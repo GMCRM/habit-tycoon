@@ -1,0 +1,7 @@
+{
+  "name": "habit-tycoon",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
