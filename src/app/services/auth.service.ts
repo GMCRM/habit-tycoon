@@ -299,6 +299,85 @@ export class AuthService {
     return data;
   }
 
+  // Ensure user profile exists with proper cash initialization
+  // This method is specifically designed to handle Safari/iPad issues with retries
+  async ensureUserProfileExists(user?: any): Promise<any> {
+    try {
+      // Get user if not provided
+      if (!user) {
+        const { data: { user: currentUser } } = await this.supabase.auth.getUser();
+        user = currentUser;
+      }
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      console.log('🔍 Ensuring profile exists for user:', user.id);
+
+      // First, try to get existing profile
+      let profile;
+      try {
+        profile = await this.getUserProfile(user.id);
+        if (profile && profile.cash !== undefined && profile.cash !== null) {
+          console.log('✅ Profile already exists with proper cash:', profile);
+          return profile;
+        }
+      } catch (error) {
+        console.log('ℹ️ Profile does not exist yet, will create:', error instanceof Error ? error.message : error);
+      }
+
+      // Profile doesn't exist or missing cash, create/update it
+      console.log('🔄 Creating/updating profile for user:', user.id);
+      
+      // Use upsert to handle both creation and updates, with retry logic for Safari/iPad
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1 second
+      
+      while (retryCount < maxRetries) {
+        try {
+          const { data, error } = await this.supabase
+            .from('user_profiles')
+            .upsert({
+              id: user.id,
+              email: user.email!,
+              name: user.user_metadata?.['full_name'] || user.user_metadata?.['name'] || user.email!.split('@')[0],
+              cash: 100.00,
+              net_worth: 100.00
+            }, {
+              onConflict: 'id'
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error(`❌ Profile creation attempt ${retryCount + 1} failed:`, error);
+            if (retryCount === maxRetries - 1) {
+              throw error;
+            }
+          } else {
+            console.log('✅ Profile created/updated successfully:', data);
+            return data;
+          }
+        } catch (error) {
+          console.error(`❌ Profile creation attempt ${retryCount + 1} exception:`, error);
+          if (retryCount === maxRetries - 1) {
+            throw error;
+          }
+        }
+        
+        retryCount++;
+        console.log(`⏳ Retrying profile creation in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to ensure profile exists:', error);
+      throw error;
+    }
+  }
+
   // Force create profile for current authenticated user
   async forceCreateCurrentUserProfile() {
     try {

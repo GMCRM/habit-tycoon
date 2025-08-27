@@ -51,13 +51,25 @@ export class AppComponent implements OnInit {
     }
 
     // Listen to auth state changes
-    this.authService.onAuthStateChange((event, session) => {
+    this.authService.onAuthStateChange(async (event, session) => {
       console.log('🔍 AppComponent: Auth state change:', event, 'current path:', window.location.pathname);
       
       if (event === 'SIGNED_OUT') {
         console.log('🔄 AppComponent: User signed out, redirecting to login');
         this.router.navigate(['/login']);
       } else if (event === 'SIGNED_IN') {
+        console.log('🔄 AppComponent: User signed in, ensuring profile exists...');
+        
+        // Ensure user profile exists with proper cash initialization
+        // This is critical for OAuth users on Safari/iPad
+        try {
+          await this.authService.ensureUserProfileExists(session?.user);
+          console.log('✅ AppComponent: User profile ensured');
+        } catch (error) {
+          console.error('❌ AppComponent: Failed to ensure user profile:', error);
+          // Don't block the sign-in process, but log the error
+        }
+        
         // Only redirect to home if currently on login/signup page
         const currentPath = window.location.pathname;
         if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {

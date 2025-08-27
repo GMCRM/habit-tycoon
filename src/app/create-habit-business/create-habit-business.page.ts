@@ -102,41 +102,12 @@ export class CreateHabitBusinessPage implements OnInit {
       // Load user profile with better error handling
       const { data: { user } } = await this.authService.getUser();
       if (user) {
-        console.log('User found, loading profile for:', user.id);
+        console.log('User found, ensuring profile exists for:', user.id);
         try {
-          this.userProfile = await this.authService.getUserProfile(user.id);
-          console.log('Loaded user profile:', this.userProfile);
-          
-          // If profile doesn't exist (null) or has no cash, create/initialize
-          if (!this.userProfile) {
-            console.log('No profile found, creating new profile...');
-            
-            try {
-              await this.authService.createUserProfile(
-                user.id, 
-                user.email || '',
-                user.user_metadata?.['name'] || 'Entrepreneur'
-              );
-              
-              // Reload the profile
-              this.userProfile = await this.authService.getUserProfile(user.id);
-              console.log('Created and loaded new profile:', this.userProfile);
-            } catch (createError) {
-              console.warn('Could not create profile, using temporary default:', createError);
-              this.userProfile = {
-                name: user.user_metadata?.['name'] || 'Entrepreneur',
-                cash: 100.00,
-                net_worth: 100.00
-              };
-            }
-          } else if (this.userProfile.cash === undefined || this.userProfile.cash === null) {
-            console.log('Profile exists but missing cash, updating...');
-            // Profile exists but missing cash data - this shouldn't happen but let's handle it
-            this.userProfile.cash = 100.00;
-            this.userProfile.net_worth = this.userProfile.net_worth || 100.00;
-          }
+          this.userProfile = await this.authService.ensureUserProfileExists(user);
+          console.log('User profile ensured:', this.userProfile);
         } catch (profileError) {
-          console.error('Error loading profile:', profileError);
+          console.error('Error ensuring profile exists:', profileError);
           await this.showToast('Cannot connect to user profile. Please check your connection.', 'danger');
           
           // Use temporary default to allow form to work
