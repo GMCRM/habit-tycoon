@@ -1,10 +1,33 @@
 // Social page styling - Adventure Capitalist inspired
 
+// iOS Safari viewport fixes for ion-content
+ion-content {
+  /* Ensure proper height calculation on iOS */
+  --offset-bottom: auto !important;
+  --offset-top: auto !important;
+  
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+}
+
 // Custom scrollable content
 .scrollable-content {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Enable momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  
+  /* iOS Safari specific scrolling fixes */
+  @supports (-webkit-touch-callout: none) {
+    height: calc(100vh - 60px); /* Adjust for header */
+    height: calc(100dvh - 60px);
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
   
   /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
   &::-webkit-scrollbar {
@@ -23,6 +46,13 @@
   background: var(--ion-background-color);
   min-height: 100vh;
   padding: 16px 16px 90px 16px; /* Top, Right, Bottom (space for nav), Left */
+  
+  /* iOS Safari specific viewport fixes */
+  @supports (-webkit-touch-callout: none) {
+    min-height: calc(100vh - 60px); /* Account for header */
+    min-height: calc(100dvh - 60px);
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
 }
 
 // Segment tabs styling
@@ -34,12 +64,25 @@
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1); // Add subtle shadow like home page
   
   ion-segment-button {
-    --indicator-color: var(--ion-color-primary);
+    --indicator-color: transparent;
+    --indicator-color-checked: rgba(255, 215, 0, 0.2);
     --color: rgba(255, 255, 255, 0.7);
     --color-checked: var(--ion-color-primary);
     --border-radius: 8px; // Slightly rounded
     --padding-top: 12px; // Increased padding
     --padding-bottom: 12px;
+    
+    // Custom styling for active state
+    &.segment-button-checked {
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      
+      ion-icon,
+      ion-label {
+        color: var(--ion-color-primary) !important;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+      }
+    }
     
     ion-icon {
       font-size: 1.3rem; // Slightly larger
