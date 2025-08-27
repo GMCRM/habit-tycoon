@@ -58,12 +58,12 @@ export class AuthService {
     if (this.isMobile()) {
       return `io.ionic.habittycoon://auth/callback`; // Custom URL scheme for mobile
     } else {
-      // For GitHub Pages, we need to include the base path
+      // For GitHub Pages, we need to include the base path and account for hash routing
       const isGitHubPages = window.location.hostname === 'gmcrm.github.io';
       if (isGitHubPages) {
-        return `${window.location.origin}/habit-tycoon/home`; // GitHub Pages redirect
+        return `${window.location.origin}/habit-tycoon/#/home`; // GitHub Pages redirect with hash routing
       } else {
-        return `${window.location.origin}/home`; // Local/other web redirect
+        return `${window.location.origin}/#/home`; // Local/other web redirect with hash routing
       }
     }
   }
@@ -177,11 +177,11 @@ export class AuthService {
     try {
       console.log('🔄 Sending password reset email to:', email);
       
-      // Get the correct redirect URL for password reset
+      // Get the correct redirect URL for password reset with hash routing
       const isGitHubPages = window.location.hostname === 'gmcrm.github.io';
       const resetUrl = isGitHubPages 
-        ? `${window.location.origin}/habit-tycoon/reset-password`
-        : `${window.location.origin}/reset-password`;
+        ? `${window.location.origin}/habit-tycoon/#/reset-password`
+        : `${window.location.origin}/#/reset-password`;
       
       const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetUrl
