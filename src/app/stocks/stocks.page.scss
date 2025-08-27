@@ -18,6 +18,16 @@ ion-content {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Enable momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  
+  /* iOS Safari specific scrolling fixes */
+  @supports (-webkit-touch-callout: none) {
+    height: calc(100vh - 60px); /* Adjust for header */
+    height: calc(100dvh - 60px);
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
   
   /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
   &::-webkit-scrollbar {
@@ -35,14 +45,12 @@ ion-content {
 .page-container {
   background: var(--ion-background-color);
   min-height: 100vh;
-  /* Use dynamic viewport height for better iOS Safari support */
-  min-height: 100dvh;
   padding-bottom: 90px; /* Space for bottom navigation */
   
   /* iOS Safari specific viewport fixes */
   @supports (-webkit-touch-callout: none) {
-    min-height: calc(100vh - env(safe-area-inset-bottom));
-    min-height: calc(100dvh - env(safe-area-inset-bottom));
+    min-height: calc(100vh - 60px); /* Account for header */
+    min-height: calc(100dvh - 60px);
     padding-bottom: calc(90px + env(safe-area-inset-bottom));
   }
 }
