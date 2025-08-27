@@ -15,7 +15,13 @@ export class AuthService {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'habit-tycoon-web'
+        }
       }
     });
   }
