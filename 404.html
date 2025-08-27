@@ -1,39 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
+<head>
+    <meta charset="utf-8">
     <title>Habit Tycoon</title>
     <script type="text/javascript">
-      // Single Page App for GitHub Pages
-      // MIT License
-      // https://github.com/rafgraph/spa-github-pages
-      // This script checks to see if a redirect is present in the query string,
-      // converts it back into the correct url and adds it to the
-      // browser's history using window.history.replaceState(...),
-      // which won't cause the browser to attempt to load the new url.
-      // When the single page app is loaded further down in this file,
-      // the correct url will be waiting in the browser's history for
-      // the single page app to route accordingly.
-      (function (l) {
-        if (l.search[1] === "/") {
-          var decoded = l.search
-            .slice(1)
-            .split("&")
-            .map(function (s) {
-              return s.replace(/~and~/g, "&");
-            })
-            .join("?");
-          window.history.replaceState(
-            null,
-            null,
-            l.pathname.slice(0, -1) + decoded + l.hash
-          );
+        // For hash routing, we need to redirect to the root with the path as hash
+        // Convert /path to /#/path
+        var path = window.location.pathname;
+        if (path !== '/' && path !== '/index.html') {
+            // Redirect /path to /#/path
+            window.location.href = window.location.origin + '/#' + path + window.location.search;
+        } else {
+            // If already at root, just redirect to index.html
+            window.location.href = window.location.origin + '/index.html';
         }
-      })(window.location);
     </script>
-    <meta http-equiv="refresh" content="0; URL=./index.html" />
-  </head>
-  <body>
+</head>
+<body>
     <p>Redirecting to Habit Tycoon...</p>
-  </body>
+</body>
 </html>
