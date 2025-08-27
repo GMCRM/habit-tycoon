@@ -19,7 +19,7 @@ log.txt
 
 # Ionic
 /.ionic
-/www
+# /www  # Temporarily commented out for GitHub Pages deployment
 /platforms
 /plugins
 
