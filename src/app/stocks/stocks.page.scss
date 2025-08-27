@@ -1,5 +1,18 @@
 // Import the same styling patterns as homepage
 
+// iOS Safari viewport fixes for ion-content
+ion-content {
+  /* Ensure proper height calculation on iOS */
+  --offset-bottom: auto !important;
+  --offset-top: auto !important;
+  
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+}
+
 // Custom scrollable content
 .scrollable-content {
   height: 100%;
@@ -22,7 +35,16 @@
 .page-container {
   background: var(--ion-background-color);
   min-height: 100vh;
+  /* Use dynamic viewport height for better iOS Safari support */
+  min-height: 100dvh;
   padding-bottom: 90px; /* Space for bottom navigation */
+  
+  /* iOS Safari specific viewport fixes */
+  @supports (-webkit-touch-callout: none) {
+    min-height: calc(100vh - env(safe-area-inset-bottom));
+    min-height: calc(100dvh - env(safe-area-inset-bottom));
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
 }
 
 // Filter section styling
