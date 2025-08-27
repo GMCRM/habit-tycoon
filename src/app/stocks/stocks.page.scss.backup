@@ -1,0 +1,2022 @@
+// Import the same styling patterns as homepage
+
+// Custom scrollable content
+.scrollable-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+  
+  /* Hide scrollbar for Internet Explorer/Edge */
+  -ms-overflow-style: none;
+}
+
+.page-container {
+  background: var(--ion-background-color);
+  min-height: 100vh;
+  padding-bottom: 90px; /* Space for bottom navigation */
+}
+
+// Header section styling - matches homepage spacing
+.header-section {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  
+  h1 {
+    margin: 0 0 8px 0;
+    color: var(--ion-color-primary);
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+  }
+  
+  p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+  }
+}
+
+// Tab switcher styling
+.tab-switcher {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 0 16px;
+  
+  ion-button {
+    flex: 1;
+    --border-radius: 10px;
+    font-weight: 600;
+  }
+}
+
+// Stats grid styling - matches homepage
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 24px;
+
+  .stat-card {
+    background: var(--business-item-background);
+    border: var(--business-item-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+    
+    &.clickable-card {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.2);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+      
+      &.active-tab {
+        border: 2px solid var(--ion-color-primary);
+        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 165, 0, 0.02) 100%);
+      }
+    }
+    
+    ion-card-content {
+      padding: 16px;
+      
+      .stat-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        
+        ion-icon {
+          font-size: 2rem;
+          color: var(--ion-color-primary);
+          filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+        }
+        
+        .stat-info {
+          h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--cash-color);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+          }
+          
+          p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Dividend potential styling
+.dividend-potential {
+  color: var(--ion-color-success) !important;
+  font-weight: 600;
+}
+
+// User info styling - matches homepage
+.user-info {
+  background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  
+  .welcome-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    
+    .welcome-text {
+      h2 {
+        margin: 0;
+        color: var(--ion-color-primary);
+        font-size: 1.4rem;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+      }
+      
+      p {
+        margin: 4px 0 0 0;
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+    
+    .cash-display {
+      text-align: right;
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      
+      .networth-display {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding: 8px 12px;
+        background: var(--ion-color-dark);
+        border: 2px solid #FFD700;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        
+        .networth-amount {
+          font-size: 1.3rem !important;
+          font-weight: 700;
+          color: #FFD700;
+          text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+        }
+        
+        .networth-label {
+          font-size: 0.75rem;
+          color: white;
+          margin-top: 2px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+      }
+      
+      .cash-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding: 8px 12px;
+        background: var(--ion-color-dark);
+        border: 2px solid #00FF7F;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 255, 127, 0.3);
+      }
+      
+      .cash-amount {
+        font-size: 1.3rem !important;
+        font-weight: 700;
+        color: #00FF7F;
+        text-shadow: 0 0 8px rgba(0, 255, 127, 0.4);
+      }
+      
+      .cash-label {
+        font-size: 0.75rem;
+        color: white;
+        margin-top: 2px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+    }
+  }
+}
+
+// Stocks sections - match homepage habit-businesses styling
+.my-habit-businesses {
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 0 8px;
+    
+    h2 {
+      margin: 0;
+      flex: 1;
+      color: var(--ion-color-primary);
+      font-size: 1.4rem;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    }
+    
+    ion-icon {
+      font-size: 1.5rem;
+      color: var(--ion-color-primary);
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+    }
+  }
+  
+  // Individual stock/holding items - Adventure Capitalist style
+  .habit-business-item {
+    background: var(--business-item-background);
+    border: var(--business-item-border);
+    border-radius: 12px;
+    margin: 12px 0;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    
+    // Subtle glow effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--ion-color-primary), transparent);
+      opacity: 0.6;
+    }
+    
+    .item-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+      
+      .business-icon {
+        font-size: 2.5rem;
+        min-width: 50px;
+        width: 50px;
+        text-align: center;
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+        padding-right: 12px;
+      }
+      
+      .business-info {
+        flex: 1;
+        
+        .business-name {
+          margin: 0 0 8px 0;
+          font-size: 1.2rem;
+          font-weight: bold;
+          color: var(--ion-color-primary);
+          text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+        }
+        
+        .owner-section {
+          margin-bottom: 12px;
+          text-align: center;
+          max-width: 400px;
+          margin-left: auto;
+          margin-right: auto;
+          
+          .owner-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+          }
+          
+          .owner-name {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+            line-height: 1.4;
+          }
+        }
+        
+        .habit-description {
+          margin: 0 0 12px 0;
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 0.95rem;
+          line-height: 1.4;
+        }
+        
+        .habit-stats {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 10px;
+          justify-content: center;
+          max-width: 100%;
+          margin: 0 auto 12px auto;
+          
+          .stat-item {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            flex: 1;
+            min-width: 65px;
+            
+            .stat-label {
+              font-size: 0.68rem;
+              color: rgba(255, 255, 255, 0.6);
+              text-transform: uppercase;
+              letter-spacing: 0.2px;
+              margin-bottom: 2px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            
+            .stat-value {
+              font-weight: bold;
+              font-size: 0.82rem;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              
+              &.streak {
+                color: var(--streak-color);
+              }
+              
+              &.total-earned {
+                color: var(--earnings-color);
+                text-shadow: 0 0 6px rgba(0, 255, 136, 0.3);
+              }
+            }
+          }
+        }
+        
+        // Habit grid styling - match home page exactly
+        app-habit-grid {
+          margin: 8px 0;
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          
+          ::ng-deep .content-wrapper {
+            width: fit-content !important;
+            display: flex !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          ::ng-deep .habit-grid-container {
+            width: fit-content !important;
+            max-width: fit-content !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-radius: 8px !important;
+            border-top: 1px solid rgba(255, 215, 0, 0.2) !important;
+            padding: 8px !important;
+            border: 1px solid rgba(255, 215, 0, 0.2) !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            display: inline-block !important;
+          }
+          
+          ::ng-deep .grid-header {
+            margin-bottom: 8px !important;
+            width: fit-content !important;
+          }
+          
+          ::ng-deep .month-labels {
+            font-size: 10px !important;
+            width: fit-content !important;
+            margin-left: 20px !important;
+            margin-bottom: 8px !important;
+            overflow: visible !important;
+          }
+          
+          ::ng-deep .grid-wrapper {
+            width: fit-content !important;
+            overflow: visible !important;
+            padding-bottom: 0 !important;
+          }
+          
+          ::ng-deep .habit-grid {
+            width: fit-content !important;
+            overflow: visible !important;
+          }
+          
+          // Hide stats for compact display in stocks
+          ::ng-deep .grid-stats {
+            display: none !important;
+          }
+        }
+        
+        // Price badge styling for stocks
+        .price-badge {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+          
+          .current-price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--ion-color-primary);
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+          }
+          
+          .price-change {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 600;
+            
+            &.price-up {
+              color: #10dc60;
+              background: rgba(16, 220, 96, 0.15);
+              border: 1px solid rgba(16, 220, 96, 0.3);
+            }
+            
+            &.price-down {
+              color: #ff4757;
+              background: rgba(255, 71, 87, 0.15);
+              border: 1px solid rgba(255, 71, 87, 0.3);
+            }
+            
+            &.price-neutral {
+              color: #b0b0b0;
+              background: rgba(176, 176, 176, 0.15);
+              border: 1px solid rgba(176, 176, 176, 0.3);
+            }
+          }
+          
+          .shares-owned {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+          }
+        }
+      }
+      
+      .earnings-section {
+        text-align: center;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        
+        .earnings-total {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          
+          .total-amount {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--earnings-color);
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+            
+            &.profit {
+              color: #10dc60;
+              text-shadow: 0 0 8px rgba(16, 220, 96, 0.3);
+            }
+            
+            &.loss {
+              color: #f53d3d;
+              text-shadow: 0 0 8px rgba(245, 61, 61, 0.3);
+            }
+          }
+          
+          .earnings-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+          }
+          
+          .profit-loss {
+            font-size: 0.9rem;
+            font-weight: 600;
+            
+            &.profit {
+              color: #10dc60;
+            }
+            
+            &.loss {
+              color: #f53d3d;
+            }
+          }
+        }
+        
+        .checkin-action {
+          margin-top: 8px;
+          
+          ion-button {
+            --border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            
+            &[color="success"] {
+              --background: var(--earnings-color);
+              --color: #000000;
+              --box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+            }
+            
+            &[color="secondary"] {
+              --background: rgba(255, 165, 0, 0.8);
+              --color: #000000;
+              --box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Empty state styling - matches homepage
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    
+    ion-icon {
+      font-size: 4rem;
+      color: var(--ion-color-medium);
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+    
+    ion-spinner {
+      --color: var(--ion-color-primary);
+      transform: scale(1.5);
+      margin-bottom: 16px;
+    }
+    
+    h3 {
+      color: rgba(255, 255, 255, 0.8);
+      margin: 0 0 12px 0;
+      font-size: 1.2rem;
+    }
+    
+    p {
+      color: rgba(255, 255, 255, 0.6);
+      margin: 0 0 8px 0;
+      line-height: 1.5;
+    }
+    
+    ion-button {
+      --border-radius: 8px;
+      --padding-start: 20px;
+      --padding-end: 20px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
+      margin-top: 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      height: 44px;
+      width: auto;
+      
+      .button-native {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      
+      ion-icon {
+        font-size: 1.1rem;
+        margin-right: 8px;
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+      }
+      
+      &[color="primary"] {
+        --box-shadow: 0 3px 10px rgba(var(--ion-color-primary-rgb), 0.3);
+      }
+    }
+  }
+}
+
+// Help icon container
+.help-icon-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px;
+  cursor: pointer;
+  
+  ion-icon {
+    font-size: 1.4rem;
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: var(--ion-color-primary);
+    }
+  }
+  
+  .help-text {
+    font-size: 0.9rem;
+    color: var(--ion-color-medium);
+    transition: color 0.2s ease;
+  }
+  
+  &:hover .help-text {
+    color: var(--ion-color-primary);
+  }
+}
+
+// Info card styling
+.info-card {
+  margin: 16px;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  
+  .info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    
+    .info-title-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      ion-icon {
+        font-size: 1.5rem;
+      }
+      
+      h3 {
+        margin: 0;
+        color: var(--ion-color-primary);
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+    }
+  }
+  
+  .info-content {
+    p {
+      margin: 0 0 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    
+    ul {
+      margin: 8px 0;
+      padding-left: 16px;
+      
+      li {
+        margin: 4px 0;
+        font-size: 0.85rem;
+        line-height: 1.3;
+        
+        strong {
+          color: var(--ion-color-primary);
+        }
+      }
+    }
+    
+    em {
+      font-size: 0.85rem;
+      color: var(--ion-color-success);
+      font-weight: 500;
+    }
+  }
+}
+
+// Extra Large screen optimization - FULL YEAR display (>1400px) - Match home page
+@media (min-width: 1401px) {
+  .my-habit-businesses {
+    .habit-business-item {
+      .item-content {
+        .business-info {
+          .habit-stats {
+            gap: 12px;
+            max-width: 100%;
+            
+            .stat-item {
+              flex: 1;
+              min-width: 75px;
+              
+              .stat-label {
+                font-size: 0.7rem;
+                letter-spacing: 0.3px;
+              }
+              
+              .stat-value {
+                font-size: 0.85rem;
+              }
+            }
+          }
+          
+          // Habit grid optimization for FULL YEAR (53 weeks) - Match home page styling
+          app-habit-grid {
+            --grid-size: 12px; // Same as home page
+            --grid-gap: 2px;
+            
+            ::ng-deep .content-wrapper {
+              width: fit-content !important;
+              max-width: none !important;
+            }
+            
+            ::ng-deep .habit-grid-container {
+              width: fit-content !important;
+              max-width: none !important;
+              background: rgba(0, 0, 0, 0.3) !important;
+              border-radius: 8px !important;
+              border: 1px solid rgba(255, 215, 0, 0.2) !important;
+              padding: 8px !important;
+              margin: 0 !important;
+              overflow: visible !important;
+            }
+            
+            ::ng-deep .grid-header {
+              margin-bottom: 8px !important;
+              
+              .month-labels {
+                font-size: 0.7rem !important; // Same as home page
+                width: fit-content !important;
+                margin-left: 20px !important;
+              }
+            }
+            
+            ::ng-deep .grid-wrapper {
+              width: fit-content !important;
+              overflow: visible !important;
+              
+              .habit-grid {
+                width: fit-content !important;
+                min-width: fit-content !important;
+              }
+            }
+            
+            
+            ::ng-deep .habit-grid {
+              width: fit-content !important;
+              
+              .grid-day {
+                width: 12px !important; // Same as home page
+                height: 12px !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Large screen optimization - 6 months display (1025-1400px)
+@media (min-width: 1025px) and (max-width: 1400px) {
+  .my-habit-businesses {
+    .habit-business-item {
+      .item-content {
+        .business-info {
+          .habit-stats {
+            gap: 10px;
+            max-width: 100%;
+            
+            .stat-item {
+              flex: 1;
+              min-width: 70px;
+              
+              .stat-label {
+                font-size: 0.68rem;
+                letter-spacing: 0.2px;
+              }
+              
+              .stat-value {
+                font-size: 0.82rem;
+              }
+            }
+          }
+          
+          // Habit grid optimization for 6 months (better readability)
+          app-habit-grid {
+            ::ng-deep .habit-grid-container {
+              max-width: 100% !important;
+              overflow-x: hidden !important;
+              padding: 14px !important;
+              margin: 0 auto !important;
+              width: fit-content !important;
+            }
+            
+            ::ng-deep .month-labels {
+              font-size: 0.8rem !important;
+              width: fit-content !important;
+              margin-left: 20px !important;
+            }
+            
+            ::ng-deep .grid-wrapper {
+              width: fit-content !important;
+              margin: 0 auto !important;
+              overflow-x: hidden !important;
+            }
+            
+            ::ng-deep .habit-grid {
+              width: fit-content !important;
+              margin: 0 auto !important;
+              
+              .grid-day {
+                width: 16px !important; // Good size for 6 months
+                height: 16px !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Medium screen optimization - 4 months display (769-1024px)
+@media (max-width: 1024px) and (min-width: 769px) {
+  .my-habit-businesses {
+    .habit-business-item {
+      .item-content {
+        .business-info {
+          .habit-stats {
+            gap: 8px;
+            max-width: 100%;
+            
+            .stat-item {
+              flex: 1;
+              min-width: 65px;
+              
+              .stat-label {
+                font-size: 0.65rem;
+                letter-spacing: 0.2px;
+              }
+              
+              .stat-value {
+                font-size: 0.8rem;
+              }
+            }
+          }
+          
+          // Habit grid optimization for 4 months (better readability)
+          app-habit-grid {
+            ::ng-deep .habit-grid-container {
+              max-width: 100% !important;
+              overflow-x: hidden !important;
+              padding: 12px !important;
+              margin: 0 auto !important;
+              width: fit-content !important;
+            }
+            
+            ::ng-deep .month-labels {
+              font-size: 0.75rem !important;
+              width: fit-content !important;
+              margin-left: 18px !important;
+            }
+            
+            ::ng-deep .grid-wrapper {
+              width: fit-content !important;
+              margin: 0 auto !important;
+              overflow-x: hidden !important;
+            }
+            
+            ::ng-deep .habit-grid {
+              width: fit-content !important;
+              margin: 0 auto !important;
+              
+              .grid-day {
+                width: 14px !important; // Good size for 4 months
+                height: 14px !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Mobile-specific layout optimization
+@media (max-width: 768px) {
+  .my-habit-businesses {
+    .habit-business-item {
+      .item-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        
+        .business-icon {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          font-size: 1.8rem;
+          min-width: auto;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.3);
+          border-radius: 8px;
+          border: 1px solid rgba(255, 215, 0, 0.3);
+          z-index: 10;
+        }
+        
+        .business-info {
+          margin-left: 0;
+          padding-left: 0;
+          width: 100%;
+          
+          .business-name {
+            margin-left: 48px; // Make room for top-left emoji
+            margin-bottom: 4px;
+            font-size: 1.1rem;
+          }
+          
+          .owner-section {
+            margin-left: 48px; // Make room for top-left emoji
+            margin-bottom: 8px;
+            
+            .owner-label {
+              font-size: 0.7rem;
+            }
+            
+            .owner-name {
+              font-size: 0.9rem;
+            }
+          }
+          
+          .habit-description {
+            margin-left: 48px; // Make room for top-left emoji
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+          }
+          
+          .habit-stats {
+            gap: 6px;
+            margin-bottom: 8px;
+            justify-content: center;
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            flex-wrap: nowrap;
+            
+            .stat-item {
+              text-align: center;
+              flex: 1;
+              min-width: 60px;
+              
+              .stat-label {
+                font-size: 0.6rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                letter-spacing: 0.2px;
+              }
+              
+              .stat-value {
+                font-size: 0.75rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+            }
+          }
+          
+          // Make habit grid more compact on mobile with monthly view
+          app-habit-grid {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            display: block !important;
+            
+            ::ng-deep .content-wrapper {
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              display: block !important;
+            }
+            
+            ::ng-deep .habit-grid-container {
+              padding: 12px 8px !important;
+              margin: 0 !important;
+              width: 100% !important;
+              overflow-x: hidden !important;
+              background: rgba(0, 0, 0, 0.3) !important;
+              border-radius: 8px !important;
+              border: 1px solid rgba(255, 215, 0, 0.2) !important;
+              min-height: auto !important;
+              display: block !important;
+            }
+            
+            ::ng-deep .grid-header {
+              display: none !important;
+            }
+            
+            ::ng-deep .month-labels {
+              display: none !important;
+            }
+            
+            ::ng-deep .grid-wrapper {
+              width: 100% !important;
+              margin: 0 !important;
+              overflow-x: hidden !important;
+              padding: 0 !important;
+            }
+              display: grid !important;
+              grid-template-columns: repeat(7, 1fr) !important;
+              gap: 0 !important;
+              margin-bottom: 24px !important;
+              padding: 0 20px !important;
+              background: transparent !important;
+              border-radius: 0 !important;
+            }
+            
+            ::ng-deep .habit-grid {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 4px !important;
+              gap: 6px !important;
+              display: grid !important;
+              grid-template-columns: repeat(7, 1fr) !important;
+              max-width: 100% !important;
+              overflow: hidden !important;
+              background: rgba(255, 255, 255, 0.05) !important;
+              border-radius: 8px !important;
+              
+              &.mobile-month-grid {
+                padding: 0 20px 20px !important;
+                gap: 12px !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+                border: none !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+              }
+              
+              &.mobile-year-grid {
+                grid-template-columns: repeat(53, 1fr) !important;
+                gap: 1px !important;
+                padding: 4px !important;
+              }
+            }
+            
+            ::ng-deep .grid-day {
+              width: 100% !important;
+              height: 36px !important;
+              min-width: 0 !important;
+              border-radius: 8px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              position: relative !important;
+              font-size: 0.75rem !important;
+              font-weight: 600 !important;
+              cursor: pointer !important;
+              transition: all 0.2s ease !important;
+              aspect-ratio: 1 !important;
+              margin: 2px !important;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+              
+              &.mobile-monthly-day {
+                width: 40px !important;
+                height: 40px !important;
+                margin: 0 auto !important;
+                border-radius: 50% !important;
+                background: transparent !important;
+                border: 2px solid rgba(255, 255, 255, 0.1) !important;
+                font-size: 0.9rem !important;
+                font-weight: 500 !important;
+                color: rgba(255, 255, 255, 0.8) !important;
+                cursor: default !important;
+                aspect-ratio: auto !important;
+                box-shadow: none !important;
+              }
+              
+              &.mobile-monthly-day.today {
+                border-color: white !important;
+                color: white !important;
+                font-weight: 600 !important;
+              }
+              
+              &.mobile-monthly-day.today::after {
+                content: '' !important;
+                position: absolute !important;
+                bottom: -8px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 4px !important;
+                height: 4px !important;
+                background: white !important;
+                border-radius: 50% !important;
+              }
+              
+              &.mobile-monthly-day.has-data {
+                background: rgba(76, 175, 80, 0.3) !important;
+                border-color: rgba(76, 175, 80, 0.6) !important;
+                color: #4CAF50 !important;
+              }
+              
+              &.mobile-monthly-day.other-month {
+                opacity: 0.3 !important;
+                pointer-events: none !important;
+              }
+              
+              &.mobile-yearly-day {
+                width: 100% !important;
+                height: 12px !important;
+                min-height: 12px !important;
+                border-radius: 2px !important;
+                margin: 0 !important;
+                aspect-ratio: auto !important;
+              }
+              
+              .day-number {
+                font-size: 9px !important;
+                color: #ffffff !important;
+                font-weight: 500 !important;
+                position: absolute !important;
+                top: 2px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 1 !important;
+                
+                &.mobile-monthly-day {
+                  font-size: 14px !important;
+                  font-weight: 600 !important;
+                  top: 4px !important;
+                  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+                }
+              }
+              
+              &.outside-month .day-number {
+                color: rgba(255, 255, 255, 0.3) !important;
+              }
+            }
+            
+            ::ng-deep .grid-day:hover {
+              transform: scale(1.1) !important;
+              z-index: 10 !important;
+            }
+            
+            ::ng-deep .grid-day.is-today {
+              border: 2px solid var(--ion-color-primary, #ffd700) !important;
+              box-shadow: 0 0 8px rgba(255, 215, 0, 0.5) !important;
+            }
+          }
+          
+          .price-badge {
+            align-items: flex-start;
+            margin-left: 48px; // Make room for top-left emoji
+            
+            .current-price {
+              font-size: 1.1rem;
+            }
+            
+            .shares-owned {
+              font-size: 0.75rem;
+            }
+          }
+        }
+        
+        .earnings-section {
+          min-width: auto;
+          width: 100%;
+          margin-top: 8px;
+          
+          .earnings-total {
+            .total-amount {
+              font-size: 1.2rem;
+            }
+            
+            .earnings-label {
+              font-size: 0.7rem;
+            }
+          }
+          
+          .checkin-action {
+            margin-top: 6px;
+            
+            ion-button {
+              font-size: 0.8rem;
+              --padding-start: 12px;
+              --padding-end: 12px;
+              --padding-top: 8px;
+              --padding-bottom: 8px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Global utility classes
+.profit {
+  color: #10dc60 !important;
+}
+
+.loss {
+  color: #f53d3d !important;
+}
+
+// Desktop-only elements (hide on mobile screens smaller than 1300px)
+.desktop-only {
+  @media (max-width: 1299px) {
+    display: none !important;
+  }
+}
+
+// Responsive design
+@media (min-width: 768px) and (max-width: 1023px) {
+  // Tablet styles (iPad, Android tablets)
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  .habit-business-item {
+    .item-content {
+      gap: 16px;
+      
+      .business-icon {
+        font-size: 2.8rem;
+        min-width: 70px;
+        padding-right: 8px;
+      }
+      
+      .business-info {
+        flex: 1;
+        
+        .business-name {
+          font-size: 1.2rem;
+        }
+        
+        .habit-stats {
+          gap: 8px;
+          flex-wrap: nowrap;
+          justify-content: center;
+          max-width: 100%;
+          margin: 0 auto 12px auto;
+          
+          .stat-item {
+            flex: 1;
+            min-width: 65px;
+            text-align: center;
+          }
+        }
+        
+        // Adjust habit grid for tablet
+        app-habit-grid {
+          ::ng-deep .habit-grid-container {
+            padding: 10px !important;
+            margin: 0 auto !important;
+            width: fit-content !important;
+            overflow-x: hidden !important;
+          }
+          
+          ::ng-deep .month-labels {
+            font-size: 9px !important;
+            width: fit-content !important;
+            margin: 0 auto !important;
+          }
+          
+          ::ng-deep .grid-wrapper {
+            width: fit-content !important;
+            margin: 0 auto !important;
+            overflow-x: hidden !important;
+          }
+          
+          ::ng-deep .habit-grid {
+            width: fit-content !important;
+            margin: 0 auto !important;
+          }
+        }
+      }
+      
+      .earnings-section {
+        min-width: 110px;
+        flex-shrink: 0;
+        
+        .earnings-total {
+          .total-amount {
+            font-size: 1.2rem;
+          }
+          
+          .earnings-label {
+            font-size: 0.7rem;
+          }
+        }
+        
+        .checkin-action {
+          ion-button {
+            font-size: 0.8rem;
+            --padding-start: 14px;
+            --padding-end: 14px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1400px) {
+  // Large Desktop styles (medium-large range)
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  
+  .habit-business-item {
+    .item-content {
+      .business-icon {
+        font-size: 3rem;
+        min-width: 80px;
+      }
+      
+      .business-info {
+        .business-name {
+          font-size: 1.4rem;
+        }
+        
+        .habit-stats {
+          gap: 12px;
+          justify-content: center;
+          max-width: 100%;
+          margin: 0 auto 12px auto;
+          flex-wrap: nowrap;
+          
+          .stat-item {
+            flex: 1;
+            min-width: 75px;
+            text-align: center;
+          }
+        }
+        
+        // Large desktop grid styling (for 6-month display)
+        app-habit-grid {
+          ::ng-deep .habit-grid-container {
+            padding: 14px !important;
+            margin: 0 auto !important;
+            width: fit-content !important;
+            overflow: visible !important;
+          }
+          
+          ::ng-deep .month-labels {
+            font-size: 0.8rem !important;
+            width: fit-content !important;
+            margin-left: 20px !important;
+          }
+          
+          ::ng-deep .grid-wrapper {
+            width: fit-content !important;
+            margin: 0 auto !important;
+            overflow: visible !important;
+          }
+          
+          ::ng-deep .habit-grid {
+            width: fit-content !important;
+            margin: 0 auto !important;
+            
+            .grid-day {
+              width: 16px !important;
+              height: 16px !important;
+            }
+          }
+        }
+      }
+      
+      .earnings-section {
+        min-width: 140px;
+      }
+    }
+  }
+}
+
+// Mobile portfolio stats carousel
+@media (max-width: 768px) {
+  .desktop-stats {
+    display: none;
+  }
+
+  .mobile-stats-carousel {
+    display: block;
+    
+    .carousel-container {
+      position: relative;
+      width: 100%;
+      
+      .carousel-card {
+        margin: 0;
+        width: 100%;
+        min-height: 100px;
+        background: var(--business-item-background);
+        border: var(--business-item-border);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        
+        .stat-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          justify-content: center;
+          text-align: center;
+
+          ion-icon {
+            font-size: 28px;
+            min-width: 36px;
+            color: var(--ion-color-primary);
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+          }
+
+          .stat-info {
+            h2 {
+              margin: 0;
+              font-size: 1.5rem;
+              font-weight: bold;
+              color: var(--cash-color);
+              text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+
+              &.profit {
+                color: var(--ion-color-success);
+              }
+
+              &.loss {
+                color: var(--ion-color-danger);
+              }
+            }
+
+            p {
+              margin: 4px 0 0 0;
+              font-size: 1rem;
+              color: rgba(255, 255, 255, 0.8);
+            }
+          }
+        }
+      }
+      
+      .carousel-indicators {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 12px;
+        
+        .indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: var(--ion-color-light);
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+          
+          &.active {
+            background-color: var(--ion-color-primary);
+          }
+        }
+      }
+    }
+  }
+
+  // Mobile-specific business item adjustments
+  .habit-business-item {
+    margin: 8px 0;
+    padding: 12px;
+
+    .item-content {
+      flex-direction: column;
+      gap: 16px;
+      align-items: stretch;
+      
+      .business-icon {
+        font-size: 2rem;
+        min-width: auto;
+        width: auto;
+        text-align: center;
+        padding-right: 0;
+        align-self: center;
+      }
+      
+      .business-info {
+        text-align: center;
+        
+        .business-name {
+          font-size: 1.1rem;
+        }
+        
+        .habit-stats {
+          justify-content: center;
+          gap: 8px;
+          max-width: 100%;
+          margin: 0 auto 12px auto;
+          flex-wrap: nowrap;
+          
+          .stat-item {
+            flex: 1;
+            min-width: 65px;
+            text-align: center;
+          }
+        }
+        
+        // Make habit grid more compact on mobile
+        app-habit-grid {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          display: block !important;
+          
+          ::ng-deep .content-wrapper {
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+          }
+          
+          ::ng-deep .habit-grid-container {
+            padding: 8px 4px !important;
+            margin: 0 !important;
+            width: 100% !important;
+            overflow-x: hidden !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 215, 0, 0.2) !important;
+          }
+          
+          ::ng-deep .grid-header {
+            display: none !important;
+          }
+          
+          ::ng-deep .month-labels {
+            display: none !important;
+          }
+          
+          ::ng-deep .grid-wrapper {
+            width: 100% !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+            padding: 0 !important;
+          }
+          
+          ::ng-deep .habit-grid {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 1px !important;
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(8px, 1fr)) !important;
+          }
+          
+          ::ng-deep .grid-day {
+            width: 100% !important;
+            height: 8px !important;
+            min-width: 8px !important;
+            border-radius: 2px !important;
+            position: relative !important;
+            
+            .day-number {
+              display: none !important; // Too small for day numbers
+            }
+          }
+        }
+      }
+      
+      .earnings-section {
+        min-width: auto;
+        width: 100%;
+        
+        .earnings-total {
+          .total-amount {
+            font-size: 1.2rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Extra small screens (very narrow phones)
+@media (max-width: 480px) {
+  .habit-business-item {
+    margin: 6px 0;
+    padding: 10px;
+    
+    .item-content {
+      gap: 12px;
+      
+      .business-info {
+        .business-name {
+          font-size: 1rem;
+        }
+        
+        .habit-stats {
+          gap: 4px;
+          justify-content: center;
+          max-width: 100%;
+          margin: 0 auto 8px auto;
+          flex-wrap: nowrap;
+          
+          .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 55px;
+            
+            .stat-label {
+              font-size: 0.55rem;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              letter-spacing: 0.1px;
+            }
+            
+            .stat-value {
+              font-size: 0.7rem;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+          }
+        }
+        
+        // Even more compact habit grid for very small screens
+        app-habit-grid {
+          ::ng-deep .habit-grid-container {
+            padding: 6px !important;
+            margin: 0 auto !important;
+            width: fit-content !important;
+            overflow-x: hidden !important;
+          }
+          
+          ::ng-deep .month-labels {
+            font-size: 8px !important;
+            width: fit-content !important;
+            margin: 0 auto !important;
+          }
+          
+          ::ng-deep .grid-wrapper {
+            width: fit-content !important;
+            margin: 0 auto !important;
+            overflow-x: hidden !important;
+          }
+          
+          ::ng-deep .habit-grid {
+            width: fit-content !important;
+            margin: 0 auto !important;
+            transform: scale(0.9);
+          }
+        }
+      }
+      
+      .earnings-section {
+        .earnings-total {
+          .total-amount {
+            font-size: 1.1rem;
+          }
+          
+          .earnings-label {
+            font-size: 0.7rem;
+          }
+          
+          .profit-loss {
+            font-size: 0.8rem;
+          }
+        }
+        
+        .checkin-action {
+          ion-button {
+            font-size: 0.8rem;
+            --padding-start: 12px;
+            --padding-end: 12px;
+            --padding-top: 8px;
+            --padding-bottom: 8px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Desktop responsive stats
+@media (min-width: 769px) {
+  .desktop-stats {
+    display: grid;
+  }
+
+  .mobile-stats-carousel {
+    display: none;
+  }
+}
+
+// Mobile combined tab styles
+.mobile-combined-tab {
+  display: none;
+  
+  .stat-card {
+    background: var(--business-item-background);
+    border: var(--business-item-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 215, 0, 0.2);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+  
+  .combined-tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    
+    .tab-info {
+      flex: 1;
+      
+      .tab-icon-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 4px;
+        
+        ion-icon {
+          font-size: 24px;
+          min-width: 32px;
+        }
+        
+        h2 {
+          margin: 0;
+          font-size: 1.3rem;
+          font-weight: 600;
+          color: var(--ion-color-primary);
+        }
+      }
+      
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--ion-color-medium);
+      }
+    }
+    
+    .toggle-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 60px;
+      
+      ion-icon {
+        font-size: 20px;
+      }
+      
+      .toggle-text {
+        font-size: 0.75rem;
+        color: var(--ion-color-medium);
+        text-align: center;
+      }
+    }
+  }
+}
+
+// Responsive visibility
+@media (max-width: 768px) {
+  .desktop-tabs {
+    display: none;
+  }
+  
+  .mobile-combined-tab {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-tabs {
+    display: grid;
+  }
+  
+  .mobile-combined-tab {
+    display: none;
+  }
+}
+
+// Sell Modal Styles
+.sell-modal-content {
+  .business-info {
+    margin-bottom: 20px;
+    
+    .business-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 10px;
+      
+      .business-emoji {
+        font-size: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        background: var(--ion-color-light);
+        border-radius: 12px;
+      }
+      
+      h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--ion-text-color, #000);
+      }
+      
+      p {
+        margin: 5px 0 0 0;
+        color: var(--ion-color-medium);
+        font-size: 0.95rem;
+      }
+    }
+  }
+  
+  .holdings-info {
+    background: var(--ion-color-light);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    
+    p {
+      margin: 8px 0;
+      font-size: 0.95rem;
+      color: var(--ion-text-color, #000);
+      
+      strong {
+        color: var(--ion-text-color, #000);
+        font-weight: 600;
+      }
+      
+      &:first-child {
+        margin-top: 0;
+      }
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    .profit {
+      color: var(--ion-color-success) !important;
+      font-weight: 600;
+    }
+    
+    .loss {
+      color: var(--ion-color-danger) !important;
+      font-weight: 600;
+    }
+  }
+  
+  .sell-controls {
+    ion-item {
+      --background: var(--ion-color-light);
+      --color: var(--ion-text-color, #000);
+      --border-radius: 12px;
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
+      --inner-padding-end: 8px;
+      margin-bottom: 15px;
+      min-height: 60px;
+      
+      ion-label {
+        color: var(--ion-text-color, #000) !important;
+        font-weight: 500;
+        margin-bottom: 8px !important;
+      }
+      
+      ion-select {
+        color: var(--ion-text-color, #000);
+        --placeholder-color: var(--ion-color-medium);
+        --padding-top: 4px;
+        --padding-bottom: 4px;
+        min-height: 40px;
+      }
+    }
+    
+    .sell-preview {
+      background: var(--ion-color-light);
+      border: 2px solid var(--ion-color-primary);
+      padding: 12px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+      
+      p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--ion-text-color, #000);
+        font-weight: 500;
+        
+        strong {
+          color: var(--ion-color-primary);
+          font-weight: 700;
+          font-size: 1.2rem;
+        }
+      }
+    }
+    
+    ion-button[expand="block"] {
+      margin-top: 20px;
+      --border-radius: 12px;
+      height: 50px;
+      font-weight: 600;
+      
+      &[disabled] {
+        opacity: 0.5;
+      }
+    }
+  }
+}
+
+// Dark mode adjustments
+@media (prefers-color-scheme: dark) {
+  .sell-modal-content {
+    .business-info {
+      .business-header {
+        h2 {
+          color: var(--ion-color-light);
+        }
+      }
+    }
+    
+    .holdings-info {
+      background: var(--ion-color-dark-tint);
+      
+      p {
+        color: var(--ion-color-light);
+        
+        strong {
+          color: var(--ion-color-light);
+        }
+      }
+    }
+    
+    .sell-controls {
+      ion-item {
+        --background: var(--ion-color-dark-tint);
+        --color: var(--ion-color-light);
+        --padding-start: 16px;
+        --padding-end: 16px;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+        --inner-padding-end: 8px;
+        min-height: 60px;
+        
+        ion-label {
+          color: var(--ion-color-light) !important;
+          margin-bottom: 8px !important;
+        }
+        
+        ion-select {
+          color: var(--ion-color-light);
+          --padding-top: 4px;
+          --padding-bottom: 4px;
+          min-height: 40px;
+        }
+      }
+      
+      .sell-preview {
+        background: var(--ion-color-dark);
+        border-color: var(--ion-color-primary);
+        
+        p {
+          color: var(--ion-color-light) !important;
+          
+          strong {
+            color: var(--ion-color-primary-tint) !important;
+          }
+        }
+      }
+    }
+  }
+}

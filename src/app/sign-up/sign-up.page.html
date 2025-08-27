@@ -1,0 +1,97 @@
+<ion-content class="ion-padding">
+  <div class="center-card-container">
+    <ion-card>
+      <ion-card-content>
+        <h1 class="card-title">Sign Up</h1>
+
+        <!-- Google OAuth Button -->
+        <ion-button
+          expand="block"
+          fill="solid"
+          color="danger"
+          (click)="onGoogleSignUp()"
+        >
+          <ion-icon name="logo-google" slot="start"></ion-icon>
+          Continue with Google
+        </ion-button>
+
+        <div class="divider ion-text-center ion-margin">
+          <span>or</span>
+        </div>
+
+        <form (ngSubmit)="onSignUp()" #signUpForm="ngForm">
+          <ion-item>
+            <ion-label position="floating">Email</ion-label>
+            <ion-input
+              type="email"
+              name="email"
+              [(ngModel)]="email"
+              required
+              maxlength="100"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="floating">Display Name</ion-label>
+            <ion-input
+              type="text"
+              name="displayName"
+              [(ngModel)]="displayName"
+              required
+              maxlength="30"
+            ></ion-input>
+          </ion-item>
+          <p class="input-helper">How you'll appear to friends</p>
+
+          <ion-item>
+            <ion-label position="floating">Password</ion-label>
+            <ion-input
+              type="password"
+              name="password"
+              [(ngModel)]="password"
+              required
+              maxlength="100"
+            ></ion-input>
+          </ion-item>
+
+          <ion-button
+            expand="block"
+            fill="outline"
+            type="submit"
+            (click)="onSignUp()"
+          >
+            Sign Up with Email
+          </ion-button>
+        </form>
+
+        <div class="divider ion-text-center ion-margin">
+          <span>Debug Tools</span>
+        </div>
+
+        <!-- Debug buttons -->
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="warning"
+          (click)="testDatabase()"
+        >
+          🔧 Test Database
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="tertiary"
+          (click)="testAuthOnly()"
+        >
+          🧪 Test Auth Only
+        </ion-button>
+
+        <div class="login-link ion-text-center ion-margin-top">
+          <p>Already have an account?</p>
+          <a routerLink="/login">Click here to log in!</a>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

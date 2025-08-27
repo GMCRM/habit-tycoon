@@ -35,3 +35,84 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+
+/**
+ * Custom Modal Styles
+ * -----------------------------------------------------
+ */
+
+/* Upgrade Modal */
+.upgrade-modal .modal-wrapper {
+  --height: auto;
+  --max-height: 90vh;
+  --max-width: 500px;
+  --width: 95%;
+  --border-radius: 16px;
+}
+
+.upgrade-modal .modal-wrapper .modal-shadow {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure vertical scrolling works in modal content */
+.upgrade-modal ion-content {
+  overflow-x: hidden;
+  overflow-y: auto;
+  
+  /* Hide scrollbar for WebKit browsers */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for the modal content element specifically */
+.upgrade-modal .inner-scroll {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+}
+
+/* Target Ionic's internal scroll elements */
+.upgrade-modal .scroll-content,
+.upgrade-modal .scroll-y,
+.upgrade-modal .scroll-inner {
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Global scrollbar hiding for all elements within upgrade modal */
+.upgrade-modal * {
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Custom Alert Styles */
+.alert-wrapper {
+  --max-width: 400px;
+  --border-radius: 12px;
+}
+
+.disabled-button {
+  opacity: 0.5 !important;
+  pointer-events: none !important;
+}
+
+/* Desktop-only utility class for hiding elements on mobile screens */
+.desktop-only {
+  @media (max-width: 1299px) {
+    display: none !important;
+  }
+}

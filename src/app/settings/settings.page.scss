@@ -1,0 +1,507 @@
+// Settings page styling - Adventure Capitalist theme
+
+// Custom scrollable content
+.scrollable-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+  
+  /* Hide scrollbar for Internet Explorer/Edge */
+  -ms-overflow-style: none;
+}
+
+.settings-content {
+  padding: 20px 16px 90px 16px; /* Top, Right, Bottom (space for nav), Left */
+  background: var(--ion-background-color);
+  min-height: 100vh;
+  
+  @media (min-width: 768px) {
+    padding: 24px 20px 90px 20px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+// Main background and theming
+ion-content {
+  --background: var(--ion-background-color);
+}
+
+// Settings cards styling
+ion-card {
+  background: var(--business-item-background);
+  border: var(--business-item-border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  
+  // Subtle glow effect like homepage
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--ion-color-primary), transparent);
+    opacity: 0.6;
+  }
+  
+  ion-card-header {
+    padding: 20px 20px 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    background: rgba(0, 0, 0, 0.1);
+    
+    ion-card-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--ion-color-primary);
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+      margin: 0;
+      
+      ion-icon {
+        font-size: 1.5rem;
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+      }
+    }
+  }
+  
+  ion-card-content {
+    padding: 20px;
+    background: transparent;
+  }
+}
+
+// Form items styling
+ion-item {
+  --background: rgba(0, 0, 0, 0.2);
+  --color: #ffffff;
+  --border-color: rgba(255, 215, 0, 0.3);
+  --inner-padding-end: 16px;
+  --padding-start: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  
+  ion-label {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+  
+  ion-input {
+    --background: rgba(30, 30, 63, 0.6);
+    --color: #ffffff;
+    --placeholder-color: rgba(255, 255, 255, 0.5);
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --padding-top: 12px;
+    --padding-bottom: 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    font-size: 1rem;
+    
+    &:focus-within {
+      --border-color: var(--ion-color-primary);
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    }
+  }
+}
+
+// Button styling to match homepage
+ion-button {
+  --border-radius: 10px;
+  font-weight: 600;
+  margin-top: 16px;
+  height: 48px;
+  
+  &[color="primary"] {
+    --background: linear-gradient(135deg, #FFD700 0%, #ff8c00 100%);
+    --color: #000000;
+    --box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    
+    &:hover {
+      --box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
+      transform: translateY(-1px);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    &[disabled] {
+      --background: rgba(255, 215, 0, 0.3);
+      --color: rgba(0, 0, 0, 0.5);
+      --box-shadow: none;
+      transform: none;
+      opacity: 0.6;
+    }
+  }
+  
+  &[color="secondary"] {
+    --background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+    --color: #000000;
+    --box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+    
+    &:hover {
+      --box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+      transform: translateY(-1px);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    &[disabled] {
+      --background: rgba(0, 255, 136, 0.3);
+      --color: rgba(0, 0, 0, 0.5);
+      --box-shadow: none;
+      transform: none;
+      opacity: 0.6;
+    }
+  }
+}
+
+// Loading state styling
+.loading-button {
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: loading-shimmer 1.5s infinite;
+  }
+}
+
+@keyframes loading-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+// Toast styling
+ion-toast {
+  --background: var(--business-item-background);
+  --color: #ffffff;
+  --border: 1px solid rgba(255, 215, 0, 0.3);
+  --border-radius: 12px;
+  --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  &.toast-success {
+    --background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+    --color: #000000;
+    --border: 1px solid rgba(0, 255, 136, 0.5);
+  }
+  
+  &.toast-danger {
+    --background: linear-gradient(135deg, #ff3366 0%, #e62e5a 100%);
+    --color: #ffffff;
+    --border: 1px solid rgba(255, 51, 102, 0.5);
+  }
+}
+
+// Header styling
+ion-header {
+  ion-toolbar {
+    --background: var(--ion-toolbar-background);
+    --color: var(--ion-toolbar-color);
+    --border-color: rgba(255, 215, 0, 0.2);
+    
+    ion-title {
+      font-weight: bold;
+      color: var(--ion-color-primary);
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+      font-size: 1.4rem;
+    }
+    
+    ion-back-button {
+      --color: var(--ion-color-primary);
+      --icon-font-size: 1.5rem;
+      
+      &:hover {
+        --color: var(--ion-color-primary-shade);
+      }
+    }
+  }
+}
+
+// Form validation styling
+.validation-error {
+  color: var(--ion-color-danger);
+  font-size: 0.85rem;
+  margin-top: 4px;
+  margin-left: 16px;
+  font-weight: 500;
+}
+
+.form-field {
+  margin-bottom: 20px;
+  
+  &.has-error {
+    ion-item {
+      --border-color: var(--ion-color-danger);
+      border-color: var(--ion-color-danger);
+      
+      ion-input {
+        --border-color: var(--ion-color-danger);
+      }
+    }
+  }
+}
+
+// Success state styling
+.success-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--earnings-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 8px;
+  
+  ion-icon {
+    font-size: 1.1rem;
+  }
+}
+
+// Mobile responsive
+@media (max-width: 768px) {
+  .settings-content {
+    padding: 16px 12px;
+  }
+  
+  ion-card {
+    margin-bottom: 16px;
+    
+    ion-card-header {
+      padding: 16px 16px 10px 16px;
+      
+      ion-card-title {
+        font-size: 1.2rem;
+        
+        ion-icon {
+          font-size: 1.3rem;
+        }
+      }
+    }
+    
+    ion-card-content {
+      padding: 16px;
+    }
+  }
+  
+  ion-item {
+    margin-bottom: 12px;
+    
+    ion-label {
+      font-size: 0.9rem;
+    }
+    
+    ion-input {
+      font-size: 0.95rem;
+    }
+  }
+  
+  ion-button {
+    height: 44px;
+    font-size: 0.95rem;
+  }
+}
+
+// Google account info card styling
+.google-info-card {
+  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+  border: 2px solid #4169E1;
+  box-shadow: 0 8px 32px rgba(65, 105, 225, 0.4);
+  
+  ion-card-title {
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    ion-icon {
+      font-size: 1.5rem;
+      color: #FFD700;
+    }
+  }
+}
+
+.google-info {
+  .google-message {
+    color: #ffffff;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .google-tip {
+    color: #b8c6db;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 0;
+  }
+
+  .google-link {
+    color: #FFD700;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: #FFF;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
+  }
+}
+
+// Danger Zone Card styling
+.danger-zone-card {
+  background: var(--business-item-background);
+  border: var(--business-item-border);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+  
+  // Add subtle red accent instead of full red background
+  &::before {
+    background: linear-gradient(90deg, transparent, #FF6B6B, transparent);
+  }
+  
+  ion-card-title {
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    ion-icon {
+      font-size: 1.5rem;
+      color: #FF6B6B;
+    }
+  }
+}
+
+.danger-info {
+  .danger-message {
+    color: #ffffff;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+}
+
+// Delete confirmation modal styling
+.delete-confirmation {
+  .warning-section {
+    text-align: center;
+    margin-bottom: 24px;
+    
+    ion-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+    
+    h2 {
+      color: var(--ion-color-danger);
+      margin-bottom: 16px;
+      font-weight: bold;
+    }
+    
+    p {
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    
+    ul {
+      text-align: left;
+      margin: 16px 0;
+      padding-left: 20px;
+      
+      li {
+        margin-bottom: 8px;
+        line-height: 1.4;
+      }
+    }
+    
+    .final-warning {
+      color: var(--ion-color-danger);
+      font-size: 1.1rem;
+      margin-top: 20px;
+    }
+  }
+  
+  .confirmation-input {
+    margin-bottom: 24px;
+    
+    ion-item {
+      --background: var(--ion-color-light);
+      --border-color: var(--ion-color-danger);
+      border: 2px solid var(--ion-color-danger);
+      border-radius: 8px;
+    }
+    
+    ion-label {
+      font-weight: 600;
+      color: var(--ion-color-danger);
+    }
+  }
+  
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    
+    ion-button {
+      height: auto;
+      min-height: 48px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
+      white-space: normal;
+      text-wrap: wrap;
+      font-size: 0.9rem;
+      
+      &[color="danger"] {
+        font-weight: 600;
+      }
+    }
+    
+    @media (min-width: 768px) {
+      flex-direction: row;
+      
+      ion-button {
+        flex: 1;
+        font-size: 0.85rem;
+      }
+    }
+    
+    @media (max-width: 400px) {
+      ion-button {
+        font-size: 0.8rem;
+        --padding-start: 8px;
+        --padding-end: 8px;
+      }
+    }
+  }
+}

@@ -1,0 +1,136 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="trending-up" color="success"></ion-icon>
+        Upgrade Business
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="upgrade-modal-content" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="current-business-info">
+      <div class="business-header">
+        <div class="business-icon">{{ habitBusiness.business_icon }}</div>
+        <div class="business-details">
+          <h2>{{ habitBusiness.business_name }}</h2>
+          <p class="habit-description">{{ habitBusiness.habit_description }}</p>
+        </div>
+      </div>
+
+      <div class="financial-info">
+        <div class="info-card">
+          <ion-icon name="cash" color="success"></ion-icon>
+          <div class="info-content">
+            <div class="info-label">Sell Value</div>
+            <div class="info-value">${{ currentBusinessValue }}</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <ion-icon name="wallet" color="primary"></ion-icon>
+          <div class="info-content">
+            <div class="info-label">Your Cash</div>
+            <div class="info-value">${{ userCash }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upgrade-options">
+      <h3>Choose Your Upgrade</h3>
+      <p class="upgrade-subtitle">
+        Select a better business type to upgrade to:
+      </p>
+
+      <div class="options-grid">
+        <div
+          *ngFor="let businessType of upgradeOptions"
+          class="upgrade-option"
+          [class.affordable]="canAffordUpgrade(businessType)"
+          [class.expensive]="!canAffordUpgrade(businessType)"
+          (click)="selectUpgrade(businessType)"
+        >
+          <div class="option-header">
+            <div class="business-type-icon">{{ businessType.icon }}</div>
+            <div class="business-type-name">{{ businessType.name }}</div>
+          </div>
+
+          <div class="business-stats">
+            <div class="stat-item">
+              <ion-icon name="cash-outline" color="success"></ion-icon>
+              <span
+                >{{
+                  businessType.base_earnings_per_completion
+                }}/completion</span
+              >
+            </div>
+            <div class="stat-item">
+              <ion-icon name="trending-up-outline" color="primary"></ion-icon>
+              <span>{{ businessType.growth_rate }}% growth</span>
+            </div>
+          </div>
+
+          <div class="pricing-info">
+            <div
+              class="upgrade-cost"
+              [class.affordable-text]="canAffordUpgrade(businessType)"
+              [class.expensive-text]="!canAffordUpgrade(businessType)"
+            >
+              <span class="cost-label">Upgrade Cost:</span>
+              <span class="cost-amount"
+                >${{ getUpgradeCost(businessType) }}</span
+              >
+            </div>
+
+            <div *ngIf="!canAffordUpgrade(businessType)" class="need-more">
+              Need ${{ getUpgradeCost(businessType) - userCash }} more
+            </div>
+          </div>
+
+          <div class="action-area">
+            <ion-button
+              *ngIf="canAffordUpgrade(businessType)"
+              fill="solid"
+              color="success"
+              size="small"
+              expand="block"
+            >
+              <ion-icon name="arrow-up" slot="start"></ion-icon>
+              Upgrade Now
+            </ion-button>
+
+            <ion-button
+              *ngIf="!canAffordUpgrade(businessType)"
+              fill="outline"
+              color="medium"
+              size="small"
+              expand="block"
+              disabled
+            >
+              <ion-icon name="lock-closed" slot="start"></ion-icon>
+              Can't Afford
+            </ion-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="footer-content">
+      <ion-button fill="clear" color="warning" (click)="dismiss()">
+        <ion-icon name="arrow-back" slot="start"></ion-icon>
+        Cancel
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

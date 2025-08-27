@@ -1,0 +1,22 @@
+<div class="bottom-nav-container">
+  <ion-tab-bar class="custom-tab-bar">
+    <!-- Main Button: Add or Home -->
+    <ion-tab-button class="add-button" (click)="addHabitBusiness()">
+      <div class="add-circle">
+        <ion-icon [name]="mainButton === 'home' ? 'home' : 'add'"></ion-icon>
+      </div>
+    </ion-tab-button>
+
+    <!-- Social Button -->
+    <ion-tab-button class="nav-button" (click)="openSocial()">
+      <ion-icon name="people"></ion-icon>
+      <ion-label>Social</ion-label>
+    </ion-tab-button>
+
+    <!-- Stocks/Leaderboard Button -->
+    <ion-tab-button class="nav-button" (click)="openStocks()">
+      <ion-icon name="trending-up"></ion-icon>
+      <ion-label>Stocks</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</div>

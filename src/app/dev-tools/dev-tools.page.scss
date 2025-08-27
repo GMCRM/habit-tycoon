@@ -1,0 +1,44 @@
+.test-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.welcome-message {
+  text-align: center;
+}
+
+.profile-debug {
+  margin-bottom: 2rem;
+}
+
+.profile-info p {
+  margin: 0.5rem 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.test-result {
+  margin-top: 1rem;
+}
+
+.instructions {
+  h4 {
+    color: var(--ion-color-primary);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  ul {
+    margin-left: 1rem;
+    
+    li {
+      margin-bottom: 0.25rem;
+    }
+  }
+}

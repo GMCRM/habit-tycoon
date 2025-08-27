@@ -1,0 +1,328 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-button fill="clear" slot="start" (click)="goHome()">
+      <ion-icon name="arrow-back"></ion-icon>
+    </ion-button>
+    <ion-title>📈 Stock Market</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="page-container">
+      <div class="header-section">
+        <h1>💰 Friend Habit Businesses</h1>
+        <p>Invest in your friends' success and earn dividends!</p>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="tab-switcher">
+        <ion-button
+          [fill]="selectedTab === 'available' ? 'solid' : 'outline'"
+          [color]="selectedTab === 'available' ? 'primary' : 'medium'"
+          (click)="selectedTab = 'available'"
+        >
+          Available Stocks
+        </ion-button>
+        <ion-button
+          [fill]="selectedTab === 'portfolio' ? 'solid' : 'outline'"
+          [color]="selectedTab === 'portfolio' ? 'primary' : 'medium'"
+          (click)="selectedTab = 'portfolio'"
+        >
+          My Portfolio
+        </ion-button>
+      </div>
+
+      <!-- Available Stocks Tab -->
+      <div *ngIf="selectedTab === 'available'" class="tab-content">
+        <div *ngIf="isLoading" class="loading-state">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Loading stocks...</p>
+        </div>
+
+    <div *ngIf="!isLoading && availableStocks.length > 0" class="stocks-grid">
+      <ion-card
+        *ngFor="let stock of availableStocks; trackBy: trackByStockId"
+        class="stock-card"
+      >
+        <ion-card-content>
+          <div class="stock-header">
+            <div class="stock-info">
+              <h3>{{ stock.businessName }}</h3>
+              <p class="owner-name">Owner: {{ stock.ownerName }}</p>
+              <div class="price-info">
+                <span class="current-price">${{ stock.currentPrice }}</span>
+                <span
+                  class="price-change"
+                  [class.positive]="stock.priceChangePercent > 0"
+                  [class.negative]="stock.priceChangePercent < 0"
+                >
+                  {{ stock.priceChangePercent > 0 ? "+" : ""
+                  }}{{ stock.priceChangePercent.toFixed(1) }}%
+                </span>
+              </div>
+            </div>
+            <div class="stock-actions">
+              <div class="quantity-selector">
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  (click)="decrementQuantity(stock.stockId)"
+                  [disabled]="
+                    (selectedQuantities[stock.stockId] || 1) <= 1 || isLoading
+                  "
+                >
+                  -
+                </ion-button>
+                <span class="quantity">{{
+                  selectedQuantities[stock.stockId] || 1
+                }}</span>
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  (click)="incrementQuantity(stock.stockId)"
+                  [disabled]="isLoading"
+                >
+                  +
+                </ion-button>
+              </div>
+              <ion-button
+                color="primary"
+                size="small"
+                (click)="buyStocks(stock)"
+                [disabled]="isLoading"
+              >
+                Buy (${{
+                  (
+                    stock.currentPrice * (selectedQuantities[stock.stockId] || 1)
+                  ).toFixed(2)
+                }})
+              </ion-button>
+            </div>
+          </div>
+          <div class="stock-stats">
+            <div class="stat">
+              <span class="stat-label">Streak:</span>
+              <span class="stat-value">{{ stock.streak }} days</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Available:</span>
+              <span class="stat-value">{{ stock.availableShares }} shares</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Total Holders:</span>
+              <span class="stat-value">{{ stock.shareholderCount }}</span>
+            </div>
+          </div>
+          
+          <!-- Stock Chart -->
+          <app-stock-chart 
+            [businessId]="stock.stockId"
+            [currentStreak]="stock.streak"
+            [height]="80">
+          </app-stock-chart>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div *ngIf="!isLoading && availableStocks.length === 0" class="empty-state">
+      <ion-icon name="trending-up-outline" size="large"></ion-icon>
+      <h3>No Stocks Available</h3>
+      <p>
+        Your friends haven't set up any habit businesses yet, or you've already
+        invested in all available opportunities!
+      </p>
+      </div>
+
+      <!-- My Portfolio Tab -->
+      <div *ngIf="selectedTab === 'portfolio'" class="tab-content">
+        <div *ngIf="isLoading" class="loading-state">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Loading portfolio...</p>
+        </div>
+
+    <div class="portfolio-summary" *ngIf="!isLoading && portfolio.length > 0">
+      <div class="summary-card">
+        <h3>Portfolio Value</h3>
+        <div class="total-value">${{ getTotalPortfolioValue().toFixed(2) }}</div>
+        <div class="investment-breakdown">
+          <div class="breakdown-item">
+            <span>Total Invested:</span>
+            <span>${{ getTotalInvested().toFixed(2) }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span>Current Value:</span>
+            <span>${{ getTotalPortfolioValue().toFixed(2) }}</span>
+          </div>
+          <div
+            class="breakdown-item"
+            [class.profit]="getTotalGainLoss() > 0"
+            [class.loss]="getTotalGainLoss() < 0"
+          >
+            <span>{{ getTotalGainLoss() > 0 ? "Profit" : "Loss" }}:</span>
+            <span>
+              {{ getTotalGainLoss() > 0 ? "+" : "" }}${{
+                getTotalGainLoss().toFixed(2)
+              }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && portfolio.length > 0" class="portfolio-grid">
+      <ion-card
+        *ngFor="let holding of portfolio; trackBy: trackByHoldingId"
+        class="portfolio-card"
+      >
+        <ion-card-content>
+          <div class="holding-header">
+            <div class="holding-info">
+              <h3>{{ holding.businessName }}</h3>
+              <p class="owner-name">Owner: {{ holding.ownerName }}</p>
+              <div class="shares-info">
+                <span class="shares-owned">{{ holding.shares }} shares</span>
+                <span class="avg-price">Avg: ${{ holding.avgPrice }}</span>
+              </div>
+            </div>
+            <div class="holding-value">
+              <div class="current-value">
+                ${{ (holding.currentPrice * holding.shares).toFixed(2) }}
+              </div>
+              <div
+                class="gain-loss"
+                [class.profit]="
+                  holding.currentPrice * holding.shares >
+                  holding.totalInvested
+                "
+                [class.loss]="
+                  holding.currentPrice * holding.shares <
+                  holding.totalInvested
+                "
+              >
+                {{
+                  holding.currentPrice * holding.shares >
+                  holding.totalInvested
+                    ? "+"
+                    : ""
+                }}${{
+                  (
+                    holding.currentPrice * holding.shares -
+                    holding.totalInvested
+                  ).toFixed(2)
+                }}
+              </div>
+            </div>
+          </div>
+          <div class="holding-stats">
+            <div class="stat">
+              <span class="stat-label">Current Price:</span>
+              <span class="stat-value">${{ holding.currentPrice }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Streak:</span>
+              <span class="stat-value">{{ holding.streak }} days</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Total Invested:</span>
+              <span class="stat-value">${{ holding.totalInvested }}</span>
+            </div>
+          </div>
+          
+          <!-- Stock Chart -->
+          <app-stock-chart 
+            [businessId]="holding.stockId"
+            [currentStreak]="holding.streak"
+            [height]="80">
+          </app-stock-chart>
+          <div class="holding-actions">
+            <div class="sell-controls">
+              <div class="sell-buttons">
+                <ion-button
+                  fill="outline"
+                  color="secondary"
+                  size="small"
+                  (click)="sellStocks(holding, 0.25)"
+                  [disabled]="isLoading"
+                >
+                  Sell 25%
+                </ion-button>
+                <ion-button
+                  fill="outline"
+                  color="secondary"
+                  size="small"
+                  (click)="sellStocks(holding, 0.5)"
+                  [disabled]="isLoading"
+                >
+                  Sell 50%
+                </ion-button>
+                <ion-button
+                  fill="outline"
+                  color="secondary"
+                  size="small"
+                  (click)="sellStocks(holding, 1.0)"
+                  [disabled]="isLoading"
+                >
+                  Sell All
+                </ion-button>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <ion-button
+                fill="outline"
+                color="primary"
+                size="small"
+                (click)="sellStocks(holding, 0.25)"
+                [disabled]="isLoading"
+              >
+                Sell 25%
+              </ion-button>
+              <ion-button
+                fill="outline"
+                color="secondary"
+                size="small"
+                (click)="sellStocks(holding, 0.5)"
+                [disabled]="isLoading"
+              >
+                Sell 50%
+              </ion-button>
+              <ion-button
+                fill="outline"
+                color="secondary"
+                size="small"
+                (click)="sellStocks(holding, 1.0)"
+                [disabled]="isLoading"
+              >
+                Sell All
+              </ion-button>
+              <ion-button
+                fill="outline"
+                color="primary"
+                size="small"
+                (click)="sendHabitPoke(holding.ownerId, holding.businessName)"
+              >
+                Encourage Owner
+              </ion-button>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+      <div *ngIf="portfolio.length === 0" class="empty-state">
+        <ion-icon name="pie-chart-outline" size="large"></ion-icon>
+        <h3>No Investments Yet</h3>
+        <p>
+          Start investing in your friends' habit businesses to build your
+          portfolio!
+        </p>
+        <ion-button (click)="selectedTab = 'available'" color="primary">
+          Browse Available Stocks
+        </ion-button>
+      </div>
+    </div>
+
+    <app-bottom-nav></app-bottom-nav>
+  </div>
+  </div>
+</ion-content>

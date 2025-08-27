@@ -1,2 +1,193 @@
-// For information on how to create your own theme, please see:
-// http://ionicframework.com/docs/theming/
+// Adventure Capitalist inspired color scheme
+// Dark, rich colors with gold accents and gradients
+
+:root {
+  // Primary colors - Rich dark blues and golds
+  --ion-color-primary: #FFD700;
+  --ion-color-primary-rgb: 255, 215, 0;
+  --ion-color-primary-contrast: #1a1a2e;
+  --ion-color-primary-contrast-rgb: 26, 26, 46;
+  --ion-color-primary-shade: #e6c200;
+  --ion-color-primary-tint: #ffdb1a;
+
+  // Secondary - Rich purple/blue
+  --ion-color-secondary: #16213e;
+  --ion-color-secondary-rgb: 22, 33, 62;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #131d37;
+  --ion-color-secondary-tint: #2d3751;
+
+  // Success - Adventure Capitalist green
+  --ion-color-success: #00ff88;
+  --ion-color-success-rgb: 0, 255, 136;
+  --ion-color-success-contrast: #000000;
+  --ion-color-success-contrast-rgb: 0, 0, 0;
+  --ion-color-success-shade: #00e678;
+  --ion-color-success-tint: #1aff94;
+
+  // Warning - Rich orange
+  --ion-color-warning: #ff8c00;
+  --ion-color-warning-rgb: 255, 140, 0;
+  --ion-color-warning-contrast: #000000;
+  --ion-color-warning-contrast-rgb: 0, 0, 0;
+  --ion-color-warning-shade: #e67c00;
+  --ion-color-warning-tint: #ff981a;
+
+  // Danger - Deep red
+  --ion-color-danger: #ff3366;
+  --ion-color-danger-rgb: 255, 51, 102;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #e62e5a;
+  --ion-color-danger-tint: #ff4d75;
+
+  // Dark theme colors
+  --ion-color-dark: #0f0f23;
+  --ion-color-dark-rgb: 15, 15, 35;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #0d0d1f;
+  --ion-color-dark-tint: #27273f;
+
+  // Medium - Muted purple
+  --ion-color-medium: #4a4a6a;
+  --ion-color-medium-rgb: 74, 74, 106;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #41415d;
+  --ion-color-medium-tint: #5c5c79;
+
+  // Light - Subtle background
+  --ion-color-light: #1e1e3f;
+  --ion-color-light-rgb: 30, 30, 63;
+  --ion-color-light-contrast: #ffffff;
+  --ion-color-light-contrast-rgb: 255, 255, 255;
+  --ion-color-light-shade: #1a1a38;
+  --ion-color-light-tint: #353552;
+
+  // Background colors - Adventure Capitalist style
+  --ion-background-color: #0f0f23;
+  --ion-background-color-rgb: 15, 15, 35;
+  --ion-text-color: #ffffff;
+  --ion-text-color-rgb: 255, 255, 255;
+
+  // Toolbar colors
+  --ion-toolbar-background: linear-gradient(135deg, #16213e 0%, #0f0f23 100%);
+  --ion-toolbar-color: #ffffff;
+
+  // Card colors - Dark with subtle gradients
+  --ion-card-background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
+  --ion-card-color: #ffffff;
+
+  // Item colors
+  --ion-item-background: transparent;
+  --ion-item-color: #ffffff;
+
+  // Border colors
+  --ion-color-step-50: #262647;
+  --ion-color-step-100: #2d2d52;
+  --ion-color-step-150: #34345d;
+  --ion-color-step-200: #3b3b68;
+  --ion-color-step-250: #424273;
+  --ion-color-step-300: #49497e;
+  --ion-color-step-350: #505089;
+  --ion-color-step-400: #575794;
+  --ion-color-step-450: #5e5e9f;
+  --ion-color-step-500: #6565aa;
+  --ion-color-step-550: #6c6cb5;
+  --ion-color-step-600: #7373c0;
+  --ion-color-step-650: #7a7acb;
+  --ion-color-step-700: #8181d6;
+  --ion-color-step-750: #8888e1;
+  --ion-color-step-800: #8f8fec;
+  --ion-color-step-850: #9696f7;
+  --ion-color-step-900: #9d9dff;
+  --ion-color-step-950: #a4a4ff;
+
+  // Custom Adventure Capitalist inspired variables
+  --business-item-background: linear-gradient(90deg, #1e1e3f 0%, #2a2a4a 50%, #1e1e3f 100%);
+  --business-item-border: 1px solid #FFD700;
+  --earnings-color: #00ff88;
+  --cash-color: #FFD700;
+  --streak-color: #ff8c00;
+}
+
+// Adventure Capitalist specific styling
+.business-list-item {
+  background: var(--business-item-background);
+  border: var(--business-item-border);
+  border-radius: 12px;
+  margin: 8px 0;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+}
+
+.earnings-display {
+  color: var(--earnings-color);
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.cash-display {
+  color: var(--cash-color);
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.streak-display {
+  color: var(--streak-color);
+  font-weight: bold;
+}
+
+// Remove white backgrounds globally
+ion-content {
+  --background: var(--ion-background-color);
+}
+
+ion-card {
+  --background: var(--ion-card-background);
+  --color: var(--ion-card-color);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+ion-toolbar {
+  --background: var(--ion-toolbar-background);
+  --color: var(--ion-toolbar-color);
+}
+
+ion-item {
+  --background: var(--ion-item-background);
+  --color: var(--ion-item-color);
+}
+
+// Button styling
+ion-button {
+  --border-radius: 8px;
+  font-weight: 600;
+}
+
+ion-button.button-solid {
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+// Input styling for dark theme
+ion-input, ion-textarea, ion-select {
+  --background: rgba(30, 30, 63, 0.8);
+  --color: #ffffff;
+  --border-color: rgba(255, 215, 0, 0.3);
+  --border-radius: 8px;
+}
+
+// Adventure Capitalist gradient backgrounds
+.gradient-bg-primary {
+  background: linear-gradient(135deg, #FFD700 0%, #ff8c00 100%);
+}
+
+.gradient-bg-secondary {
+  background: linear-gradient(135deg, #16213e 0%, #0f0f23 100%);
+}
+
+.gradient-bg-success {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+}

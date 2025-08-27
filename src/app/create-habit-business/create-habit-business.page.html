@@ -1,0 +1,299 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-button fill="clear" slot="start" (click)="goHome()">
+      <ion-icon name="arrow-back"></ion-icon>
+    </ion-button>
+    <ion-title>💰 Launch New Business</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="page-container">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-container">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading business opportunities...</p>
+      </div>
+
+      <!-- Main Form -->
+      <div *ngIf="!loading">
+        <!-- Header Section -->
+        <div class="user-info">
+          <div class="welcome-section">
+            <div class="welcome-text">
+              <h2>🚀 Launch Your Habit Business</h2>
+              <p>Transform daily habits into profitable ventures</p>
+            </div>
+            <div class="cash-display">
+              <div class="cash-amount">${{ userProfile?.cash || '0.00' }}</div>
+              <div class="cash-label">AVAILABLE CAPITAL</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1: Business Foundation -->
+        <div class="my-habit-businesses">
+          <div class="section-header">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <h2>Business Foundation</h2>
+          </div>
+
+          <div class="habit-business-item">
+            <div class="business-header">
+              <div class="business-info">
+                <h3>Business Name</h3>
+                <p class="business-description">What's your habit called?</p>
+              </div>
+            </div>
+
+            <div class="business-content">
+              <ion-item lines="none" class="business-input">
+                <ion-input
+                  [(ngModel)]="habitName"
+                  placeholder="e.g., Morning Walk, Reading Time, Push-ups, Meditation..."
+                  maxlength="50"
+                ></ion-input>
+              </ion-item>
+
+              <div *ngIf="habitName.trim()" class="business-tips">
+                <h4>💡 Naming Strategy:</h4>
+                <ul>
+                  <li>Keep it simple and memorable</li>
+                  <li>Use action words: "Daily Walk" vs "Walking"</li>
+                  <li>Make it personal and motivating</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Business Details -->
+        <div *ngIf="habitName.trim()" class="my-habit-businesses">
+          <div class="section-header">
+            <ion-icon name="document"></ion-icon>
+            <h2>Business Operations</h2>
+          </div>
+
+          <div class="habit-business-item">
+            <div class="business-header">
+              <div class="business-info">
+                <h3>Operation Details</h3>
+                <p class="business-description">Describe your habit</p>
+              </div>
+            </div>
+
+            <div class="business-content">
+              <ion-item lines="none" class="business-input">
+                <ion-label position="stacked">Business Description</ion-label>
+                <ion-textarea
+                  [(ngModel)]="habitDescription"
+                  placeholder="e.g., Take a 30-minute walk around the neighborhood, Read for 20 minutes before bed, Do 10 push-ups in the morning..."
+                  rows="3"
+                  maxlength="200"
+                ></ion-textarea>
+              </ion-item>
+
+              <div class="business-settings">
+                <ion-item lines="none" class="business-input">
+                  <ion-label position="stacked">Operating Schedule</ion-label>
+                  <ion-select
+                    [(ngModel)]="frequency"
+                    placeholder="Select frequency"
+                  >
+                    <ion-select-option value="daily"
+                      >Every Day 🔥</ion-select-option
+                    >
+                    <ion-select-option value="weekly"
+                      >Every Week 📅</ion-select-option
+                    >
+                  </ion-select>
+                </ion-item>
+
+                <ion-item lines="none" class="business-input">
+                  <ion-label position="stacked"
+                    >Target Operations (per {{ frequency || 'period'
+                    }})</ion-label
+                  >
+                  <ion-input
+                    [(ngModel)]="goalValue"
+                    type="number"
+                    min="1"
+                    max="99"
+                    placeholder="e.g., 1, 3, 10..."
+                  ></ion-input>
+                  <ion-note slot="helper">
+                    Revenue splits across completions. {{ goalValue > 1 ?
+                    'Complete ' + goalValue + ' times for maximum earnings!' :
+                    '' }}
+                  </ion-note>
+                </ion-item>
+              </div>
+
+              <div *ngIf="habitDescription.trim()" class="business-tips">
+                <h4>💡 Operations Strategy:</h4>
+                <ul>
+                  <li>Be specific: "Walk 30 minutes" not "exercise more"</li>
+                  <li>
+                    Include when/where: "Read before bed" or "Meditate in my
+                    room"
+                  </li>
+                  <li>
+                    Start conservative: Better to exceed than underperform
+                  </li>
+                  <li>Focus on consistency over intensity</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Investment Package -->
+        <div *ngIf="habitDescription.trim()" class="my-habit-businesses">
+          <div class="section-header">
+            <ion-icon name="trophy"></ion-icon>
+            <h2>Investment Packages</h2>
+          </div>
+
+          <div class="habit-business-item">
+            <div class="business-header">
+              <div class="business-info">
+                <h3>Choose Your Investment Level</h3>
+                <p class="business-description">Higher risk, higher rewards</p>
+              </div>
+            </div>
+
+            <div class="business-content">
+              <!-- Investment Options -->
+              <div class="investment-options">
+                <div
+                  *ngFor="let type of businessTypes"
+                  class="investment-option"
+                  [class.selected]="selectedBusinessTypeId === type.id"
+                  [class.affordable]="userProfile?.cash >= type.base_cost"
+                  [class.locked]="userProfile?.cash < type.base_cost"
+                  (click)="selectRewardLevel(type)"
+                >
+                  <div class="investment-header">
+                    <div class="investment-icon">{{ type.icon }}</div>
+                    <div class="investment-info">
+                      <div class="investment-name">{{ type.name }}</div>
+                      <div
+                        class="investment-cost"
+                        [class.unaffordable]="userProfile?.cash < type.base_cost"
+                      >
+                        ${{ type.base_cost }}
+                      </div>
+                    </div>
+                    <div class="investment-status">
+                      <ion-icon
+                        [name]="userProfile?.cash >= type.base_cost ? 'checkmark-circle' : 'lock-closed'"
+                        [color]="userProfile?.cash >= type.base_cost ? 'success' : 'medium'"
+                      ></ion-icon>
+                    </div>
+                  </div>
+
+                  <div class="investment-details">
+                    <div class="revenue-info">
+                      <span class="revenue-amount">${{ type.base_pay }}</span>
+                      <span class="revenue-label">per completion</span>
+                    </div>
+                    <div class="growth-example">
+                      Day 10 streak = ${{ type.base_pay * 10 }}/completion!
+                    </div>
+                  </div>
+
+                  <div
+                    *ngIf="userProfile?.cash < type.base_cost"
+                    class="locked-overlay"
+                  >
+                    <div class="locked-text">Need more capital</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business Summary & Launch -->
+        <div *ngIf="isFormValid" class="my-habit-businesses">
+          <div class="section-header">
+            <ion-icon name="rocket"></ion-icon>
+            <h2>Launch Business</h2>
+          </div>
+
+          <div class="habit-business-item launch-summary">
+            <div class="business-header">
+              <div class="business-info">
+                <h3>"{{ habitName }}"</h3>
+                <p class="business-description">{{ habitDescription }}</p>
+              </div>
+              <div class="business-actions">
+                <div class="frequency-badge">
+                  {{ frequency === 'daily' ? '🔥 Daily' : '📅 Weekly' }}
+                </div>
+              </div>
+            </div>
+
+            <div class="business-content">
+              <div class="business-summary">
+                <div class="summary-item">
+                  <span class="summary-label">Investment Package:</span>
+                  <span class="summary-value"
+                    >{{ selectedBusinessType?.icon }} {{
+                    selectedBusinessType?.name }}</span
+                  >
+                </div>
+                <div class="summary-item cost">
+                  <span class="summary-label">Initial Investment:</span>
+                  <span class="summary-value"
+                    >-${{ selectedBusinessType?.base_cost }}</span
+                  >
+                </div>
+                <div class="summary-item earning">
+                  <span class="summary-label">Revenue per Operation:</span>
+                  <span class="summary-value"
+                    >+${{ selectedBusinessType?.base_pay }}</span
+                  >
+                </div>
+                <div class="summary-item highlight">
+                  <span class="summary-label">Break-even Point:</span>
+                  <span class="summary-value">
+                    {{ Math.ceil((selectedBusinessType?.base_cost || 0) /
+                    (selectedBusinessType?.base_pay || 1)) }} completions
+                  </span>
+                </div>
+              </div>
+
+              <ion-button
+                expand="block"
+                color="success"
+                size="large"
+                [disabled]="!canAfford || creating"
+                (click)="createHabitBusiness()"
+                class="launch-button"
+              >
+                <ion-spinner *ngIf="creating" slot="start"></ion-spinner>
+                <ion-icon
+                  *ngIf="!creating"
+                  name="rocket"
+                  slot="start"
+                ></ion-icon>
+                {{ creating ? 'Launching Business...' : 'Launch My Business!' }}
+              </ion-button>
+
+              <div *ngIf="!canAfford" class="insufficient-capital">
+                <ion-icon name="warning" color="danger"></ion-icon>
+                <div class="warning-text">
+                  <strong>Insufficient Capital</strong><br />
+                  Need ${{ selectedBusinessType?.base_cost }} but only have ${{
+                  userProfile?.cash }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>

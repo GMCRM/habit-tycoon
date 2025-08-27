@@ -1,0 +1,100 @@
+.bottom-nav-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
+  border-top: 1px solid #FFD700;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.custom-tab-bar {
+  --background: transparent;
+  --border: none;
+  height: 70px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.add-button {
+  --color: white;
+  --color-selected: white;
+  flex: 0 0 auto;
+}
+
+// Green circle for both add and home icons
+.add-circle {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #00ff88 0%, #00e676 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+  transition: all 0.2s ease;
+}
+
+.add-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+}
+
+.add-circle ion-icon {
+  font-size: 28px;
+  color: #1e1e3f;
+  font-weight: bold;
+}
+
+.nav-button {
+  --color: #ffdb1a;
+  --color-selected: #ffdb1a;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+  --color: #FFD700;
+}
+
+.nav-button ion-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.nav-button ion-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .custom-tab-bar {
+    padding: 0 15px;
+  }
+  
+  .add-circle {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .add-circle ion-icon {
+    font-size: 24px;
+  }
+  
+  .nav-button ion-icon {
+    font-size: 22px;
+  }
+  
+  .nav-button ion-label {
+    font-size: 11px;
+  }
+}

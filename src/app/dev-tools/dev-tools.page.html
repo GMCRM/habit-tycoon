@@ -1,0 +1,359 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>🔧 Developer Tools</ion-title>
+    <ion-button slot="end" fill="clear" routerLink="/home">
+      <ion-icon name="home" slot="start"></ion-icon>
+      Home
+    </ion-button>
+    <ion-button *ngIf="currentUser" slot="end" fill="clear" (click)="logout()">
+      <ion-icon name="log-out" slot="start"></ion-icon>
+      Logout
+    </ion-button>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="test-container">
+    <!-- Welcome Message for Logged In Users -->
+    <div *ngIf="currentUser" class="welcome-message ion-margin-bottom">
+      <ion-card color="success">
+        <ion-card-content>
+          <h2>
+            🎉 Welcome back, {{ userProfile?.name ||
+            currentUser.user_metadata?.name || currentUser.email }}!
+          </h2>
+          <p>
+            You're successfully logged in
+            <span *ngIf="userProfile?.cash !== undefined">
+              with ${{ userProfile?.cash }} cash</span
+            >
+          </p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Profile Debug Info -->
+    <div *ngIf="currentUser" class="profile-debug ion-margin-bottom">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>👤 Your Profile Data</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="profile-info">
+            <p><strong>User ID:</strong> {{ currentUser.id }}</p>
+            <p><strong>Email:</strong> {{ currentUser.email }}</p>
+            <p>
+              <strong>Auth Name:</strong> {{ currentUser.user_metadata?.name ||
+              'Not set' }}
+            </p>
+            <p>
+              <strong>Profile Name:</strong> {{ userProfile?.name ||
+              'Loading...' }}
+            </p>
+            <p>
+              <strong>Cash:</strong> ${{ userProfile?.cash || 'Loading...' }}
+            </p>
+            <p>
+              <strong>Net Worth:</strong> ${{ userProfile?.net_worth ||
+              'Loading...' }}
+            </p>
+            <p>
+              <strong>Created:</strong> {{ userProfile?.created_at ||
+              'Loading...' }}
+            </p>
+          </div>
+
+          <div class="profile-actions ion-margin-top">
+            <ion-button color="danger" fill="outline" (click)="deleteAccount()">
+              🗑️ Delete Account
+            </ion-button>
+            <ion-button
+              color="warning"
+              fill="outline"
+              (click)="refreshProfile()"
+            >
+              🔄 Refresh Profile
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <h1>🧪 Database Connection Tests</h1>
+    <p>
+      Use these tests to verify your Supabase database is working correctly:
+    </p>
+
+    <!-- Quick Test All Button -->
+    <ion-button
+      expand="full"
+      color="primary"
+      (click)="runAllTests()"
+      class="ion-margin-bottom"
+    >
+      <ion-icon name="refresh" slot="start"></ion-icon>
+      Run All Tests
+    </ion-button>
+
+    <!-- Database Connection Test -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Database Connection</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Tests basic connectivity to your Supabase database.</p>
+        <ion-button
+          fill="outline"
+          (click)="testDatabaseConnection()"
+          [disabled]="isTestingDb"
+        >
+          <ion-icon name="refresh" slot="start"></ion-icon>
+          {{ isTestingDb ? 'Testing...' : 'Test Database' }}
+        </ion-button>
+
+        <div *ngIf="dbTestResult" class="test-result ion-margin-top">
+          <ion-item [color]="dbTestResult.success ? 'success' : 'danger'">
+            <ion-icon
+              [name]="dbTestResult.success ? 'checkmark-circle' : 'alert-circle'"
+              slot="start"
+            >
+            </ion-icon>
+            <ion-label>
+              <h3>{{ dbTestResult.message }}</h3>
+              <p *ngIf="!dbTestResult.success && dbTestResult.error">
+                Error: {{ dbTestResult.error.message || dbTestResult.error }}
+              </p>
+            </ion-label>
+          </ion-item>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Auth System Test -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Authentication System</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Tests the Supabase authentication system and current session.</p>
+        <ion-button
+          fill="outline"
+          (click)="testAuthSystem()"
+          [disabled]="isTestingAuth"
+        >
+          <ion-icon name="refresh" slot="start"></ion-icon>
+          {{ isTestingAuth ? 'Testing...' : 'Test Auth' }}
+        </ion-button>
+
+        <div *ngIf="authTestResult" class="test-result ion-margin-top">
+          <ion-item [color]="authTestResult.success ? 'success' : 'danger'">
+            <ion-icon
+              [name]="authTestResult.success ? 'checkmark-circle' : 'alert-circle'"
+              slot="start"
+            >
+            </ion-icon>
+            <ion-label>
+              <h3>{{ authTestResult.message }}</h3>
+              <p
+                *ngIf="authTestResult.success && authTestResult.hasActiveSession"
+              >
+                Active session found! User: {{ authTestResult.sessionInfo?.user
+                }}
+              </p>
+              <p
+                *ngIf="authTestResult.success && !authTestResult.hasActiveSession"
+              >
+                No active session (user not logged in)
+              </p>
+              <p *ngIf="!authTestResult.success && authTestResult.error">
+                Error: {{ authTestResult.error.message || authTestResult.error
+                }}
+              </p>
+            </ion-label>
+          </ion-item>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Instructions -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Next Steps</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="instructions">
+          <h4>✅ If tests pass:</h4>
+          <p>Your database is connected! You can now:</p>
+          <ul>
+            <li>Try signing up a new user</li>
+            <li>Test logging in with those credentials</li>
+            <li>Check your Supabase dashboard for new users</li>
+          </ul>
+
+          <h4>❌ If tests fail:</h4>
+          <p>Check these common issues:</p>
+          <ul>
+            <li>Verify your Supabase URL and API key</li>
+            <li>Check your internet connection</li>
+            <li>Ensure your Supabase project is active</li>
+            <li>Verify RLS (Row Level Security) settings</li>
+          </ul>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Debug Tools -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>🔧 Debug Tools</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="warning"
+          (click)="checkAllProfiles()"
+        >
+          Check All Profiles in Database
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="tertiary"
+          (click)="refreshProfile()"
+        >
+          Refresh My Profile
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="solid"
+          color="success"
+          (click)="forceCreateProfile()"
+        >
+          🔧 Force Create/Fix My Profile
+        </ion-button>
+
+        <ion-button expand="block" color="danger" (click)="deleteAccount()">
+          Delete My Account
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Habit Business Debug Tools -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>🏢 Habit Business Debug</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="primary"
+          (click)="debugHabitBusinesses()"
+        >
+          🔍 Debug My Habit Businesses
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="secondary"
+          (click)="testResetOutdatedHabits()"
+        >
+          🔄 Test Reset Outdated Habits
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Stock Dividend Debug Tools -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>💰 Stock Dividend Debug</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Test and debug the stock dividend payout system.</p>
+
+        <!-- Add Test Money Button -->
+        <ion-button
+          expand="block"
+          fill="solid"
+          color="success"
+          (click)="addTestMoney()"
+          [disabled]="isAddingMoney"
+          class="ion-margin-bottom"
+        >
+          <ion-icon name="wallet" slot="start"></ion-icon>
+          {{ isAddingMoney ? 'Adding...' : 'Add $1,000,000 Test Money 💰' }}
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="warning"
+          (click)="testDividendProcessing()"
+          [disabled]="isTestingDividends"
+        >
+          <ion-icon name="cash" slot="start"></ion-icon>
+          {{ isTestingDividends ? 'Testing...' : 'Test Dividend Processing' }}
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="primary"
+          (click)="fixStockPrices()"
+          [disabled]="isFixingStockPrices"
+          class="ion-margin-top"
+        >
+          <ion-icon name="trending-up" slot="start"></ion-icon>
+          {{ isFixingStockPrices ? 'Fixing...' : 'Fix All Stock Prices' }}
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="solid"
+          color="success"
+          (click)="fixLemonadeStockPrices()"
+          [disabled]="isFixingLemonadeStocks"
+          class="ion-margin-top"
+        >
+          <ion-icon name="cafe" slot="start"></ion-icon>
+          {{ isFixingLemonadeStocks ? 'Fixing...' : 'Fix Lemonade Stock Prices
+          ($100 → $1)' }}
+        </ion-button>
+
+        <div *ngIf="dividendTestResult" class="test-result ion-margin-top">
+          <ion-item [color]="dividendTestResult.success ? 'success' : 'danger'">
+            <ion-icon
+              [name]="dividendTestResult.success ? 'checkmark-circle' : 'alert-circle'"
+              slot="start"
+            >
+            </ion-icon>
+            <ion-label>
+              <h3>{{ dividendTestResult.message }}</h3>
+              <p *ngIf="dividendTestResult.details">
+                Test Habit: {{ dividendTestResult.details.testHabit }}<br />
+                Holdings: {{ dividendTestResult.details.holdingsCount ||
+                dividendTestResult.details.specificHoldings }}<br />
+                <span
+                  *ngIf="dividendTestResult.details.dividendsDifference !== undefined"
+                >
+                  Dividend Change: ${{
+                  dividendTestResult.details.dividendsDifference.toFixed(2) }}
+                </span>
+              </p>
+              <p
+                *ngIf="!dividendTestResult.success && dividendTestResult.error"
+              >
+                Error: {{ dividendTestResult.error.message ||
+                dividendTestResult.error }}
+              </p>
+            </ion-label>
+          </ion-item>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

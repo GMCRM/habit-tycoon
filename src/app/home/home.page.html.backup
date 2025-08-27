@@ -1,0 +1,613 @@
+<ion-header [translucent]="true" mode="ios">
+  <ion-toolbar mode="ios">
+    <ion-title>💰 Habit Tycoon</ion-title>
+    <ion-button slot="end" fill="clear" routerLink="/dev-tools" mode="ios">
+      <ion-icon name="construct" slot="start"></ion-icon>
+      Dev
+    </ion-button>
+    <ion-button
+      *ngIf="currentUser"
+      slot="end"
+      fill="clear"
+      routerLink="/settings"
+      mode="ios"
+    >
+      <ion-icon name="settings" slot="start"></ion-icon>
+      Settings
+    </ion-button>
+    <ion-button *ngIf="currentUser" slot="end" fill="clear" (click)="logout()" mode="ios">
+      <ion-icon name="log-out" slot="start"></ion-icon>
+      Logout
+    </ion-button>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" mode="ios" [scrollY]="false">
+  <div class="scrollable-content">
+    <ion-grid class="ion-no-padding">
+      <ion-row>
+        <ion-col size="12" class="ion-padding">
+          <!-- User Stats Header -->
+          <div *ngIf="currentUser" class="user-info">
+            <div class="welcome-section">
+              <div class="welcome-text">
+                <h2>
+                  Welcome back,
+                  <span>
+                    {{ userProfile?.name || currentUser?.user_metadata?.['name'] ||
+                    'Entrepreneur' }}!
+                  </span>
+                </h2>
+                <p>{{ currentTagline }}</p>
+              </div>
+              <div class="cash-display">
+                <div class="networth-display" (click)="toggleNetWorthDetail()">
+                  <div class="networth-amount">${{ getDisplayedNetWorth() }}</div>
+                  <div class="networth-label">NET WORTH</div>
+                </div>
+                <div class="cash-section" (click)="toggleCashDetail()">
+                  <div class="cash-amount">${{ getDisplayedCash() }}</div>
+                  <div class="cash-label">HABIT CASH</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+      <!-- Simple fallback if no user -->
+      <div *ngIf="!currentUser" class="guest-view">
+        <h2>Welcome to Habit Tycoon! 💰</h2>
+        <p>Your adventure awaits...</p>
+        <ion-button routerLink="/login" color="primary">
+          Login to Start
+        </ion-button>
+      </div>
+
+      <!-- Daily Stats Section -->
+      <div *ngIf="currentUser" class="section-header-container">
+        <div class="section-header">
+          <ion-icon name="analytics-outline"></ion-icon>
+          <h2>Daily Stats</h2>
+        </div>
+
+        <div
+          *ngIf="!showStatsHelpSection"
+          class="help-icon-container ion-margin-bottom"
+        >
+          <ion-icon
+            name="help-circle"
+            color="medium"
+            (click)="toggleStatsHelpSection()"
+          >
+          </ion-icon>
+          <span class="help-text" (click)="toggleStatsHelpSection()"
+            >How stats work</span
+          >
+        </div>
+
+        <!-- Stats Explanation Card -->
+        <ion-card
+          *ngIf="showStatsHelpSection"
+          class="info-card ion-margin-bottom"
+        >
+          <ion-card-content>
+            <div class="info-header">
+              <div class="info-title-section">
+                <ion-icon name="analytics" color="success"></ion-icon>
+                <h3>How Your Daily Stats Work</h3>
+              </div>
+              <ion-button
+                fill="clear"
+                size="small"
+                color="medium"
+                (click)="toggleStatsHelpSection()"
+              >
+                <ion-icon name="close" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+            <div class="info-content">
+              <div>
+                <p>Your dashboard shows key metrics to track your progress:</p>
+                <ul>
+                  <li>
+                    <strong>Pending Habits:</strong> Number of habits you can
+                    complete today
+                  </li>
+                  <li>
+                    <strong>Today's Habit Earnings:</strong> Money earned from
+                    completing your own habits
+                  </li>
+                  <li>
+                    <strong>Today's Stock Dividends:</strong> Passive income
+                    from your stock investments
+                  </li>
+                  <li>
+                    <strong>Net Worth & Habit Cash:</strong> Click the money
+                    cards to see exact amounts
+                  </li>
+                </ul>
+                <p><em>Complete habits daily to maximize your earnings!</em></p>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Stats Grid -->
+      <!-- Desktop: All 3 cards -->
+      <div class="stats-grid ion-margin-bottom desktop-stats">
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-content">
+              <ion-icon name="checkmark-circle" color="success"></ion-icon>
+              <div class="stat-info">
+                <h2>{{ pendingHabitsCount }}</h2>
+                <p>Pending Habits</p>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-content">
+              <ion-icon name="business" color="success"></ion-icon>
+              <div class="stat-info">
+                <h2>${{ formatCurrency(todaysEarnings) }}</h2>
+                <p>Today's Habit Earnings</p>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-content">
+              <ion-icon name="wallet" color="secondary"></ion-icon>
+              <div class="stat-info">
+                <h2>${{ formatCurrency(todaysStockEarnings) }}</h2>
+                <p>Today's Stock Dividends</p>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Mobile: Carousel with single card -->
+      <div class="mobile-stats-carousel ion-margin-bottom">
+        <div
+          class="carousel-container"
+          (touchstart)="onStatTouchStart($event)"
+          (touchend)="onStatTouchEnd($event)"
+        >
+          <ion-card
+            class="stat-card carousel-card"
+            *ngIf="statsCards[currentStatIndex] as stat"
+            [class.clickable-card]="stat.clickAction"
+            (click)="stat.clickAction && stat.clickAction()"
+          >
+            <ion-card-content>
+              <div class="stat-content">
+                <ion-icon [name]="stat.icon" [color]="stat.color"></ion-icon>
+                <div class="stat-info">
+                  <h2>{{ stat.getValue() }}</h2>
+                  <p>{{ stat.label }}</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <!-- Carousel indicators -->
+          <div class="carousel-indicators">
+            <span
+              *ngFor="let stat of statsCards; let i = index"
+              class="indicator"
+              [class.active]="i === currentStatIndex"
+              (click)="currentStatIndex = i; stopAutoCarousel()"
+            >
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Habit-Businesses - NO CARD BACKGROUND -->
+      <div class="my-habit-businesses ion-margin-bottom">
+        <div class="section-header">
+          <ion-icon name="business"></ion-icon>
+          <h2>My Habit-Businesses</h2>
+        </div>
+
+        <div
+          *ngIf="!showHabitProgressHelpSection"
+          class="help-icon-container ion-margin-bottom"
+        >
+          <ion-icon
+            name="help-circle"
+            color="medium"
+            (click)="toggleHabitProgressHelpSection()"
+          >
+          </ion-icon>
+          <span class="help-text" (click)="toggleHabitProgressHelpSection()"
+            >How habit businesses work</span
+          >
+        </div>
+
+        <!-- Habit Progress Explanation Card -->
+        <ion-card
+          *ngIf="showHabitProgressHelpSection"
+          class="info-card ion-margin-bottom"
+        >
+          <ion-card-content>
+            <div class="info-header">
+              <div class="info-title-section">
+                <ion-icon name="business" color="primary"></ion-icon>
+                <h3>How Habit Businesses Work</h3>
+              </div>
+              <ion-button
+                fill="clear"
+                size="small"
+                color="medium"
+                (click)="toggleHabitProgressHelpSection()"
+              >
+                <ion-icon name="close" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+            <div class="info-content">
+              <div>
+                <p>
+                  Turn your habits into profitable businesses that generate
+                  income:
+                </p>
+                <ul>
+                  <li>
+                    <strong>Complete Habits:</strong> Each completion earns
+                    money and builds streaks
+                  </li>
+                  <li>
+                    <strong>Habit Streaks:</strong> Longer streaks increase your
+                    earnings multiplier
+                  </li>
+                  <li>
+                    <strong>Business Value:</strong> Consistent habits increase
+                    your business's stock price
+                  </li>
+                  <li>
+                    <strong>Stockholders:</strong> Others can invest in your
+                    habits and earn dividends
+                  </li>
+                </ul>
+                <p>
+                  <em
+                    >Consistency is the key to building a successful habit
+                    empire!</em
+                  >
+                </p>
+                <p class="disclaimer">
+                  <strong>Disclaimer:</strong> All in-game "Habit Cash" and
+                  currency are virtual and hold no real-world monetary value.
+                  This is a gamification tool designed to motivate habit
+                  building.
+                </p>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <div
+          *ngIf="habitBusinesses && habitBusinesses.length > 0; else noHabitBusinesses"
+        >
+          <div *ngFor="let hb of habitBusinesses" class="habit-business-item">
+            <div class="item-content">
+              <div class="business-icon">{{ hb.business_icon }}</div>
+              <div class="business-info">
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                  "
+                >
+                  <h3 class="business-name">{{ hb.business_name }}</h3>
+                  <div style="display: flex; gap: 8px; align-items: center">
+                    <!-- Delete button moved to far left -->
+                    <ion-button
+                      fill="clear"
+                      color="danger"
+                      size="default"
+                      (click)="deleteHabitBusiness(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon name="trash" slot="icon-only"></ion-icon>
+                    </ion-button>
+
+                    <!-- Earnings Toggle Button -->
+                    <div
+                      class="earnings-toggle-button"
+                      (click)="toggleEarningsVisibility(hb.id)"
+                    >
+                      <ion-icon name="cash" class="dollar-icon"></ion-icon>
+                    </div>
+
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="default"
+                      class="calendar-toggle-button"
+                      (click)="toggleHabitGrid(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon
+                        name="calendar-outline"
+                        slot="icon-only"
+                      ></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="warning"
+                      size="default"
+                      (click)="upgradeHabitBusiness(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon name="trending-up" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="medium"
+                      size="default"
+                      (click)="editHabitBusiness(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon name="create" slot="icon-only"></ion-icon>
+                    </ion-button>
+
+                    <!-- Complete/Undo buttons moved to far right -->
+                    <!-- Single transforming button: Complete -> Undo -->
+                    <div
+                      *ngIf="!isGoalCompleted(hb) || (hb.current_progress || 0) > 0"
+                      class="hold-complete-button"
+                      [class.is-holding]="holdingStates[hb.id]?.isHolding"
+                      [class.is-completing]="holdingStates[hb.id]?.isCompleting"
+                      [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
+                      [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
+                      (touchstart)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
+                      (touchend)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                      (touchleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                      (touchcancel)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                      (mousedown)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
+                      (mouseup)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                      (mouseleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                      (contextmenu)="$event.preventDefault()"
+                    >
+                      <!-- Complete progress bar (only visible during complete hold) -->
+                      <div
+                        class="hold-progress"
+                        [style.width.%]="holdingStates[hb.id]?.progress || 0"
+                        *ngIf="!isGoalCompleted(hb)"
+                      ></div>
+
+                      <!-- Undo progress bar (only visible during undo hold) -->
+                      <div
+                        class="undo-progress"
+                        [style.width.%]="holdingStates[hb.id]?.undoProgress || 0"
+                        *ngIf="isGoalCompleted(hb)"
+                      ></div>
+
+                      <!-- Icon changes based on mode -->
+                      <ion-icon
+                        [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
+                        class="button-icon"
+                      ></ion-icon>
+
+                      <!-- Text changes based on mode and progress -->
+                      <span class="button-text" *ngIf="isGoalCompleted(hb)">
+                        Undo
+                      </span>
+                      <span
+                        class="button-text"
+                        *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
+                      >
+                        Complete ({{ hb.current_progress || 0 }}/{{
+                        hb.goal_value }})
+                      </span>
+                      <span
+                        class="button-text"
+                        *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
+                      >
+                        Complete
+                      </span>
+                    </div>
+
+                    <!-- Simple back button for multi-completion habits with progress -->
+                    <div
+                      *ngIf="(hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
+                      class="back-button"
+                      (click)="undoLastCompletion(hb)"
+                    >
+                      <ion-icon name="arrow-back" class="back-icon"></ion-icon>
+                    </div>
+
+                    <!-- Show completed status if goal is fully completed but no undo available -->
+                    <ion-button
+                      *ngIf="isGoalCompleted(hb) && (hb.current_progress || 0) === 0"
+                      fill="outline"
+                      color="medium"
+                      size="small"
+                      disabled
+                    >
+                      <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+                      <!-- Show progress for multi-completion habits -->
+                      <span *ngIf="hb.goal_value && hb.goal_value > 1">
+                        Goal Complete ({{ hb.current_progress }}/{{
+                        hb.goal_value }})
+                      </span>
+                      <!-- Simple text for single completion habits -->
+                      <span *ngIf="!hb.goal_value || hb.goal_value <= 1">
+                        Completed Today
+                      </span>
+                    </ion-button>
+                  </div>
+                </div>
+                <p class="habit-description">{{ hb.habit_description }}</p>
+                <div class="habit-stats">
+                  <div class="stat-item">
+                    <div class="stat-label">Frequency</div>
+                    <div class="stat-value frequency">{{ hb.frequency }}</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-value streak">
+                      {{ hb.streak }} {{ hb.frequency === 'daily' ? 'days' :
+                      'weeks' }}
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">Total Earned</div>
+                    <div class="stat-value total-earned">
+                      ${{ hb.total_earnings }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Earnings Section (toggleable) - Now displayed below the main content -->
+                <div
+                  class="earnings-section"
+                  *ngIf="showEarningsSection[hb.id]"
+                >
+                  <div class="earnings-total">
+                    <div class="total-amount">
+                      ${{ getEarningsBreakdown(hb).totalEarnings.toFixed(2) }}
+                    </div>
+                    <div class="earnings-label">total per completion</div>
+
+                    <!-- Itemized Earnings Toggle Button -->
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      color="medium"
+                      (click)="toggleEarningsBreakdown(hb.id)"
+                    >
+                      <ion-icon
+                        [name]="showEarningsBreakdown[hb.id] ? 'chevron-up' : 'chevron-down'"
+                        slot="end"
+                      ></ion-icon>
+                      {{ showEarningsBreakdown[hb.id] ? 'Hide Details' :
+                      'Itemized' }}
+                    </ion-button>
+                  </div>
+
+                  <!-- Earnings Breakdown (Collapsible) -->
+                  <div
+                    class="earnings-breakdown"
+                    *ngIf="showEarningsBreakdown[hb.id]"
+                  >
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Base Pay:</span>
+                      <span class="breakdown-value"
+                        >${{ getEarningsBreakdown(hb).baseEarnings.toFixed(2)
+                        }}</span
+                      >
+                    </div>
+                    <div
+                      class="breakdown-item"
+                      *ngIf="getEarningsBreakdown(hb).streakBonus > 0"
+                    >
+                      <span class="breakdown-label">Streak Bonus:</span>
+                      <span class="breakdown-value"
+                        >+${{ getEarningsBreakdown(hb).streakBonus.toFixed(2)
+                        }}</span
+                      >
+                    </div>
+                    <div
+                      class="breakdown-item"
+                      *ngIf="getEarningsBreakdown(hb).stockBoost > 0"
+                    >
+                      <span class="breakdown-label">Stock Boost:</span>
+                      <span class="breakdown-value"
+                        >+${{ getEarningsBreakdown(hb).stockBoost.toFixed(2)
+                        }}</span
+                      >
+                    </div>
+                    <div class="breakdown-item breakdown-total">
+                      <span class="breakdown-label">Total:</span>
+                      <span class="breakdown-value"
+                        >${{ getEarningsBreakdown(hb).totalEarnings.toFixed(2)
+                        }}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Inline Year-Long Habit Grid (Expandable) -->
+                <div *ngIf="expandedGrids[hb.id]" class="inline-habit-grid">
+                  <div>
+                    <!-- DEBUG: Display businessId -->
+                    <app-habit-grid
+                      [businessId]="hb.id"
+                      [businessName]="hb.business_name"
+                      [businessEmoji]="hb.business_icon"
+                      [businessType]="hb.business_types?.name || hb.business_name || ''"
+                      [businessCreatedAt]="hb.created_at"
+                      [isModal]="false"
+                      [showStats]="true"
+                      [useCalendarYear]="true"
+                    >
+                    </app-habit-grid>
+                  </div>
+                </div>
+
+                <!-- Daily Check-in Action -->
+                <div class="checkin-action">
+                  <!-- Complete button moved to header area next to calendar button -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noHabitBusinesses>
+          <div class="empty-state">
+            <ion-icon name="business" size="large" color="medium"></ion-icon>
+            <h3>No habit-businesses yet</h3>
+            <p>
+              Create your first habit-business to start earning money from your
+              habits!
+            </p>
+            <p class="tip">
+              💡
+              <em
+                >Each habit comes with its own business - buy the business, do
+                the habit, earn money!</em
+              >
+            </p>
+            <ion-button
+              fill="solid"
+              color="success"
+              (click)="createNewHabitBusiness()"
+            >
+              <ion-icon name="add" slot="start"></ion-icon>
+              Create Habit-Business
+            </ion-button>
+          </div>
+        </ng-template>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+</ion-content>
+
+<!-- Fixed Bottom Navigation -->
+<app-bottom-nav></app-bottom-nav>

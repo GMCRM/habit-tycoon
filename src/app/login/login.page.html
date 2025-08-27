@@ -1,0 +1,77 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>💰 Habit Tycoon</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="login-container">
+    <div class="welcome-section">
+      <h1>Welcome Back!</h1>
+      <p>Sign in to continue building your habit empire</p>
+    </div>
+
+    <ion-card class="login-card">
+      <ion-card-content>
+        <!-- Google OAuth Button -->
+        <ion-button
+          expand="block"
+          fill="outline"
+          class="google-btn"
+          (click)="onGoogleLogin()"
+        >
+          <ion-icon name="logo-google" slot="start"></ion-icon>
+          Continue with Google
+        </ion-button>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+          <ion-item>
+            <ion-label position="floating">Email Address</ion-label>
+            <ion-input
+              type="email"
+              name="email"
+              [(ngModel)]="email"
+              required
+              maxlength="100"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="floating">Password</ion-label>
+            <ion-input
+              type="password"
+              name="password"
+              [(ngModel)]="password"
+              required
+              maxlength="100"
+            ></ion-input>
+          </ion-item>
+
+          <ion-button
+            expand="block"
+            type="submit"
+            class="login-btn"
+            [disabled]="!loginForm.form.valid"
+          >
+            Sign In
+          </ion-button>
+        </form>
+
+        <div class="forgot-password">
+          <ion-button fill="clear" size="small" (click)="onForgotPassword()">
+            Forgot your password?
+          </ion-button>
+        </div>
+
+        <div class="signup-section">
+          <p>New to Habit Tycoon?</p>
+          <a routerLink="/sign-up">Create Account</a>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

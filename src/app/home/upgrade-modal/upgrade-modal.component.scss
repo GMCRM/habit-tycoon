@@ -1,0 +1,277 @@
+.upgrade-modal-content {
+  --background: var(--ion-color-light);
+  overflow: hidden;
+}
+
+.scrollable-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+  
+  /* Hide scrollbar for Internet Explorer/Edge */
+  -ms-overflow-style: none;
+}
+
+/* Target any child scrollable elements */
+:host ::ng-deep .upgrade-modal-content,
+:host ::ng-deep .scroll-content,
+:host ::ng-deep .scroll-y,
+:host ::ng-deep .inner-scroll {
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.current-business-info {
+  background: white;
+  margin: 16px;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.business-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.business-icon {
+  font-size: 48px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+}
+
+.business-details h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.habit-description {
+  margin: 4px 0 0 0;
+  color: #666666;
+  font-size: 14px;
+}
+
+.financial-info {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.info-card {
+  flex: 1;
+  min-width: 120px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #666666;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin: 0;
+}
+
+.info-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 2px 0 0 0;
+}
+
+.upgrade-options {
+  padding: 0 16px 16px 16px;
+}
+
+.upgrade-options h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.upgrade-subtitle {
+  margin: 0 0 20px 0;
+  color: white;
+  font-size: 14px;
+}
+
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upgrade-option {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.upgrade-option.affordable {
+  border-color: var(--ion-color-success-tint);
+}
+
+.upgrade-option.affordable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border-color: var(--ion-color-success);
+}
+
+.upgrade-option.expensive {
+  opacity: 0.7;
+  border-color: var(--ion-color-medium-tint);
+}
+
+.option-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.business-type-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-medium-tint);
+}
+
+.business-type-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.business-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-item ion-icon {
+  font-size: 16px;
+}
+
+.pricing-info {
+  margin-bottom: 16px;
+}
+
+.upgrade-cost {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.affordable-text {
+  color: var(--ion-color-success);
+}
+
+.expensive-text {
+  color: var(--ion-color-danger);
+}
+
+.cost-label {
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.need-more {
+  font-size: 12px;
+  color: var(--ion-color-danger);
+  font-style: italic;
+}
+
+.action-area {
+  margin-top: 16px;
+}
+
+.footer-content {
+  padding: 8px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.footer-content ion-button {
+  --color: #ffdb1a !important;
+  color: #ffdb1a !important;
+}
+
+.footer-content ion-button ion-icon {
+  color: #ffdb1a !important;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .business-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .financial-info {
+    flex-direction: column;
+  }
+}

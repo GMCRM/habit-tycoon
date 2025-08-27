@@ -1,0 +1,573 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>🎯 Daily Check-in</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="page-container">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-container">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Loading your habits...</p>
+      </div>
+
+      <!-- Main Content -->
+      <div *ngIf="!loading">
+        <!-- User Info Header -->
+        <div class="user-info">
+          <div class="welcome-section">
+            <div class="welcome-text">
+              <h2>{{ today | date:'EEEE' }}</h2>
+              <p>{{ today | date:'MMMM d, y' }} - Complete your habits!</p>
+            </div>
+            <div class="cash-display">
+              <div class="cash-amount">${{ todaysEarnings }}</div>
+              <div class="cash-label">TODAY'S POTENTIAL</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid ion-margin-bottom">
+          <ion-card class="stat-card">
+            <ion-card-content>
+              <div class="stat-content">
+                <ion-icon name="flame" color="warning"></ion-icon>
+                <div class="stat-info">
+                  <h2>{{ totalActiveStreaks }}</h2>
+                  <p>Active Streaks</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card class="stat-card">
+            <ion-card-content>
+              <div class="stat-content">
+                <ion-icon name="checkmark-circle" color="success"></ion-icon>
+                <div class="stat-info">
+                  <h2>{{ completedToday }}/{{ totalHabits }}</h2>
+                  <p>Completed Today</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card class="stat-card">
+            <ion-card-content>
+              <div class="stat-content">
+                <ion-icon name="business" color="primary"></ion-icon>
+                <div class="stat-info">
+                  <h2>{{ totalHabits }}</h2>
+                  <p>Total Habits</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </div>
+
+        <!-- Today's Habits Section -->
+        <div class="my-habit-businesses ion-margin-bottom">
+          <div class="section-header">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <h2>Today's Habits</h2>
+          </div>
+
+          <div *ngIf="todaysHabits && todaysHabits.length > 0; else noHabits">
+            <div
+              *ngFor="let habit of todaysHabits"
+              class="habit-business-item"
+              [class.completed]="habit.completed_today"
+            >
+              <div class="item-content">
+                <div class="business-icon">{{ habit.business_icon }}</div>
+                <div class="business-info">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                    "
+                  >
+                    <h3 class="business-name">{{ habit.business_name }}</h3>
+                    <div *ngIf="habit.completed_today" class="completed-badge">
+                      <ion-icon
+                        name="checkmark-circle"
+                        color="success"
+                      ></ion-icon>
+                    </div>
+                  </div>
+                  <p class="habit-description">{{ habit.habit_description }}</p>
+                  <div class="habit-stats">
+                    <div class="stat-item">
+                      <div class="stat-label">Base Pay</div>
+                      <div class="stat-value">
+                        ${{ habit.earnings_per_completion }}
+                      </div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-label">Streak</div>
+                      <div class="stat-value streak">
+                        {{ habit.streak }} {{ habit.frequency === 'daily' ?
+                        'days' : 'weeks' }}
+                      </div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-label">Total Earned</div>
+                      <div class="stat-value total-earned">
+                        ${{ calculateEarnings(habit) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Vertical separator line -->
+                <div
+                  style="
+                    width: 1px;
+                    background: linear-gradient(
+                      to bottom,
+                      transparent 0%,
+                      var(--ion-color-medium-tint) 10%,
+                      var(--ion-color-medium) 50%,
+                      var(--ion-color-medium-tint) 90%,
+                      transparent 100%
+                    );
+                    margin: 0 16px;
+                    align-self: stretch;
+                  "
+                ></div>
+
+                <div class="earnings-section">
+                  <div class="earnings-total">
+                    <div class="total-amount">
+                      ${{ calculateEarnings(habit) }}
+                    </div>
+                    <div class="earnings-label">potential today</div>
+                  </div>
+
+                  <!-- Check-in Action -->
+                  <div class="checkin-action">
+                    <ion-button
+                      *ngIf="!habit.completed_today"
+                      (click)="completeHabit(habit)"
+                      [disabled]="completing"
+                      fill="solid"
+                      color="success"
+                      size="small"
+                    >
+                      <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+                      Complete
+                    </ion-button>
+
+                    <div *ngIf="habit.completed_today" class="completed-status">
+                      <ion-icon
+                        name="checkmark-circle"
+                        color="success"
+                      ></ion-icon>
+                      <span>Completed!</span>
+                    </div>
+                  </div>
+
+                  <!-- Business Actions -->
+                  <div class="business-actions">
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      (click)="toggleUpgradeOptions(habit)"
+                      [color]="showUpgradeOptions[habit.id] ? 'primary' : 'medium'"
+                    >
+                      <ion-icon name="business" slot="start"></ion-icon>
+                      Upgrade
+                    </ion-button>
+
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      (click)="toggleStockInfo(habit)"
+                      [color]="showStockInfo[habit.id] ? 'primary' : 'medium'"
+                    >
+                      <ion-icon name="trending-up" slot="start"></ion-icon>
+                      Stock
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upgrade Options Panel -->
+              <div
+                *ngIf="showUpgradeOptions[habit.id] && habit.upgradeOptions"
+                class="upgrade-panel"
+              >
+                <div class="upgrade-header">
+                  <h4>💰 Business Upgrade Options</h4>
+                  <p>
+                    Sell your {{ habit.streak }}-day streak for cash and
+                    upgrade!
+                  </p>
+                </div>
+
+                <div class="current-value">
+                  <div class="value-breakdown">
+                    <div class="breakdown-item">
+                      <span class="label">Current Daily Value:</span>
+                      <span class="value"
+                        >${{ habit.upgradeOptions.currentBusinessValue }}</span
+                      >
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="label">Streak Multiplier:</span>
+                      <span class="value"
+                        >{{ habit.upgradeOptions.streakMultiplier }}x</span
+                      >
+                    </div>
+                    <div class="breakdown-item total">
+                      <span class="label">Total Streak Value:</span>
+                      <span class="value"
+                        >${{ habit.upgradeOptions.totalStreakValue }}</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="upgrade-options">
+                  <div
+                    *ngFor="let option of habit.upgradeOptions.upgradeOptions"
+                    class="upgrade-option"
+                    [class.affordable]="option.canAfford"
+                    [class.profitable]="option.profitFromUpgrade > 0"
+                  >
+                    <div class="option-header">
+                      <span class="business-icon"
+                        >{{ option.businessType.icon }}</span
+                      >
+                      <h5>{{ option.businessType.name }}</h5>
+                      <span
+                        class="profit-indicator"
+                        [class.positive]="option.profitFromUpgrade > 0"
+                        [class.negative]="option.profitFromUpgrade <= 0"
+                      >
+                        {{ option.profitFromUpgrade >= 0 ? '+' : '' }}${{
+                        option.profitFromUpgrade }}
+                      </span>
+                    </div>
+
+                    <div class="option-details">
+                      <div class="detail-row">
+                        <span>Upgrade Cost:</span>
+                        <span>${{ option.upgradeCost }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span>New Base Pay:</span>
+                        <span
+                          >${{ option.businessType.base_pay }}/completion</span
+                        >
+                      </div>
+                    </div>
+
+                    <ion-button
+                      *ngIf="option.canAfford"
+                      (click)="upgradeBusiness(habit, option.businessType.id)"
+                      [color]="option.profitFromUpgrade > 0 ? 'success' : 'warning'"
+                      size="small"
+                      fill="solid"
+                    >
+                      <ion-icon name="business" slot="start"></ion-icon>
+                      Upgrade {{ option.profitFromUpgrade > 0 ? '(+Profit)' :
+                      '(Break Even)' }}
+                    </ion-button>
+
+                    <div *ngIf="!option.canAfford" class="not-affordable">
+                      Need {{ habit.upgradeOptions.totalStreakValue -
+                      option.upgradeCost | number:'1.0-0' }} more streak value
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stock Info Panel -->
+              <div
+                *ngIf="showStockInfo[habit.id] && habit.stockInfo"
+                class="stock-panel"
+              >
+                <div class="stock-header">
+                  <h4>📈 Stock Information</h4>
+                  <p>
+                    Your business has public shares that friends can invest in!
+                  </p>
+                </div>
+
+                <div class="stock-details">
+                  <div class="stock-stat">
+                    <span class="label">Current Stock Price:</span>
+                    <span class="value"
+                      >${{ habit.stockInfo.current_stock_price }}</span
+                    >
+                  </div>
+                  <div class="stock-stat">
+                    <span class="label">Price Multiplier:</span>
+                    <span class="value"
+                      >{{ habit.stockInfo.price_multiplier }}x (Based on {{
+                      habit.streak }}-day streak)</span
+                    >
+                  </div>
+                  <div class="stock-stat">
+                    <span class="label">Shares Available:</span>
+                    <span class="value"
+                      >{{ habit.stockInfo.shares_available }}/{{
+                      habit.stockInfo.total_shares_issued }}</span
+                    >
+                  </div>
+                  <div class="stock-stat">
+                    <span class="label">Investors:</span>
+                    <span class="value"
+                      >{{ habit.stockInvestors }} shares owned by others</span
+                    >
+                  </div>
+                </div>
+
+                <div class="stock-benefits">
+                  <h5>🎯 Benefits of Stock Investment:</h5>
+                  <ul>
+                    <li>
+                      <strong>You earn more:</strong> 5% bonus per 10% of shares
+                      owned by others
+                    </li>
+                    <li>
+                      <strong>Investors earn:</strong> 50% of your stock bonus
+                      as dividends
+                    </li>
+                    <li>
+                      <strong>Stock price:</strong> Rises and falls with your
+                      streak performance
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #noHabits>
+            <div class="empty-state">
+              <ion-icon name="business" size="large"></ion-icon>
+              <h3>No habits to complete</h3>
+              <p>Create your first habit-business to start earning!</p>
+              <ion-button routerLink="/create-habit-business" color="primary">
+                <ion-icon name="add" slot="start"></ion-icon>
+                Create Habit-Business
+              </ion-button>
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Stock Portfolio Section -->
+        <div
+          class="my-habit-businesses ion-margin-bottom"
+          *ngIf="userStockHoldings && userStockHoldings.length > 0"
+        >
+          <div class="section-header">
+            <ion-icon name="trending-up"></ion-icon>
+            <h2>Your Stock Portfolio</h2>
+          </div>
+
+          <div class="stock-holdings">
+            <div
+              *ngFor="let holding of userStockHoldings"
+              class="habit-business-item"
+              [class.profit]="(holding.profitLoss || 0) >= 0"
+              [class.loss]="(holding.profitLoss || 0) < 0"
+            >
+              <div class="item-content">
+                <div class="business-icon">
+                  {{ holding.business_stocks?.habit_businesses?.business_icon ||
+                  '📈' }}
+                </div>
+                <div class="business-info">
+                  <h3 class="business-name">
+                    {{ holding.business_stocks?.habit_businesses?.business_name
+                    || 'Business' }}
+                  </h3>
+                  <p class="habit-description">
+                    {{ holding.shares_owned }} shares @ ${{
+                    holding.average_purchase_price }}/share
+                  </p>
+                  <div class="habit-stats">
+                    <div class="stat-item">
+                      <div class="stat-label">Current Price</div>
+                      <div class="stat-value">
+                        ${{ holding.business_stocks?.current_stock_price || 0 }}
+                      </div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-label">Total Dividends</div>
+                      <div class="stat-value">
+                        ${{ holding.total_dividends_earned }}
+                      </div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-label">Business Streak</div>
+                      <div class="stat-value streak">
+                        {{ holding.business_stocks?.habit_businesses?.streak ||
+                        0 }} days
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Vertical separator line -->
+                <div
+                  style="
+                    width: 1px;
+                    background: linear-gradient(
+                      to bottom,
+                      transparent 0%,
+                      var(--ion-color-medium-tint) 10%,
+                      var(--ion-color-medium) 50%,
+                      var(--ion-color-medium-tint) 90%,
+                      transparent 100%
+                    );
+                    margin: 0 16px;
+                    align-self: stretch;
+                  "
+                ></div>
+
+                <div class="earnings-section">
+                  <div class="earnings-total">
+                    <div
+                      class="total-amount"
+                      [class.profit]="(holding.profitLoss || 0) >= 0"
+                      [class.loss]="(holding.profitLoss || 0) < 0"
+                    >
+                      ${{ holding.currentValue || 0 }}
+                    </div>
+                    <div class="earnings-label">current value</div>
+                    <div
+                      class="profit-loss"
+                      [class.positive]="(holding.profitLoss || 0) >= 0"
+                      [class.negative]="(holding.profitLoss || 0) < 0"
+                    >
+                      <ion-icon
+                        [name]="getStockTrendIcon(holding.profitLoss || 0)"
+                      ></ion-icon>
+                      {{ formatPercentage(holding.profitLossPercentage || 0) }}
+                      ({{ (holding.profitLoss || 0) >= 0 ? '+' : '' }}${{
+                      holding.profitLoss || 0 }})
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Available Stocks Section -->
+        <div
+          class="my-habit-businesses ion-margin-bottom"
+          *ngIf="availableStocks && availableStocks.length > 0"
+        >
+          <div class="section-header">
+            <ion-icon name="business"></ion-icon>
+            <h2>Stock Market</h2>
+          </div>
+
+          <div class="available-stocks">
+            <div
+              *ngFor="let stock of availableStocks"
+              class="habit-business-item"
+            >
+              <div class="item-content">
+                <div class="business-icon">
+                  {{ stock.habit_businesses?.business_icon || '🏢' }}
+                </div>
+                <div class="business-info">
+                  <h3 class="business-name">
+                    {{ stock.habit_businesses?.business_name || 'Business' }}
+                  </h3>
+                  <p class="habit-description">
+                    Owner: {{ stock.habit_businesses?.user_id }}
+                  </p>
+                  <div class="habit-stats">
+                    <div class="stat-item">
+                      <div class="stat-label">Streak</div>
+                      <div class="stat-value streak">
+                        {{ stock.habit_businesses?.streak || 0 }} days
+                      </div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-label">Available Shares</div>
+                      <div class="stat-value">{{ stock.shares_available }}</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-label">Market Cap</div>
+                      <div class="stat-value">
+                        ${{ stock.current_stock_price *
+                        stock.total_shares_issued }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Vertical separator line -->
+                <div
+                  style="
+                    width: 1px;
+                    background: linear-gradient(
+                      to bottom,
+                      transparent 0%,
+                      var(--ion-color-medium-tint) 10%,
+                      var(--ion-color-medium) 50%,
+                      var(--ion-color-medium-tint) 90%,
+                      transparent 100%
+                    );
+                    margin: 0 16px;
+                    align-self: stretch;
+                  "
+                ></div>
+
+                <div class="earnings-section">
+                  <div class="earnings-total">
+                    <div class="total-amount">
+                      ${{ stock.current_stock_price }}
+                    </div>
+                    <div class="earnings-label">per share</div>
+                    <div class="multiplier">{{ stock.price_multiplier }}x</div>
+                  </div>
+
+                  <!-- Buy Action -->
+                  <div class="checkin-action">
+                    <ion-button
+                      (click)="purchaseStock(stock)"
+                      color="primary"
+                      size="small"
+                      fill="solid"
+                      [disabled]="stock.shares_available === 0"
+                    >
+                      <ion-icon name="add-circle" slot="start"></ion-icon>
+                      Buy Shares
+                    </ion-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievement Toast -->
+        <div *ngIf="showAchievement" class="achievement-toast">
+          <div class="achievement-content">
+            <ion-icon name="trophy" color="warning"></ion-icon>
+            <div class="achievement-text">
+              <h4>Streak Achievement!</h4>
+              <p>{{ achievementMessage }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
