@@ -631,8 +631,9 @@ export class HabitBusinessService {
         throw new Error(`Goal already completed! You've done ${currentProgress}/${goalValue} for today.`);
       }
 
-      // Double-check: prevent duplicate completions for the same day using proper date comparison
-      const todayDateString = this.getLocalDateString(); // Get today as YYYY-MM-DD string
+      // Double-check: prevent duplicate completions for the same day using LOCAL DATE comparison
+      // This prevents timezone-related duplicates where server date != user date
+      const todayDateString = this.getLocalDateString(); // Get today as YYYY-MM-DD string in USER's timezone
       
       const { data: existingCompletions, error: checkError } = await this.supabase
         .from('habit_completions')
@@ -643,10 +644,12 @@ export class HabitBusinessService {
       if (checkError) {
         console.error('Error checking existing completions:', checkError);
       } else if (existingCompletions && existingCompletions.length > 0) {
-        // Check if any completion was recorded for today (using date string comparison)
+        // Check if any completion was recorded for today using LOCAL DATE STRING comparison
+        // This is more reliable than timezone-dependent date comparisons
         const todayCompletions = existingCompletions.filter(completion => {
-          const completionDate = this.getLocalDateString(new Date(completion.completed_at));
-          return completionDate === todayDateString;
+          const completionDateLocal = this.getLocalDateString(new Date(completion.completed_at));
+          console.log(`🔍 Checking completion: DB date=${completionDateLocal}, Today=${todayDateString}`);
+          return completionDateLocal === todayDateString;
         });
         
         console.log(`📅 Found ${todayCompletions.length} existing completions for today (${todayDateString}):`, 
@@ -722,20 +725,21 @@ export class HabitBusinessService {
 
       const totalEarnings = baseTotal + stockBoost;
 
-      // CRITICAL FIX: Ensure completion is recorded for "today" in local timezone
-      // This prevents habits from being marked as completed "tomorrow" due to UTC conversion
+      // CRITICAL FIX: Ensure completion is recorded for "today" in USER'S local timezone
+      // This prevents habits from being marked as completed "tomorrow" due to server timezone differences
       const currentTime = new Date();
-      const localDateString = this.getLocalDateString(currentTime); // Get today as YYYY-MM-DD in local timezone
+      const localDateString = this.getLocalDateString(currentTime); // Get today as YYYY-MM-DD in USER's timezone
       
-      // Create a completion timestamp that represents local noon today
-      // This ensures consistent date interpretation regardless of timezone
-      const completionTime = new Date(`${localDateString}T12:00:00`);
+      // Create a completion timestamp that represents the user's local date at a consistent time
+      // Use 6 PM local time to avoid any timezone edge cases while preserving the actual date
+      const completionTime = new Date(`${localDateString}T18:00:00`);
       
-      console.log('🕐 Recording completion for:', {
-        localDate: localDateString,
-        originalTime: currentTime.toString(),
-        completionTime: completionTime.toString(),
-        completionTimestamp: completionTime.toISOString()
+      console.log('🕐 Recording completion for USER LOCAL DATE:', {
+        userLocalDate: localDateString,
+        userLocalTime: currentTime.toString(),
+        completionTimestamp: completionTime.toISOString(),
+        serverTime: new Date().toISOString(),
+        timezoneName: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
 
       // Record the completion with actual timestamp
@@ -1727,27 +1731,30 @@ export class HabitBusinessService {
    */
   async getTodaysActualEarnings(userId: string): Promise<number> {
     try {
-      // Get today's date range in local timezone
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      // Use local date string to avoid timezone issues
+      const todayLocalDateString = this.getLocalDateString(new Date());
       
-      console.log(`📊 Fetching habit earnings for ${userId} between ${today.toISOString()} and ${tomorrow.toISOString()}`);
+      console.log(`📊 Fetching habit earnings for ${userId} on local date: ${todayLocalDateString}`);
       
       const { data, error } = await this.supabase
         .from('habit_completions')
         .select('earnings, completed_at')
-        .eq('user_id', userId)
-        .gte('completed_at', today.toISOString())
-        .lt('completed_at', tomorrow.toISOString());
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error fetching today\'s actual earnings:', error);
         throw error;
       }
 
-      const totalEarnings = data?.reduce((total, completion) => total + completion.earnings, 0) || 0;
-      console.log(`💰 Today's habit earnings for user: $${totalEarnings.toFixed(2)} (${data?.length || 0} completions)`);
+      // Filter completions to only include today's using local date comparison
+      const todayCompletions = data?.filter(completion => {
+        const completionLocalDate = this.getLocalDateString(new Date(completion.completed_at));
+        return completionLocalDate === todayLocalDateString;
+      }) || [];
+
+      const totalEarnings = todayCompletions.reduce((total, completion) => total + completion.earnings, 0);
+      console.log(`💰 Today's habit earnings for user: $${totalEarnings.toFixed(2)} (${todayCompletions.length} completions from ${data?.length || 0} total)`);
+      console.log(`📅 Filtering for local date: ${todayLocalDateString}`);
       
       return totalEarnings;
     } catch (error) {
