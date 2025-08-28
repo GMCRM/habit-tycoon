@@ -10,7 +10,7 @@ SELECT up.id,
     up.name,
     up.email
 FROM user_profiles up
-WHERE up.email = search_term
+WHERE LOWER(up.email) = LOWER(search_term)
     OR up.name ILIKE '%' || search_term || '%'
 LIMIT 10;
 -- Limit results to prevent abuse
