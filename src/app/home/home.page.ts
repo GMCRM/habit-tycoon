@@ -7,6 +7,7 @@ import {
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon, 
   IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
+import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../services/auth.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { HabitUpdateService } from '../services/habit-update.service';
@@ -14,13 +15,13 @@ import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, CdkDropList, CdkDrag],
 })
 export class HomePage implements OnDestroy {
   currentUser: any = null;
@@ -71,7 +72,7 @@ export class HomePage implements OnDestroy {
     private alertController: AlertController,
     private modalController: ModalController
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics });
+    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour });
     this.setRandomTagline();
     this.checkScreenSize();
     this.setupStatsCards();
@@ -207,6 +208,9 @@ export class HomePage implements OnDestroy {
         // Reset any outdated daily habits first to ensure accurate counts
         try {
           await this.habitBusinessService.resetOutdatedDailyHabits();
+          
+          // ✨ NEW: Reset habit order to custom order when habits are reset (new day/week)
+          await this.resetHabitsToCustomOrder();
         } catch (resetError) {
           console.warn('⚠️ Non-critical error resetting outdated habits:', resetError);
         }
@@ -325,6 +329,9 @@ export class HomePage implements OnDestroy {
       
       // Reload dashboard data to get updated stats and completion status
       await this.loadDashboardData();
+      
+      // ✨ NEW: Automatically move completed habits to bottom
+      await this.moveCompletedHabitsToBottom();
       
     } catch (error) {
       console.error('Error completing habit:', error);
@@ -1353,6 +1360,77 @@ export class HomePage implements OnDestroy {
         color: 'danger'
       });
       await errorToast.present();
+    }
+  }
+
+  /**
+   * Handle drag and drop reordering of habit business cards
+   */
+  async onHabitBusinessDrop(event: CdkDragDrop<HabitBusiness[]>) {
+    if (event.previousIndex === event.currentIndex) {
+      return; // No change in position
+    }
+
+    try {
+      // Update the local array immediately for responsive UI
+      moveItemInArray(this.habitBusinesses, event.previousIndex, event.currentIndex);
+      
+      // Create ordered list of business IDs
+      const orderedBusinessIds = this.habitBusinesses.map(hb => hb.id);
+      
+      // Update the database
+      await this.habitBusinessService.updateHabitBusinessOrder(this.currentUser.id, orderedBusinessIds);
+      
+      // Show success toast
+      const toast = await this.toastController.create({
+        message: '✅ Habit order updated!',
+        duration: 1500,
+        position: 'top',
+        color: 'success'
+      });
+      await toast.present();
+      
+    } catch (error) {
+      console.error('Error updating habit order:', error);
+      
+      // Revert the local change
+      await this.loadDashboardData();
+      
+      const errorToast = await this.toastController.create({
+        message: '❌ Failed to update order. Please try again.',
+        duration: 3000,
+        position: 'top',
+        color: 'danger'
+      });
+      await errorToast.present();
+    }
+  }
+
+  /**
+   * Automatically move completed habits to bottom when they're completed
+   */
+  async moveCompletedHabitsToBottom() {
+    try {
+      await this.habitBusinessService.moveCompletedHabitsToBottom(this.currentUser.id);
+      // Reload data to reflect the new order
+      await this.loadDashboardData();
+    } catch (error) {
+      console.error('Error moving completed habits to bottom:', error);
+      // Don't show error toast as this is automatic - just log it
+    }
+  }
+
+  /**
+   * Reset habits to user's custom order (called when new day/week starts)
+   */
+  async resetHabitsToCustomOrder() {
+    try {
+      await this.habitBusinessService.resetToCustomOrder(this.currentUser.id);
+      // Reload data to reflect the reset order
+      await this.loadDashboardData();
+    } catch (error) {
+      console.error('Error resetting habits to custom order:', error);
+      // Don't show error toast as this is automatic - just log it
     }
   }
 }

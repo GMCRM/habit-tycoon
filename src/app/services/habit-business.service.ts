@@ -28,6 +28,8 @@ export interface HabitBusiness {
   total_earnings: number;
   last_completed_at?: string;
   is_active: boolean;
+  display_order: number; // User's preferred order for display
+  user_custom_order: number; // User's original custom order (for resetting)
   created_at: string;
   updated_at: string;
   business_types?: BusinessType;
@@ -150,7 +152,7 @@ export class HabitBusinessService {
   }
 
   /**
-   * Get user's habit-businesses
+   * Get user's habit-businesses ordered by display_order (for user customization)
    */
   async getUserHabitBusinesses(userId: string): Promise<HabitBusiness[]> {
     try {
@@ -169,7 +171,7 @@ export class HabitBusinessService {
         `)
         .eq('user_id', userId)
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('display_order', { ascending: true });
 
       if (error) {
         console.error('Error fetching habit businesses:', error);
@@ -225,6 +227,20 @@ export class HabitBusinessService {
         throw new Error('Goal value must be between 1 and 99');
       }
 
+      // Get current user's habits count to set appropriate order
+      const { data: existingHabits, error: countError } = await this.supabase
+        .from('habit_businesses')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (countError) {
+        console.error('Error counting existing habits:', countError);
+        throw countError;
+      }
+
+      const nextOrderValue = (existingHabits?.length || 0) + 1;
+
       // Create the habit-business
       const habitBusinessData = {
         user_id: user.id,
@@ -240,6 +256,8 @@ export class HabitBusinessService {
         streak: 0,
         total_completions: 0,
         total_earnings: 0,
+        display_order: nextOrderValue,
+        user_custom_order: nextOrderValue,
         is_active: true
       };
 
@@ -2988,5 +3006,186 @@ export class HabitBusinessService {
       console.error('💥 Error in fallback method:', error);
       return [];
     }
+  }
+
+  /**
+   * Update display order for multiple habit businesses (used for drag-and-drop reordering)
+   */
+  async updateHabitBusinessOrder(userId: string, orderedBusinessIds: string[]): Promise<void> {
+    try {
+      // Update each habit business with its new display_order
+      const updates = orderedBusinessIds.map((businessId, index) => ({
+        id: businessId,
+        display_order: index + 1,
+        user_custom_order: index + 1, // Also update custom order to preserve user's choice
+        updated_at: new Date().toISOString()
+      }));
+
+      for (const update of updates) {
+        const { error } = await this.supabase
+          .from('habit_businesses')
+          .update({
+            display_order: update.display_order,
+            user_custom_order: update.user_custom_order,
+            updated_at: update.updated_at
+          })
+          .eq('id', update.id)
+          .eq('user_id', userId);
+
+        if (error) {
+          console.error('Error updating habit business order:', error);
+          throw error;
+        }
+      }
+
+      console.log('✅ Successfully updated habit business order for', orderedBusinessIds.length, 'items');
+    } catch (error) {
+      console.error('❌ Error updating habit business order:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Move completed habits to bottom while preserving non-completed order
+   */
+  async moveCompletedHabitsToBottom(userId: string): Promise<void> {
+    try {
+      // Get all user's habit businesses
+      const habits = await this.getUserHabitBusinesses(userId);
+      
+      // Separate completed and non-completed habits
+      const nonCompleted: HabitBusiness[] = [];
+      const completed: HabitBusiness[] = [];
+      
+      for (const habit of habits) {
+        if (this.isHabitCompleteForToday(habit)) {
+          completed.push(habit);
+        } else {
+          nonCompleted.push(habit);
+        }
+      }
+      
+      // Sort non-completed by their custom order, completed by their custom order too
+      nonCompleted.sort((a, b) => a.user_custom_order - b.user_custom_order);
+      completed.sort((a, b) => a.user_custom_order - b.user_custom_order);
+      
+      // Create new order: non-completed first, then completed
+      const newOrder = [...nonCompleted, ...completed];
+      const orderedBusinessIds = newOrder.map(h => h.id);
+      
+      // Update display orders (but don't change user_custom_order)
+      for (let i = 0; i < orderedBusinessIds.length; i++) {
+        const { error } = await this.supabase
+          .from('habit_businesses')
+          .update({
+            display_order: i + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', orderedBusinessIds[i])
+          .eq('user_id', userId);
+
+        if (error) {
+          console.error('Error updating display order for completed habits:', error);
+          throw error;
+        }
+      }
+
+      console.log('✅ Successfully moved completed habits to bottom');
+    } catch (error) {
+      console.error('❌ Error moving completed habits to bottom:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset habits to their user custom order (called when new day/week starts)
+   */
+  async resetToCustomOrder(userId: string): Promise<void> {
+    try {
+      // Get all user's habits and reset display_order to match user_custom_order
+      const habits = await this.getUserHabitBusinesses(userId);
+      
+      for (const habit of habits) {
+        const { error } = await this.supabase
+          .from('habit_businesses')
+          .update({
+            display_order: habit.user_custom_order,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', habit.id)
+          .eq('user_id', userId);
+
+        if (error) {
+          console.error('Error resetting individual habit to custom order:', error);
+          throw error;
+        }
+      }
+
+      console.log('✅ Successfully reset habits to custom order');
+    } catch (error) {
+      console.error('❌ Error resetting to custom order:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a habit is completed for today/this week
+   * (Helper method for internal use in ordering logic)
+   */
+  private isHabitCompleteForToday(habitBusiness: HabitBusiness): boolean {
+    if (!habitBusiness.last_completed_at) {
+      return false;
+    }
+    
+    // For multi-completion habits, check if the goal is fully completed
+    const goalValue = habitBusiness.goal_value || 1;
+    const currentProgress = habitBusiness.current_progress || 0;
+    
+    // If it's a multi-completion habit and goal isn't fully met, it's not "completed"
+    if (goalValue > 1 && currentProgress < goalValue) {
+      return false;
+    }
+    
+    // Also check if there's any current progress - if it's 0, then it's not really "completed"
+    if (currentProgress === 0) {
+      return false;
+    }
+    
+    if (habitBusiness.frequency === 'daily') {
+      // For daily habits, check if completed today
+      const completionDate = new Date(habitBusiness.last_completed_at);
+      const today = new Date();
+      
+      const todayString = today.getFullYear() + '-' + 
+        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(today.getDate()).padStart(2, '0');
+      
+      const completionString = completionDate.getFullYear() + '-' + 
+        String(completionDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(completionDate.getDate()).padStart(2, '0');
+      
+      return completionString === todayString;
+      
+    } else if (habitBusiness.frequency === 'weekly') {
+      // For weekly habits, check if completed this week
+      const now = new Date();
+      const completionDate = new Date(habitBusiness.last_completed_at);
+      
+      // Get the start of this week (Monday)
+      const startOfThisWeek = new Date(now);
+      const dayOfWeek = startOfThisWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const daysUntilMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust so Monday = 0
+      startOfThisWeek.setDate(startOfThisWeek.getDate() - daysUntilMonday);
+      startOfThisWeek.setHours(0, 0, 0, 0);
+      
+      // Get the end of this week (Sunday)
+      const endOfThisWeek = new Date(startOfThisWeek);
+      endOfThisWeek.setDate(endOfThisWeek.getDate() + 6);
+      endOfThisWeek.setHours(23, 59, 59, 999);
+      
+      return completionDate >= startOfThisWeek && completionDate <= endOfThisWeek;
+    }
+    
+    return false;
   }
 }

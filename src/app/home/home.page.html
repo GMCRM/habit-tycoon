@@ -288,8 +288,24 @@
         <div
           *ngIf="habitBusinesses && habitBusinesses.length > 0; else noHabitBusinesses"
         >
-          <div *ngFor="let hb of habitBusinesses" class="habit-business-item">
-            <div class="item-content">
+          <!-- Drag and Drop Container -->
+          <div 
+            cdkDropList 
+            (cdkDropListDropped)="onHabitBusinessDrop($event)" 
+            class="habit-businesses-container"
+          >
+            <div 
+              *ngFor="let hb of habitBusinesses" 
+              class="habit-business-item"
+              cdkDrag
+              [cdkDragData]="hb"
+            >
+              <!-- Drag Handle -->
+              <div class="drag-handle" cdkDragHandle>
+                <ion-icon name="reorder-four"></ion-icon>
+              </div>
+              
+              <div class="item-content">
               <div class="business-icon">{{ hb.business_icon }}</div>
               <div class="business-info">
                 <div
@@ -569,6 +585,7 @@
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
 

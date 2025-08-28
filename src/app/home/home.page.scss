@@ -1917,3 +1917,67 @@ button, span, div, ion-button {
     }
   }
 }
+
+// Drag and Drop Styles
+.habit-businesses-container {
+  .cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    background: var(--business-item-background);
+    border: var(--business-item-border);
+    transform: rotate(5deg);
+    opacity: 0.9;
+  }
+
+  .cdk-drag-placeholder {
+    opacity: 0.3;
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+    border: 2px dashed var(--ion-color-primary);
+    border-radius: 12px;
+    min-height: 120px;
+  }
+
+  .cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.habit-business-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  
+  .drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    cursor: grab;
+    color: var(--ion-color-medium);
+    margin-top: 20px; // Align with content
+    
+    &:active {
+      cursor: grabbing;
+    }
+    
+    ion-icon {
+      font-size: 18px;
+    }
+    
+    &:hover {
+      color: var(--ion-color-primary);
+    }
+  }
+  
+  .item-content {
+    flex: 1;
+  }
+}
+
+// Enhanced visual feedback for dragging
+.cdk-drop-list-dragging .habit-business-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
