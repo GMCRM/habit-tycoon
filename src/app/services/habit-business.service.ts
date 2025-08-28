@@ -595,8 +595,23 @@ export class HabitBusinessService {
       }
       
       // Reset progress if it's a new day/week
+      // Use time-based comparison instead of date strings to handle timezone properly
       if (habitBusiness.frequency === 'daily' && lastCompleted !== today) {
-        currentProgress = 0;
+        // Additional check: only reset if last completion was more than 20 hours ago
+        // This prevents timezone-related issues where dates differ but it's still the "same day"
+        if (habitBusiness.last_completed_at) {
+          const lastCompletionTime = new Date(habitBusiness.last_completed_at);
+          const hoursAgo = (new Date().getTime() - lastCompletionTime.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursAgo > 20) {
+            console.log(`🔄 Resetting daily habit progress: last completed ${hoursAgo.toFixed(1)} hours ago`);
+            currentProgress = 0;
+          } else {
+            console.log(`⏰ Not resetting: only ${hoursAgo.toFixed(1)} hours since last completion`);
+          }
+        } else {
+          currentProgress = 0; // No previous completion
+        }
       } else if (habitBusiness.frequency === 'weekly') {
         // For weekly habits, reset if it's a new week (Monday to Sunday)
         if (lastCompleted) {
@@ -1035,7 +1050,7 @@ export class HabitBusinessService {
    */
   async getTodaysHabits(userId: string): Promise<HabitBusiness[]> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = this.getLocalDateString();
       
       const { data, error } = await this.supabase
         .from('habit_businesses')
