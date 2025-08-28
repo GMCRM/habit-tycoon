@@ -1,5 +1,15 @@
 // Adventure Capitalist inspired styling
 
+// Global fixes for Safari bullet point issue on buttons
+button, span, div, ion-button {
+  list-style: none !important;
+  list-style-type: none !important;
+  
+  &::before {
+    content: none !important;
+  }
+}
+
 // Custom scrollable content
 .scrollable-content {
   height: 100%;
@@ -1581,6 +1591,34 @@
     z-index: 2 !important;
     pointer-events: none !important;
     color: inherit !important;
+    list-style: none !important;
+    list-style-type: none !important;
+    
+    &::before,
+    &::after {
+      display: none !important;
+      content: none !important;
+    }
+  }
+  
+  .button-text {
+    // Explicitly remove any list styling or pseudo-elements
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    list-style-type: none !important;
+    text-indent: 0 !important;
+    
+    // Remove any potential pseudo-element bullets
+    &::before {
+      display: none !important;
+      content: none !important;
+    }
+    
+    &::after {
+      display: none !important;
+      content: none !important;
+    }
   }
   
   .button-icon {

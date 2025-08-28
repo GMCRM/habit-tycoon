@@ -278,10 +278,42 @@ export class DevToolsPage {
     try {
       console.log('🔄 Testing reset outdated habits function...');
       await this.habitBusinessService.resetOutdatedDailyHabits();
-      alert('Reset function completed! Check console for details.');
+      await this.showToast('✅ Reset outdated habits test completed!', 'success');
     } catch (error) {
-      console.error('Error testing reset function:', error);
-      alert('Error testing reset function: ' + error);
+      console.error('❌ Reset outdated habits test failed:', error);
+      await this.showToast('❌ Reset outdated habits test failed', 'danger');
+    }
+  }
+
+  async cleanupAllHabits() {
+    try {
+      console.log('🚨 Starting emergency cleanup of all habit duplicates...');
+      
+      if (!this.currentUser) {
+        await this.showToast('❌ User not authenticated', 'danger');
+        return;
+      }
+      
+      // Get all user's habits
+      const habits = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
+      
+      if (habits && habits.length > 0) {
+        let totalCleaned = 0;
+        
+        for (const habit of habits) {
+          console.log(`🧹 Cleaning habit: ${habit.business_name}`);
+          await this.habitBusinessService.cleanupHabitCompletions(habit.id);
+          totalCleaned++;
+        }
+        
+        await this.showToast(`✅ Cleaned up ${totalCleaned} habits successfully!`, 'success');
+        console.log(`✅ Emergency cleanup completed for ${totalCleaned} habits`);
+      } else {
+        await this.showToast('ℹ️ No habits found to clean up', 'warning');
+      }
+    } catch (error) {
+      console.error('❌ Emergency cleanup failed:', error);
+      await this.showToast('❌ Emergency cleanup failed', 'danger');
     }
   }
 
@@ -451,6 +483,64 @@ export class DevToolsPage {
       await this.showToast(`❌ Failed to fix lemonade prices: ${(error as any)?.message || 'Unknown error'}`, 'danger');
     } finally {
       this.isFixingLemonadeStocks = false;
+    }
+  }
+
+  /**
+   * Debug a specific habit's state and completion records
+   */
+  async debugSpecificHabit() {
+    if (!this.currentUser) {
+      await this.showToast('❌ User not authenticated', 'danger');
+      return;
+    }
+
+    try {
+      // Get all user's habits first
+      const habits = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
+      
+      if (!habits || habits.length === 0) {
+        await this.showToast('ℹ️ No habits found', 'warning');
+        return;
+      }
+
+      // For demo, debug the first habit (usually the problematic one)
+      const habitToDebug = habits[0];
+      
+      console.log('🔍 Starting habit debug for:', habitToDebug.business_name);
+      
+      const debugResult = await this.habitBusinessService.debugHabitState(habitToDebug.id);
+      
+      // Show summary in alert
+      const summary = `Debug Results for "${habitToDebug.business_name}":
+
+Current State:
+- Progress: ${debugResult.habitBusiness.current_progress || 0}/${debugResult.habitBusiness.goal_value || 1}
+- Last Completed: ${debugResult.habitBusiness.last_completed_at || 'Never'}
+- Streak: ${debugResult.habitBusiness.streak || 0}
+
+Today's Info:
+- Local Date: ${debugResult.dateInfo.todayLocal}
+- UTC Date: ${debugResult.dateInfo.todayUTC}
+- Timezone: ${debugResult.dateInfo.timezone}
+
+Completions Found:
+- All Time: ${debugResult.allCompletions?.length || 0} records
+- Today (time range): ${debugResult.todayCompletions?.length || 0} records
+- Today (date string): ${debugResult.todayCompletionsByDate?.length || 0} records
+
+UI Method Results:
+- isCompletedToday: ${debugResult.uiResults.isCompletedToday}
+- isGoalCompleted: ${debugResult.uiResults.isGoalCompleted}
+
+Check console for detailed logs.`;
+
+      alert(summary);
+      await this.showToast('✅ Habit debug completed - check console and alert', 'success');
+      
+    } catch (error) {
+      console.error('❌ Habit debug failed:', error);
+      await this.showToast(`❌ Habit debug failed: ${(error as any)?.message}`, 'danger');
     }
   }
 
