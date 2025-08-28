@@ -116,3 +116,36 @@
     display: none !important;
   }
 }
+
+/* Fix for iPad Safari - force ion-title to align left */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  ion-toolbar {
+    ion-title {
+      text-align: left !important;
+      padding-left: 16px !important;
+      justify-content: flex-start !important;
+      
+      /* Specifically target the title element */
+      .toolbar-title {
+        text-align: left !important;
+        justify-content: flex-start !important;
+        padding-left: 0 !important;
+      }
+    }
+  }
+  
+  /* Additional specificity for iPad */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    ion-header ion-toolbar ion-title {
+      text-align: left !important;
+      justify-content: flex-start !important;
+      padding-left: 16px !important;
+      
+      .toolbar-title {
+        text-align: left !important;
+        justify-content: flex-start !important;
+      }
+    }
+  }
+}

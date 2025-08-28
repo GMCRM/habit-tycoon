@@ -264,6 +264,26 @@
         >
           🔄 Test Reset Outdated Habits
         </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="warning"
+          (click)="cleanupAllHabits()"
+          class="ion-margin-top"
+        >
+          🚨 Emergency: Clean Up All Habit Duplicates
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="solid"
+          color="primary"
+          (click)="debugSpecificHabit()"
+          class="ion-margin-top"
+        >
+          🔍 Debug Specific Habit State
+        </ion-button>
       </ion-card-content>
     </ion-card>
 
