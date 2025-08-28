@@ -151,7 +151,7 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
       date.setDate(date.getDate() - i);
       
       mockData.push({
-        date: date.toISOString().split('T')[0],
+        date: this.getLocalDateString(date),
         completed: false,
         streakDay: 0
       });
@@ -182,7 +182,7 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
       }
       
       mockData.push({
-        date: date.toISOString().split('T')[0],
+        date: this.getLocalDateString(date),
         completed,
         streakDay: currentStreak
       });
@@ -414,5 +414,15 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
     } catch (error) {
       console.error('❌ Error creating habit chart:', error);
     }
+  }
+
+  /**
+   * Get local date string in YYYY-MM-DD format (consistent with other components)
+   */
+  private getLocalDateString(date: Date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }
