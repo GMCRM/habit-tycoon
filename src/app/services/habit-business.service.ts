@@ -971,7 +971,7 @@ export class HabitBusinessService {
    */
   async getTodaysHabits(userId: string): Promise<HabitBusiness[]> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = this.getLocalDateString();
       
       const { data, error } = await this.supabase
         .from('habit_businesses')
