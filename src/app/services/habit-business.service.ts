@@ -722,13 +722,20 @@ export class HabitBusinessService {
 
       const totalEarnings = baseTotal + stockBoost;
 
-      // Use actual completion time but ensure we're validating against local dates properly
-      const completionTime = new Date();
+      // CRITICAL FIX: Ensure completion is recorded for "today" in local timezone
+      // This prevents habits from being marked as completed "tomorrow" due to UTC conversion
+      const currentTime = new Date();
+      const localDateString = this.getLocalDateString(currentTime); // Get today as YYYY-MM-DD in local timezone
+      
+      // Create a completion timestamp that represents local noon today
+      // This ensures consistent date interpretation regardless of timezone
+      const completionTime = new Date(`${localDateString}T12:00:00`);
       
       console.log('🕐 Recording completion for:', {
-        actualCompletionTime: completionTime.toString(),
-        completionTimestamp: completionTime.toISOString(),
-        localDateString: this.getLocalDateString(completionTime)
+        localDate: localDateString,
+        originalTime: currentTime.toString(),
+        completionTime: completionTime.toString(),
+        completionTimestamp: completionTime.toISOString()
       });
 
       // Record the completion with actual timestamp
