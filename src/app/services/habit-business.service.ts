@@ -523,15 +523,47 @@ export class HabitBusinessService {
   /**
    * Get today's date in local timezone as YYYY-MM-DD string
    */
+  /**
+   * Get date as YYYY-MM-DD string in user's local timezone
+   * This ensures consistent date representation regardless of timezone differences
+   */
   private getLocalDateString(date: Date = new Date()): string {
+    // Use local timezone to get consistent YYYY-MM-DD format
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
+  /**
+   * Validate that the current date is not in the future relative to UTC
+   * Prevents completing habits for future dates due to timezone differences
+   */
+  private validateNotFutureDate(): void {
+    const now = new Date();
+    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+    const localToday = this.getLocalDateString(now);
+    const utcToday = this.getLocalDateString(utcNow);
+    
+    // If local date is ahead of UTC date, we might be in a future timezone
+    if (localToday > utcToday) {
+      console.warn('⚠️ Local date appears to be ahead of UTC. Local:', localToday, 'UTC:', utcToday);
+      // Allow completion if the difference is just one day (timezone difference)
+      const localDate = new Date(localToday + 'T00:00:00');
+      const utcDate = new Date(utcToday + 'T00:00:00');
+      const daysDiff = Math.floor((localDate.getTime() - utcDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff > 1) {
+        throw new Error('Cannot complete habits for future dates. Please check your device date/time settings.');
+      }
+    }
+  }
+
   async completeHabit(habitBusinessId: string): Promise<void> {
     try {
+      // Validate that we're not trying to complete a habit for a future date
+      this.validateNotFutureDate();
+      
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
       if (userError || !user) {
@@ -599,6 +631,35 @@ export class HabitBusinessService {
         throw new Error(`Goal already completed! You've done ${currentProgress}/${goalValue} for today.`);
       }
 
+      // Double-check: prevent duplicate completions for the same day using LOCAL DATE comparison
+      // This prevents timezone-related duplicates where server date != user date
+      const todayDateString = this.getLocalDateString(); // Get today as YYYY-MM-DD string in USER's timezone
+      
+      const { data: existingCompletions, error: checkError } = await this.supabase
+        .from('habit_completions')
+        .select('id, completed_at')
+        .eq('habit_business_id', habitBusinessId)
+        .eq('user_id', user.id);
+      
+      if (checkError) {
+        console.error('Error checking existing completions:', checkError);
+      } else if (existingCompletions && existingCompletions.length > 0) {
+        // Check if any completion was recorded for today using LOCAL DATE STRING comparison
+        // This is more reliable than timezone-dependent date comparisons
+        const todayCompletions = existingCompletions.filter(completion => {
+          const completionDateLocal = this.getLocalDateString(new Date(completion.completed_at));
+          console.log(`🔍 Checking completion: DB date=${completionDateLocal}, Today=${todayDateString}`);
+          return completionDateLocal === todayDateString;
+        });
+        
+        console.log(`📅 Found ${todayCompletions.length} existing completions for today (${todayDateString}):`, 
+          todayCompletions.map(c => ({ id: c.id, date: c.completed_at })));
+        
+        if (todayCompletions.length >= goalValue) {
+          throw new Error(`Already completed ${todayCompletions.length}/${goalValue} times today. Cannot complete again.`);
+        }
+      }
+
       // Increment progress
       currentProgress += 1;
       
@@ -664,14 +725,32 @@ export class HabitBusinessService {
 
       const totalEarnings = baseTotal + stockBoost;
 
-      // Record the completion
+      // CRITICAL FIX: Ensure completion is recorded for "today" in USER'S local timezone
+      // This prevents habits from being marked as completed "tomorrow" due to server timezone differences
+      const currentTime = new Date();
+      const localDateString = this.getLocalDateString(currentTime); // Get today as YYYY-MM-DD in USER's timezone
+      
+      // Create a completion timestamp that represents the user's local date at a consistent time
+      // Use 6 PM local time to avoid any timezone edge cases while preserving the actual date
+      const completionTime = new Date(`${localDateString}T18:00:00`);
+      
+      console.log('🕐 Recording completion for USER LOCAL DATE:', {
+        userLocalDate: localDateString,
+        userLocalTime: currentTime.toString(),
+        completionTimestamp: completionTime.toISOString(),
+        serverTime: new Date().toISOString(),
+        timezoneName: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
+
+      // Record the completion with actual timestamp
       const { data: completionData, error: completionError } = await this.supabase
         .from('habit_completions')
         .insert({
           habit_business_id: habitBusinessId,
           user_id: user.id,
           earnings: totalEarnings,
-          streak_count: newStreak
+          streak_count: newStreak,
+          completed_at: completionTime.toISOString() // Use actual completion time
         })
         .select()
         .single();
@@ -1050,7 +1129,7 @@ export class HabitBusinessService {
         const { error: distributionError } = await this.supabase
           .from('stock_dividend_distributions')
           .insert({
-            dividend_payment_id: `manual-${habitBusinessId}-${Date.now()}`,
+            dividend_payment_id: crypto.randomUUID(),
             stockholder_id: holding.holder_id,
             shares_owned: holding.shares_owned,
             dividend_per_share: dividendPerShare,
@@ -1151,7 +1230,7 @@ export class HabitBusinessService {
         const { error: distributionError } = await this.supabase
           .from('stock_dividend_distributions')
           .insert({
-            dividend_payment_id: stockId, // This should be dividend_payment_id, but for now using stockId
+            dividend_payment_id: crypto.randomUUID(),
             stockholder_id: holding.holder_id,
             shares_owned: holding.shares_owned,
             dividend_per_share: dividendPerShare,
@@ -1652,27 +1731,30 @@ export class HabitBusinessService {
    */
   async getTodaysActualEarnings(userId: string): Promise<number> {
     try {
-      // Get today's date range in local timezone
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      // Use local date string to avoid timezone issues
+      const todayLocalDateString = this.getLocalDateString(new Date());
       
-      console.log(`📊 Fetching habit earnings for ${userId} between ${today.toISOString()} and ${tomorrow.toISOString()}`);
+      console.log(`📊 Fetching habit earnings for ${userId} on local date: ${todayLocalDateString}`);
       
       const { data, error } = await this.supabase
         .from('habit_completions')
         .select('earnings, completed_at')
-        .eq('user_id', userId)
-        .gte('completed_at', today.toISOString())
-        .lt('completed_at', tomorrow.toISOString());
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error fetching today\'s actual earnings:', error);
         throw error;
       }
 
-      const totalEarnings = data?.reduce((total, completion) => total + completion.earnings, 0) || 0;
-      console.log(`💰 Today's habit earnings for user: $${totalEarnings.toFixed(2)} (${data?.length || 0} completions)`);
+      // Filter completions to only include today's using local date comparison
+      const todayCompletions = data?.filter(completion => {
+        const completionLocalDate = this.getLocalDateString(new Date(completion.completed_at));
+        return completionLocalDate === todayLocalDateString;
+      }) || [];
+
+      const totalEarnings = todayCompletions.reduce((total, completion) => total + completion.earnings, 0);
+      console.log(`💰 Today's habit earnings for user: $${totalEarnings.toFixed(2)} (${todayCompletions.length} completions from ${data?.length || 0} total)`);
+      console.log(`📅 Filtering for local date: ${todayLocalDateString}`);
       
       return totalEarnings;
     } catch (error) {
@@ -1819,6 +1901,9 @@ export class HabitBusinessService {
     try {
       console.log('🔄 Checking for outdated daily habits to reset...');
       
+      // First, clean up any future date completions that shouldn't exist
+      await this.cleanupInvalidCompletions();
+      
       const { data, error } = await this.supabase
         .rpc('reset_outdated_daily_habits');
 
@@ -1848,6 +1933,359 @@ export class HabitBusinessService {
     } catch (error) {
       console.error('Error in resetOutdatedDailyHabits:', error);
       // Don't throw error - this is a nice-to-have feature
+    }
+  }
+
+  /**
+   * Clean up invalid completion records (future dates, timezone issues)
+   */
+  private async cleanupInvalidCompletions(): Promise<void> {
+    try {
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+      if (userError || !user) return;
+
+      const now = new Date();
+      // Be more strict: anything beyond today should be cleaned up
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      
+      console.log('🧹 Cleaning up completion records after:', endOfToday.toISOString());
+      
+      // Find and remove completion records that are in the future
+      const { data: futureCompletions, error: queryError } = await this.supabase
+        .from('habit_completions')
+        .select('id, completed_at, habit_business_id')
+        .eq('user_id', user.id)
+        .gt('completed_at', endOfToday.toISOString());
+
+      if (queryError) {
+        console.error('Error querying future completions:', queryError);
+        return;
+      }
+
+      if (futureCompletions && futureCompletions.length > 0) {
+        console.log(`⚠️ Found ${futureCompletions.length} future completion records to clean up:`, 
+          futureCompletions.map(c => ({ 
+            id: c.id, 
+            date: c.completed_at, 
+            business: c.habit_business_id?.substring(0, 8),
+            isAfterToday: new Date(c.completed_at) > endOfToday
+          })));
+        
+        // Delete the invalid records
+        const { error: deleteError } = await this.supabase
+          .from('habit_completions')
+          .delete()
+          .in('id', futureCompletions.map(c => c.id));
+
+        if (deleteError) {
+          console.error('Error deleting future completions:', deleteError);
+        } else {
+          console.log('✅ Cleaned up future completion records');
+          
+          // Reset the progress for affected habit businesses
+          const affectedBusinessIds = [...new Set(futureCompletions.map(c => c.habit_business_id))];
+          for (const businessId of affectedBusinessIds) {
+            if (businessId) {
+              const { error: resetError } = await this.supabase
+                .from('habit_businesses')
+                .update({ 
+                  current_progress: 0,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', businessId);
+              
+              if (resetError) {
+                console.error('Error resetting progress for business:', businessId, resetError);
+              }
+            }
+          }
+        }
+      } else {
+        console.log('✅ No future completion records found to clean up');
+      }
+    } catch (error) {
+      console.error('Error in cleanupInvalidCompletions:', error);
+    }
+  }
+
+  /**
+   * Debug function to inspect habit state and completion records
+   */
+  async debugHabitState(habitBusinessId: string): Promise<any> {
+    try {
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      console.log('🔍 DEBUGGING HABIT STATE for:', habitBusinessId);
+
+      // Get habit business details
+      const { data: habitBusiness, error: habitError } = await this.supabase
+        .from('habit_businesses')
+        .select('*')
+        .eq('id', habitBusinessId)
+        .eq('user_id', user.id)
+        .single();
+
+      console.log('📊 Habit Business State:', habitBusiness);
+
+      // Get today's date info
+      const now = new Date();
+      const todayLocalString = this.getLocalDateString(now);
+      const todayUTCString = now.toISOString().split('T')[0];
+      
+      console.log('📅 Date Info:', {
+        now: now.toString(),
+        nowISO: now.toISOString(),
+        todayLocal: todayLocalString,
+        todayUTC: todayUTCString,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezoneOffset: now.getTimezoneOffset()
+      });
+
+      // Get ALL completion records for this habit
+      const { data: allCompletions, error: completionsError } = await this.supabase
+        .from('habit_completions')
+        .select('*')
+        .eq('habit_business_id', habitBusinessId)
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false })
+        .limit(10);
+
+      console.log('📋 All Recent Completions:', allCompletions);
+
+      // Check for today's completions specifically
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      
+      const { data: todayCompletions, error: todayError } = await this.supabase
+        .from('habit_completions')
+        .select('*')
+        .eq('habit_business_id', habitBusinessId)
+        .eq('user_id', user.id)
+        .gte('completed_at', todayStart.toISOString())
+        .lte('completed_at', todayEnd.toISOString());
+
+      console.log('📅 Today\'s Completions (using time range):', todayCompletions);
+
+      // Check completions using date string comparison
+      const todayCompletionsByDate = allCompletions?.filter(completion => {
+        const completionDate = this.getLocalDateString(new Date(completion.completed_at));
+        return completionDate === todayLocalString;
+      });
+
+      console.log('📅 Today\'s Completions (using date string):', todayCompletionsByDate);
+
+      // Calculate what the UI methods would return
+      const isCompletedResult = this.isCompletedTodayDebug(habitBusiness);
+      const isGoalCompletedResult = this.isGoalCompletedDebug(habitBusiness);
+
+      console.log('🎯 UI Method Results:', {
+        isCompletedToday: isCompletedResult,
+        isGoalCompleted: isGoalCompletedResult,
+        currentProgress: habitBusiness?.current_progress,
+        goalValue: habitBusiness?.goal_value,
+        lastCompletedAt: habitBusiness?.last_completed_at
+      });
+
+      return {
+        habitBusiness,
+        dateInfo: {
+          now: now.toString(),
+          todayLocal: todayLocalString,
+          todayUTC: todayUTCString,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        allCompletions,
+        todayCompletions,
+        todayCompletionsByDate,
+        uiResults: {
+          isCompletedToday: isCompletedResult,
+          isGoalCompleted: isGoalCompletedResult
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error in debugHabitState:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Debug version of isCompletedToday that logs its logic
+   */
+  private isCompletedTodayDebug(habitBusiness: any): boolean {
+    console.log('🔍 isCompletedToday Debug for:', habitBusiness?.business_name);
+    
+    if (!habitBusiness?.last_completed_at) {
+      console.log('❌ No last_completed_at - returning false');
+      return false;
+    }
+    
+    const goalValue = habitBusiness.goal_value || 1;
+    const currentProgress = habitBusiness.current_progress || 0;
+    
+    console.log('📊 Progress check:', { currentProgress, goalValue });
+    
+    // Check if goal is fully completed
+    if (goalValue > 1 && currentProgress < goalValue) {
+      console.log('❌ Multi-completion habit goal not met - returning false');
+      return false;
+    }
+    
+    // Check if progress is 0
+    if (currentProgress === 0) {
+      console.log('❌ Current progress is 0 - returning false');
+      return false;
+    }
+    
+    if (habitBusiness.frequency === 'daily') {
+      const today = new Date();
+      const todayString = this.getLocalDateString(today);
+      
+      const completionDate = new Date(habitBusiness.last_completed_at);
+      const completionString = this.getLocalDateString(completionDate);
+      
+      console.log('📅 Date comparison:', { 
+        todayString, 
+        completionString, 
+        match: completionString === todayString 
+      });
+      
+      return completionString === todayString;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Debug version of isGoalCompleted that logs its logic
+   */
+  private isGoalCompletedDebug(habitBusiness: any): boolean {
+    console.log('🔍 isGoalCompleted Debug for:', habitBusiness?.business_name);
+    
+    const goalValue = habitBusiness?.goal_value || 1;
+    const currentProgress = habitBusiness?.current_progress || 0;
+    
+    console.log('📊 Goal check:', { currentProgress, goalValue });
+    
+    // First check if the progress meets the goal
+    if (currentProgress < goalValue) {
+      console.log('❌ Goal not met - returning false');
+      return false;
+    }
+    
+    if (!habitBusiness?.last_completed_at) {
+      console.log('❌ No completion record - returning false');
+      return false;
+    }
+    
+    if (habitBusiness.frequency === 'daily') {
+      const today = new Date();
+      const todayString = this.getLocalDateString(today);
+      
+      const completionDate = new Date(habitBusiness.last_completed_at);
+      const completionString = this.getLocalDateString(completionDate);
+      
+      console.log('📅 Date comparison for goal:', { 
+        todayString, 
+        completionString, 
+        match: completionString === todayString 
+      });
+      
+      return completionString === todayString;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Emergency cleanup function to remove duplicate/invalid completions for a specific habit
+   */
+  async cleanupHabitCompletions(habitBusinessId: string): Promise<void> {
+    try {
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+      if (userError || !user) return;
+
+      console.log('🚨 Emergency cleanup for habit:', habitBusinessId);
+
+      // Get all completions for this habit
+      const { data: allCompletions, error: queryError } = await this.supabase
+        .from('habit_completions')
+        .select('*')
+        .eq('habit_business_id', habitBusinessId)
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: true });
+
+      if (queryError) {
+        console.error('Error fetching completions:', queryError);
+        return;
+      }
+
+      if (!allCompletions || allCompletions.length === 0) {
+        console.log('No completions found for this habit');
+        return;
+      }
+
+      console.log(`Found ${allCompletions.length} completion records`);
+
+      // Group by date and keep only the first completion per day
+      const completionsByDate = new Map<string, any>();
+      const duplicatesToDelete: string[] = [];
+
+      for (const completion of allCompletions) {
+        const dateKey = completion.completed_at.split('T')[0]; // Get YYYY-MM-DD
+        
+        if (completionsByDate.has(dateKey)) {
+          // This is a duplicate - mark for deletion
+          duplicatesToDelete.push(completion.id);
+          console.log(`🗑️ Marking duplicate for deletion: ${completion.id} (${completion.completed_at})`);
+        } else {
+          completionsByDate.set(dateKey, completion);
+          console.log(`✅ Keeping completion: ${completion.id} (${completion.completed_at})`);
+        }
+      }
+
+      // Delete duplicates
+      if (duplicatesToDelete.length > 0) {
+        const { error: deleteError } = await this.supabase
+          .from('habit_completions')
+          .delete()
+          .in('id', duplicatesToDelete);
+
+        if (deleteError) {
+          console.error('Error deleting duplicates:', deleteError);
+        } else {
+          console.log(`✅ Deleted ${duplicatesToDelete.length} duplicate completion records`);
+        }
+      }
+
+      // Calculate correct current_progress based on today's remaining completions
+      const today = this.getLocalDateString();
+      const todayCompletions = Array.from(completionsByDate.entries())
+        .filter(([dateKey, completion]) => dateKey === today);
+      
+      const correctProgress = todayCompletions.length;
+      
+      console.log(`📊 Updating progress: today=${today}, todayCompletions=${correctProgress}`);
+      
+      const { error: updateError } = await this.supabase
+        .from('habit_businesses')
+        .update({ 
+          current_progress: correctProgress,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', habitBusinessId);
+
+      if (updateError) {
+        console.error('Error updating habit progress:', updateError);
+      } else {
+        console.log(`✅ Updated habit progress to ${correctProgress}`);
+      }
+
+    } catch (error) {
+      console.error('Error in cleanupHabitCompletions:', error);
     }
   }
 

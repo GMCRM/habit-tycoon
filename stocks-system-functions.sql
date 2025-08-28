@@ -392,13 +392,13 @@ SELECT habit_business_id,
 FROM habit_completions
 WHERE id = completion_uuid;
 -- Get stock details
-SELECT id,
-    shares_owned_by_owner,
-    total_shares_issued INTO stock_uuid,
+SELECT bs.id,
+    bs.shares_owned_by_owner,
+    bs.total_shares_issued INTO stock_uuid,
     shares_owned_by_owner,
     total_shares_issued
-FROM business_stocks
-WHERE habit_business_id = habit_business_uuid;
+FROM business_stocks bs
+WHERE bs.habit_business_id = habit_business_uuid;
 IF stock_uuid IS NULL THEN RETURN;
 -- No stock exists for this business
 END IF;
