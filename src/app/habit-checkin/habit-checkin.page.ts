@@ -176,9 +176,10 @@ export class HabitCheckinPage implements OnInit {
   }
 
   private addCompletionStatus(habit: HabitBusiness): HabitWithCompletion {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local timezone date comparison for consistency
+    const today = this.getLocalDateString(new Date());
     const lastCompleted = habit.last_completed_at ? 
-      new Date(habit.last_completed_at).toISOString().split('T')[0] : null;
+      this.getLocalDateString(new Date(habit.last_completed_at)) : null;
     
     let completedToday = false;
     let completedThisWeek = false;
@@ -517,5 +518,15 @@ export class HabitCheckinPage implements OnInit {
 
   getStockTrendColor(profitLoss: number): string {
     return profitLoss >= 0 ? 'success' : 'danger';
+  }
+
+  /**
+   * Get local date string in YYYY-MM-DD format (consistent with service)
+   */
+  private getLocalDateString(date: Date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

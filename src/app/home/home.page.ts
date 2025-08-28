@@ -157,12 +157,12 @@ export class HomePage implements OnDestroy {
       // Try to load user profile if user exists
       if (user) {
         try {
-          console.log('Attempting to load profile for user ID:', user.id);
-          this.userProfile = await this.authService.getUserProfile(user.id);
-          console.log('Loaded user profile:', this.userProfile);
+          console.log('Attempting to ensure profile exists for user ID:', user.id);
+          this.userProfile = await this.authService.ensureUserProfileExists(user);
+          console.log('User profile ensured:', this.userProfile);
         } catch (error) {
-          console.error('Profile loading failed:', error);
-          // Initialize default profile if loading fails
+          console.error('Profile creation/loading failed:', error);
+          // Initialize default profile if everything fails
           this.userProfile = {
             name: user.user_metadata?.['name'] || 'Entrepreneur',
             cash: 100.00,
@@ -670,25 +670,36 @@ export class HomePage implements OnDestroy {
           {
             name: 'businessName',
             type: 'text',
-            placeholder: 'Business Name',
+            placeholder: 'Enter business name',
+            label: 'Business Name',
             value: habitBusiness.business_name
           },
           {
             name: 'habitDescription',
             type: 'textarea',
-            placeholder: 'Habit Description',
+            placeholder: 'Enter habit description',
+            label: 'Habit Description',
             value: habitBusiness.habit_description
           },
           {
             name: 'frequency',
-            type: 'text',
-            placeholder: 'Frequency (daily or weekly)',
-            value: habitBusiness.frequency
+            type: 'radio',
+            label: 'Daily (Every Day 🔥)',
+            value: 'daily',
+            checked: habitBusiness.frequency === 'daily'
+          },
+          {
+            name: 'frequency',
+            type: 'radio',
+            label: 'Weekly (Every Week 📅)',
+            value: 'weekly',
+            checked: habitBusiness.frequency === 'weekly'
           },
           {
             name: 'goalValue',
             type: 'number',
-            placeholder: 'Daily completion goal (1-99)',
+            placeholder: 'Enter goal (1-99)',
+            label: `Completion Goal (per ${habitBusiness.frequency || 'period'})`,
             value: habitBusiness.goal_value?.toString() || '1',
             min: 1,
             max: 99
@@ -726,9 +737,9 @@ export class HomePage implements OnDestroy {
                   return false; // Keep alert open
                 }
 
-                if (data.frequency !== 'daily' && data.frequency !== 'weekly') {
+                if (!data.frequency || (data.frequency !== 'daily' && data.frequency !== 'weekly')) {
                   const errorToast = await this.toastController.create({
-                    message: '❌ Frequency must be either "daily" or "weekly"!',
+                    message: '❌ Please select a frequency (daily or weekly)!',
                     duration: 2000,
                     position: 'top',
                     color: 'danger'

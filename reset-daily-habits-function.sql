@@ -1,8 +1,11 @@
 -- Function to reset daily habits that are outdated
 -- This function should be called when the app loads to ensure habits are properly reset
+-- Fixed to handle timezone differences properly
 DROP FUNCTION IF EXISTS reset_outdated_daily_habits();
-CREATE OR REPLACE FUNCTION reset_outdated_daily_habits() RETURNS TABLE (habit_business_id UUID, reset_reason TEXT) LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN -- Reset daily habits where last_completed_at is before today
-    -- This ensures habits completed yesterday show as incomplete today
+CREATE OR REPLACE FUNCTION reset_outdated_daily_habits() RETURNS TABLE (habit_business_id UUID, reset_reason TEXT) LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN 
+    -- Reset daily habits where last_completed_at is more than 30 hours ago
+    -- This accounts for timezone differences (up to UTC+14) while ensuring 
+    -- habits completed "yesterday" in any timezone are properly reset
     RETURN QUERY WITH reset_habits AS (
         UPDATE habit_businesses
         SET current_progress = 0,
@@ -10,9 +13,9 @@ CREATE OR REPLACE FUNCTION reset_outdated_daily_habits() RETURNS TABLE (habit_bu
         WHERE frequency = 'daily'
             AND is_active = true
             AND last_completed_at IS NOT NULL
-            AND DATE(last_completed_at) < CURRENT_DATE
+            AND last_completed_at < (NOW() - INTERVAL '30 hours')
         RETURNING id,
-            'Daily habit reset - completed before today' as reason
+            'Daily habit reset - completed more than 30 hours ago' as reason
     )
 SELECT id,
     reason
@@ -37,7 +40,7 @@ SELECT hb.id,
     (
         hb.frequency = 'daily'
         AND hb.last_completed_at IS NOT NULL
-        AND DATE(hb.last_completed_at) < CURRENT_DATE
+        AND hb.last_completed_at < (NOW() - INTERVAL '30 hours')
     ) as needs_reset
 FROM habit_businesses hb
 WHERE hb.user_id = user_uuid

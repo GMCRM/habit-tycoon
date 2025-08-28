@@ -954,6 +954,12 @@ ion-content {
               .stat-value {
                 font-size: 0.85rem;
               }
+              
+              // Ensure adequate space for button container
+              &:last-child {
+                min-width: 160px;
+                flex: 1.5;
+              }
             }
           }
           
@@ -1036,6 +1042,12 @@ ion-content {
               .stat-value {
                 font-size: 0.82rem;
               }
+              
+              // Ensure adequate space for button container
+              &:last-child {
+                min-width: 150px;
+                flex: 1.5;
+              }
             }
           }
           
@@ -1098,6 +1110,12 @@ ion-content {
               
               .stat-value {
                 font-size: 0.8rem;
+              }
+              
+              // Ensure adequate space for button container on iPad Safari
+              &:last-child {
+                min-width: 140px;
+                flex: 1.5;
               }
             }
           }
@@ -1223,6 +1241,12 @@ ion-content {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+              }
+              
+              // Ensure adequate space for button container on mobile
+              &:last-child {
+                min-width: 130px;
+                flex: 1.8;
               }
             }
           }
