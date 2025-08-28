@@ -156,12 +156,12 @@ export class HomePage implements OnDestroy {
       // Try to load user profile if user exists
       if (user) {
         try {
-          console.log('Attempting to load profile for user ID:', user.id);
-          this.userProfile = await this.authService.getUserProfile(user.id);
-          console.log('Loaded user profile:', this.userProfile);
+          console.log('Attempting to ensure profile exists for user ID:', user.id);
+          this.userProfile = await this.authService.ensureUserProfileExists(user);
+          console.log('User profile ensured:', this.userProfile);
         } catch (error) {
-          console.error('Profile loading failed:', error);
-          // Initialize default profile if loading fails
+          console.error('Profile creation/loading failed:', error);
+          // Initialize default profile if everything fails
           this.userProfile = {
             name: user.user_metadata?.['name'] || 'Entrepreneur',
             cash: 100.00,
