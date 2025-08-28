@@ -369,8 +369,8 @@ export class SocialService {
       throw new Error('User not found');
     }
 
-    // If multiple results, try to find exact email match first
-    let friendUser = searchResults.find((user: any) => user.email === friendIdentifier);
+    // If multiple results, try to find exact email match first (case insensitive)
+    let friendUser = searchResults.find((user: any) => user.email.toLowerCase() === friendIdentifier.toLowerCase());
     if (!friendUser) {
       // If no exact email match, use the first result
       friendUser = searchResults[0];
