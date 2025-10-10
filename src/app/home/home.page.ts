@@ -9,13 +9,14 @@ import {
 } from '@ionic/angular/standalone';
 import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../services/auth.service';
+import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { HabitUpdateService } from '../services/habit-update.service';
 import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour, shield } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -28,6 +29,7 @@ export class HomePage implements OnDestroy {
   userProfile: any = null;
   hasCheckedAuth = false;
   isLoading = false; // Make public for template access
+  isAdmin = false; // Track if current user is admin
   
   // Dashboard data
   todaysEarnings = 0;
@@ -66,13 +68,14 @@ export class HomePage implements OnDestroy {
   constructor(
     private router: Router,
     private authService: AuthService,
+    private adminService: AdminService,
     private habitBusinessService: HabitBusinessService,
     private habitUpdateService: HabitUpdateService,
     private toastController: ToastController,
     private alertController: AlertController,
     private modalController: ModalController
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour });
+    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour, shield });
     this.setRandomTagline();
     this.checkScreenSize();
     this.setupStatsCards();
@@ -156,6 +159,10 @@ export class HomePage implements OnDestroy {
       
       // Try to load user profile if user exists
       if (user) {
+        // Check if user is admin
+        this.isAdmin = await this.adminService.isAdmin();
+        console.log('👤 Admin status:', this.isAdmin);
+        
         try {
           console.log('Attempting to ensure profile exists for user ID:', user.id);
           this.userProfile = await this.authService.ensureUserProfileExists(user);
