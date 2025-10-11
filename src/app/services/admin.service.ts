@@ -12,6 +12,9 @@ export class AdminService {
   async isAdmin(): Promise<boolean> {
     try {
       const { data: { user } } = await this.authService.getUser();
+      console.log('🔐 Admin check - User email:', user?.email);
+      console.log('🔐 Admin check - Admin email:', this.ADMIN_EMAIL);
+      console.log('🔐 Admin check - Match:', user?.email === this.ADMIN_EMAIL);
       return user?.email === this.ADMIN_EMAIL;
     } catch (error) {
       console.error('Error checking admin status:', error);
