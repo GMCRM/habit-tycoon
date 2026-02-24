@@ -451,6 +451,53 @@ ion-content {
   }
 }
 
+// Scrollable container for stocks lists
+.stocks-list-scroll-container {
+  max-height: calc(100vh - 450px); // Adjust based on header and other elements
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px; // Space for scrollbar
+  
+  // iOS Safari specific scrolling fixes
+  @supports (-webkit-touch-callout: none) {
+    max-height: calc(100vh - 450px);
+    max-height: calc(100dvh - 450px);
+    overflow-y: scroll !important;
+  }
+  
+  // Hide scrollbar for aesthetics while maintaining functionality
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba(255, 215, 0, 0.5);
+    }
+  }
+  
+  // For mobile devices with smaller screens, increase height
+  @media (max-width: 768px) {
+    max-height: calc(100vh - 400px);
+    max-height: calc(100dvh - 400px);
+  }
+  
+  // For very small screens
+  @media (max-width: 480px) {
+    max-height: calc(100vh - 380px);
+    max-height: calc(100dvh - 380px);
+  }
+}
+
 // Stocks sections - match homepage habit-businesses styling
 .my-habit-businesses {
   .section-header {
