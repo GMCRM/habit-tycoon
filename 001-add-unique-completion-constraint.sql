@@ -2,13 +2,24 @@
 -- This ensures a user can only complete each habit once per day
 -- Fixes: Duplicate completion bug reported in health check
 
+-- First, create an immutable function to extract the date from a timestamp
+-- This is required because ::date cast is timezone-dependent and not immutable
+CREATE OR REPLACE FUNCTION extract_date_utc(ts timestamptz)
+RETURNS date
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+AS $$
+  SELECT (ts AT TIME ZONE 'UTC')::date;
+$$;
+
 -- Add unique index that prevents duplicate completions for the same habit on the same day
--- Uses date portion of completed_at timestamp to handle timezone-aware date matching
+-- Uses the immutable function to extract date portion for timezone-safe date matching
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_daily_completion 
 ON habit_completions(
     habit_business_id, 
     user_id, 
-    (completed_at::date)
+    extract_date_utc(completed_at)
 );
 
 -- Add index for performance on common queries
