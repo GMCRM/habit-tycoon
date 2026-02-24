@@ -2,10 +2,6 @@
 
 // iOS Safari viewport fixes for ion-content
 ion-content {
-  /* Ensure proper height calculation on iOS */
-  --offset-bottom: auto !important;
-  --offset-top: auto !important;
-  
   /* iOS Safari specific fixes */
   @supports (-webkit-touch-callout: none) {
     height: 100% !important;
