@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { ToastController } from '@ionic/angular/standalone';
 import { environment } from '../../environments/environment';
 
 export interface BusinessType {
@@ -124,9 +125,56 @@ export interface UpgradeCalculation {
 })
 export class HabitBusinessService {
   private supabase: SupabaseClient;
+  private toastController = inject(ToastController);
 
   constructor() {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+  }
+
+  /**
+   * Show an error toast message to the user
+   */
+  private async showErrorToast(message: string, duration: number = 4000) {
+    const toast = await this.toastController.create({
+      message,
+      duration,
+      color: 'danger',
+      position: 'top',
+      buttons: [
+        {
+          text: 'Dismiss',
+          role: 'cancel'
+        }
+      ]
+    });
+    await toast.present();
+  }
+
+  /**
+   * Show a success toast message to the user
+   */
+  private async showSuccessToast(message: string, duration: number = 3000) {
+    const toast = await this.toastController.create({
+      message,
+      duration,
+      color: 'success',
+      position: 'top'
+    });
+    await toast.present();
+  }
+
+  /**
+   * Show a loading toast (for operations that take time)
+   */
+  private async showLoadingToast(message: string) {
+    const toast = await this.toastController.create({
+      message,
+      duration: 0, // Don't auto-dismiss
+      color: 'medium',
+      position: 'bottom'
+    });
+    await toast.present();
+    return toast;
   }
 
   /**
@@ -219,7 +267,9 @@ export class HabitBusinessService {
       }
 
       if (profile.cash < businessType.base_cost) {
-        throw new Error(`Insufficient funds. Need $${businessType.base_cost}, but you only have $${profile.cash}`);
+        const errorMsg = `Insufficient funds. Need $${businessType.base_cost.toFixed(2)}, but you only have $${profile.cash.toFixed(2)}`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Validate goal_value
@@ -269,6 +319,7 @@ export class HabitBusinessService {
 
       if (createError) {
         console.error('Error creating habit business:', createError);
+        await this.showErrorToast('Failed to create habit business. Please try again.');
         throw createError;
       }
 
@@ -284,10 +335,14 @@ export class HabitBusinessService {
 
       if (updateCashError) {
         console.error('Error updating user cash:', updateCashError);
+        await this.showErrorToast('Habit created but payment failed. Please contact support.');
         // Note: The habit-business was created but cash wasn't deducted
         // In a production app, you'd want to use a database transaction
         throw new Error('Habit-business created but failed to deduct payment');
       }
+
+      // Success message
+      await this.showSuccessToast(`✅ ${request.business_name} created successfully!`);
 
       // Create business stock for this habit business
       try {
@@ -301,6 +356,10 @@ export class HabitBusinessService {
       return newHabitBusiness;
     } catch (error) {
       console.error('Error in createHabitBusiness:', error);
+      // Only show error toast if we haven't already shown a specific one
+      if (error instanceof Error && !error.message.includes('Insufficient funds')) {
+        await this.showErrorToast('Failed to create habit business. Please try again.');
+      }
       throw error;
     }
   }
@@ -661,7 +720,9 @@ export class HabitBusinessService {
       const goalValue = habitBusiness.goal_value || 1;
       
       if (currentProgress >= goalValue) {
-        throw new Error(`Goal already completed! You've done ${currentProgress}/${goalValue} for today.`);
+        const errorMsg = `Goal already completed! You've done ${currentProgress}/${goalValue} for today.`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Double-check: prevent duplicate completions for the same day using LOCAL DATE comparison
@@ -689,7 +750,9 @@ export class HabitBusinessService {
           todayCompletions.map(c => ({ id: c.id, date: c.completed_at })));
         
         if (todayCompletions.length >= goalValue) {
-          throw new Error(`Already completed ${todayCompletions.length}/${goalValue} times today. Cannot complete again.`);
+          const errorMsg = `Already completed ${todayCompletions.length}/${goalValue} times today. Cannot complete again.`;
+          await this.showErrorToast(errorMsg);
+          throw new Error(errorMsg);
         }
       }
 
@@ -789,6 +852,13 @@ export class HabitBusinessService {
         .single();
 
       if (completionError) {
+        console.error('Error recording completion:', completionError);
+        // Check if it's a duplicate key error (unique constraint violation)
+        if (completionError.code === '23505') {
+          await this.showErrorToast('You\'ve already completed this habit today!');
+        } else {
+          await this.showErrorToast('Failed to record habit completion. Please try again.');
+        }
         throw completionError;
       }
 
@@ -906,6 +976,12 @@ export class HabitBusinessService {
 
     } catch (error) {
       console.error('Error in completeHabit:', error);
+      // Only show generic error if we haven't already shown a specific one
+      if (error instanceof Error && 
+          !error.message.includes('already completed') && 
+          !error.message.includes('Goal already completed')) {
+        await this.showErrorToast('Failed to complete habit. Please try again.');
+      }
       throw error;
     }
   }
@@ -1642,7 +1718,9 @@ export class HabitBusinessService {
       }
 
       if (stock.shares_available < shares) {
-        throw new Error('Not enough shares available');
+        const errorMsg = `Not enough shares available. Only ${stock.shares_available} shares left.`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
       }
 
       const totalCost = stock.current_stock_price * shares;
@@ -1659,7 +1737,9 @@ export class HabitBusinessService {
       }
 
       if (profile.cash < totalCost) {
-        throw new Error(`Insufficient funds. Need $${totalCost}, but you only have $${profile.cash}`);
+        const errorMsg = `Insufficient funds. Need $${totalCost.toFixed(2)}, but you only have $${profile.cash.toFixed(2)}`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Update or create stock holding
@@ -1671,6 +1751,8 @@ export class HabitBusinessService {
         .single();
 
       if (holdingError && holdingError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error checking stock holdings:', holdingError);
+        await this.showErrorToast('Failed to check your stock holdings. Please try again.');
         throw holdingError;
       }
 
@@ -1750,11 +1832,22 @@ export class HabitBusinessService {
         .eq('id', user.id);
 
       if (updateCashError) {
+        console.error('Error updating user cash after stock purchase:', updateCashError);
+        await this.showErrorToast('Stock purchased but payment deduction failed. Please contact support.');
         throw new Error('Stock purchased but failed to deduct payment');
       }
 
+      // Success message
+      await this.showSuccessToast(`✅ Purchased ${shares} shares successfully!`);
+
     } catch (error) {
       console.error('Error in purchaseStock:', error);
+      // Only show generic error if we haven't already shown a specific one
+      if (error instanceof Error && 
+          !error.message.includes('Insufficient funds') && 
+          !error.message.includes('Not enough shares')) {
+        await this.showErrorToast('Failed to purchase stock. Please try again.');
+      }
       throw error;
     }
   }
