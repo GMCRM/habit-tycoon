@@ -21,6 +21,12 @@ ion-content {
   /* Enable momentum scrolling on iOS */
   -webkit-overflow-scrolling: touch;
   
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+  
+  /* Hide scrollbar for Internet Explorer/Edge */
+  -ms-overflow-style: none;
+  
   /* iOS Safari specific scrolling fixes */
   @supports (-webkit-touch-callout: none) {
     height: calc(100vh - 60px); /* Adjust for header */
@@ -34,12 +40,6 @@ ion-content {
     display: none !important;
     width: 0 !important;
   }
-  
-  /* Hide scrollbar for Firefox */
-  scrollbar-width: none;
-  
-  /* Hide scrollbar for Internet Explorer/Edge */
-  -ms-overflow-style: none;
 }
 
 .page-container {
