@@ -1579,6 +1579,7 @@ export class HabitBusinessService {
               business_name,
               business_icon,
               streak,
+              is_active,
               business_types (
                 name,
                 icon
@@ -1594,7 +1595,11 @@ export class HabitBusinessService {
         throw error;
       }
 
-      return data || [];
+      // Filter out holdings for businesses that have been deleted (soft-deleted = is_active false)
+      const active = (data || []).filter(
+        h => h.business_stocks?.habit_businesses?.is_active !== false
+      );
+      return active;
     } catch (error) {
       console.error('Error in getUserStockHoldings:', error);
       throw error;
