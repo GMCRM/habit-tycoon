@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonText, IonCard, IonCardContent, IonIcon } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { logoGoogle } from 'ionicons/icons';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -17,7 +19,9 @@ export class SignUpPage {
   displayName: string = '';
   password: string = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) {
+    addIcons({ logoGoogle });
+  }
 
   // Google OAuth signup
   async onGoogleSignUp() {

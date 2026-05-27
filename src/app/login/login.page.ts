@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonCard, IonCardContent, IonIcon, ToastController, AlertController } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { logoGoogle } from 'ionicons/icons';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -22,7 +24,9 @@ export class LoginPage implements OnInit {
     private router: Router, 
     private toastController: ToastController,
     private alertController: AlertController
-  ) { }
+  ) {
+    addIcons({ logoGoogle });
+  }
 
   ngOnInit() {
   }
