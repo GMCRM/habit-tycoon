@@ -160,7 +160,8 @@
             [disabled]="isResettingAccount || isDeletingProfile"
           >
             <ion-icon name="warning" slot="start"></ion-icon>
-            {{ isResettingAccount ? 'Resetting...' : 'Start Over (Keep Friends)' }}
+            {{ isResettingAccount ? 'Resetting...' : 'Start Over (Keep Friends)'
+            }}
           </ion-button>
 
           <div class="danger-info">
@@ -263,12 +264,17 @@
   </ion-modal>
 
   <!-- Reset Confirmation Modal -->
-  <ion-modal [isOpen]="showResetConfirmation" (willDismiss)="cancelResetAccount()">
+  <ion-modal
+    [isOpen]="showResetConfirmation"
+    (willDismiss)="cancelResetAccount()"
+  >
     <ng-template>
       <ion-header>
         <ion-toolbar>
           <ion-title>Confirm Account Reset</ion-title>
-          <ion-button slot="end" fill="clear" (click)="cancelResetAccount()">Cancel</ion-button>
+          <ion-button slot="end" fill="clear" (click)="cancelResetAccount()"
+            >Cancel</ion-button
+          >
         </ion-toolbar>
       </ion-header>
       <ion-content class="ion-padding">
@@ -276,7 +282,10 @@
           <div class="warning-section">
             <ion-icon name="warning" color="warning"></ion-icon>
             <h2>Start over from default?</h2>
-            <p>This reset keeps your social friendships, but clears your progress including:</p>
+            <p>
+              This reset keeps your social friendships, but clears your progress
+              including:
+            </p>
             <ul>
               <li>Cash and net worth reset to default</li>
               <li>All habits and progress</li>
