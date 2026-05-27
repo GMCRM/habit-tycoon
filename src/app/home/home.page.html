@@ -327,19 +327,19 @@
                   >
                     <h3 class="business-name">{{ hb.business_name }}</h3>
                     <div style="display: flex; gap: 8px; align-items: center">
-                      <!-- Delete button moved to far left -->
+                      <!-- Sell/Delete button -->
                       <ion-button
-                        fill="clear"
+                        fill="solid"
                         color="danger"
-                        size="default"
+                        size="small"
                         (click)="deleteHabitBusiness(hb)"
                         style="
                           margin: 0;
-                          --padding-start: 12px;
-                          --padding-end: 12px;
+                          --padding-start: 10px;
+                          --padding-end: 10px;
                         "
                       >
-                        <ion-icon name="trash" slot="icon-only"></ion-icon>
+                        Sell
                       </ion-button>
 
                       <!-- Earnings Toggle Button -->
