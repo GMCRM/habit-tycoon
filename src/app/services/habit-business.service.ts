@@ -889,6 +889,20 @@ export class HabitBusinessService {
           console.error('⚠️ Warning: Failed to update stock price:', priceError);
           // Don't fail the completion for this
         }
+
+        // Notify friends of streak/completion milestones (non-blocking)
+        try {
+          const { data: milestoneResult } = await this.supabase.rpc('notify_friends_of_milestone', {
+            habit_business_uuid: habitBusinessId,
+            achiever_user_id: user.id
+          });
+          if (milestoneResult && milestoneResult > 0) {
+            console.log(`🏆 Milestone notifications sent to ${milestoneResult} friend(s)`);
+          }
+        } catch (milestoneError) {
+          console.warn('⚠️ Warning: Failed to send milestone notifications (non-critical):', milestoneError);
+          // Don't fail the completion for this
+        }
       }
 
       // Add earnings to user's cash

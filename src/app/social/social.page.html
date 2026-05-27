@@ -129,14 +129,18 @@
               <ion-card-content>
                 <div class="notification-content">
                   <div class="notification-icon">
-                    <span *ngIf="notification.type === 'habit_reminder'"
-                      >👋</span
-                    >
-                    <span *ngIf="notification.type === 'stockholder_reminder'"
-                      >📈</span
-                    >
+                    <span *ngIf="notification.type === 'habit_reminder'">👋</span>
+                    <span *ngIf="notification.type === 'stockholder_reminder'">📈</span>
+                    <ng-container *ngIf="notification.type === 'friend_milestone'">
+                      <span *ngIf="notification.metadata?.milestone_key === 'streak_7'">🔥</span>
+                      <span *ngIf="notification.metadata?.milestone_key === 'streak_30'">🏆</span>
+                      <span *ngIf="notification.metadata?.milestone_key === 'streak_100'">💎</span>
+                      <span *ngIf="notification.metadata?.milestone_key === 'completions_10'">⭐</span>
+                      <span *ngIf="notification.metadata?.milestone_key === 'completions_50'">🌟</span>
+                      <span *ngIf="notification.metadata?.milestone_key === 'completions_100'">🎯</span>
+                    </ng-container>
                     <span
-                      *ngIf="!notification.type || (notification.type !== 'habit_reminder' && notification.type !== 'stockholder_reminder')"
+                      *ngIf="!notification.type || (notification.type !== 'habit_reminder' && notification.type !== 'stockholder_reminder' && notification.type !== 'friend_milestone')"
                       >🔔</span
                     >
                   </div>
@@ -181,7 +185,7 @@
               <ion-icon name="notifications-outline"></ion-icon>
               <h3>No notifications</h3>
               <p>
-                You'll see notifications here when friends send you reminders!
+                You'll see notifications here when friends send reminders or hit habit milestones!
               </p>
             </div>
           </ng-template>
