@@ -493,14 +493,17 @@
                   <p class="habit-description">{{ hb.habit_description }}</p>
                   <div class="habit-stats">
                     <div class="stat-item">
-                      <div class="stat-label">Frequency</div>
-                      <div class="stat-value frequency">{{ hb.frequency }}</div>
+                      <div class="stat-label">Interval</div>
+                      <div class="stat-value frequency">
+                        {{ hb.recurrence_interval === '7d' ? '7 Days' : '1 Day'
+                        }}
+                      </div>
                     </div>
                     <div class="stat-item">
                       <div class="stat-label">Streak</div>
                       <div class="stat-value streak">
-                        {{ hb.streak }} {{ hb.frequency === 'daily' ? 'days' :
-                        'weeks' }}
+                        {{ hb.streak }} {{ hb.recurrence_interval === '7d' ?
+                        'weeks' : 'days' }}
                       </div>
                     </div>
                     <div class="stat-item">
@@ -509,6 +512,15 @@
                         ${{ hb.total_earnings }}
                       </div>
                     </div>
+                  </div>
+                  <div class="habit-period-status">
+                    <span class="period-progress"
+                      >{{ hb.current_progress || 0 }}/{{ hb.goal_value || 1 }}
+                      completions</span
+                    >
+                    <span class="period-reset"
+                      >&bull; resets in {{ countdowns[hb.id] || '...' }}</span
+                    >
                   </div>
 
                   <!-- Earnings Section (toggleable) - Now displayed below the main content -->

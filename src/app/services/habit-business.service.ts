@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { ToastController } from '@ionic/angular/standalone';
-import { environment } from '../../environments/environment';
+import { HabitIntervalService } from './habit-interval.service';
+import { SupabaseService } from './supabase.service';
 
 export interface BusinessType {
   id: number;
@@ -20,9 +21,10 @@ export interface HabitBusiness {
   business_icon: string;
   cost: number;
   habit_description: string;
-  frequency: 'daily' | 'weekly';
-  goal_value: number; // How many times per frequency period (e.g., 10/day, 3/week)
-  current_progress: number; // Current completions for today/this week
+  recurrence_interval: '24h' | '7d';
+  frequency?: 'daily' | 'weekly'; // @deprecated — use recurrence_interval
+  goal_value: number; // How many times per interval period (e.g., 5/day, 3/week)
+  current_progress: number; // Current completions for this interval period
   earnings_per_completion: number;
   streak: number;
   total_completions: number;
@@ -40,7 +42,7 @@ export interface CreateHabitBusinessRequest {
   business_type_id: number;
   business_name: string;
   habit_description: string;
-  frequency: 'daily' | 'weekly';
+  recurrence_interval: '24h' | '7d';
   goal_value: number;
 }
 
@@ -126,9 +128,10 @@ export interface UpgradeCalculation {
 export class HabitBusinessService {
   private supabase: SupabaseClient;
   private toastController = inject(ToastController);
+  private habitIntervalService = inject(HabitIntervalService);
 
-  constructor() {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+  constructor(supabaseService: SupabaseService) {
+    this.supabase = supabaseService.client;
   }
 
   /**
@@ -273,8 +276,8 @@ export class HabitBusinessService {
       }
 
       // Validate goal_value
-      if (request.goal_value < 1 || request.goal_value > 99) {
-        throw new Error('Goal value must be between 1 and 99');
+      if (request.goal_value < 1 || request.goal_value > 20) {
+        throw new Error('Goal value must be between 1 and 20');
       }
 
       // Get current user's habits count to set appropriate order
@@ -299,7 +302,8 @@ export class HabitBusinessService {
         business_icon: businessType.icon,
         cost: businessType.base_cost,
         habit_description: request.habit_description,
-        frequency: request.frequency,
+        recurrence_interval: request.recurrence_interval,
+        frequency: request.recurrence_interval === '7d' ? 'weekly' : 'daily', // backward compat
         goal_value: request.goal_value,
         current_progress: 0,
         earnings_per_completion: this.calculateReasonableEarnings(businessType.base_pay, request.goal_value), // Use reasonable earnings calculation
@@ -659,101 +663,50 @@ export class HabitBusinessService {
         throw new Error('Habit-business not found');
       }
 
-      // Handle goal-based completion system
-      const today = this.getLocalDateString();
-      const lastCompleted = habitBusiness.last_completed_at ? 
-        this.getLocalDateString(new Date(habitBusiness.last_completed_at)) : null;
-      
+      // Resolve the habit's recurrence interval
+      const interval = this.habitIntervalService.resolveInterval(habitBusiness);
+      const periodStart = this.habitIntervalService.getCurrentPeriodStart(interval);
+
       let currentProgress = habitBusiness.current_progress || 0;
-      
-      // Debug info for multi-completion habits
-      if ((habitBusiness.goal_value || 1) > 1) {
-        console.log(`🔍 Multi-completion check: ${habitBusiness.business_name} (${currentProgress}/${habitBusiness.goal_value || 1})`);
-      }
-      
-      // Reset progress if it's a new day/week
-      // Use time-based comparison instead of date strings to handle timezone properly
-      if (habitBusiness.frequency === 'daily' && lastCompleted !== today) {
-        // Additional check: only reset if last completion was more than 20 hours ago
-        // This prevents timezone-related issues where dates differ but it's still the "same day"
-        if (habitBusiness.last_completed_at) {
-          const lastCompletionTime = new Date(habitBusiness.last_completed_at);
-          const hoursAgo = (new Date().getTime() - lastCompletionTime.getTime()) / (1000 * 60 * 60);
-          
-          if (hoursAgo > 20) {
-            console.log(`🔄 Resetting daily habit progress: last completed ${hoursAgo.toFixed(1)} hours ago`);
-            currentProgress = 0;
-          } else {
-            console.log(`⏰ Not resetting: only ${hoursAgo.toFixed(1)} hours since last completion`);
-          }
-        } else {
-          currentProgress = 0; // No previous completion
-        }
-      } else if (habitBusiness.frequency === 'weekly') {
-        // For weekly habits, reset if it's a new week (Monday to Sunday)
-        if (lastCompleted) {
-          const now = new Date();
-          const lastDate = new Date(habitBusiness.last_completed_at!);
-          
-          // Calculate the start of this week (Monday)
-          const startOfThisWeek = new Date(now);
-          const dayOfWeek = startOfThisWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
-          const daysUntilMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust so Monday = 0
-          startOfThisWeek.setDate(startOfThisWeek.getDate() - daysUntilMonday);
-          startOfThisWeek.setHours(0, 0, 0, 0);
-          
-          // Calculate the start of the completion week
-          const startOfCompletionWeek = new Date(lastDate);
-          const completionDayOfWeek = startOfCompletionWeek.getDay();
-          const completionDaysUntilMonday = completionDayOfWeek === 0 ? 6 : completionDayOfWeek - 1;
-          startOfCompletionWeek.setDate(startOfCompletionWeek.getDate() - completionDaysUntilMonday);
-          startOfCompletionWeek.setHours(0, 0, 0, 0);
-          
-          // If the completion was in a different week, reset progress
-          if (startOfThisWeek.getTime() !== startOfCompletionWeek.getTime()) {
-            currentProgress = 0;
-          }
+
+      // Reset stale progress if the last completion pre-dates the current period
+      // (the server RPC handles this on app-open, but guard here for safety)
+      if (habitBusiness.last_completed_at) {
+        const lastCompleted = new Date(habitBusiness.last_completed_at);
+        if (lastCompleted < periodStart) {
+          currentProgress = 0;
         }
       }
-      
-      // Check if goal is already completed for this period
+
+      // Check if the goal is already completed for the current period
       const goalValue = habitBusiness.goal_value || 1;
-      
+
       if (currentProgress >= goalValue) {
-        const errorMsg = `Goal already completed! You've done ${currentProgress}/${goalValue} for today.`;
+        const countdown = this.habitIntervalService.formatCountdown(
+          this.habitIntervalService.getSecondsUntilReset(interval), interval
+        );
+        const errorMsg = `Goal already completed! ${currentProgress}/${goalValue} done. Resets in ${countdown}.`;
         await this.showErrorToast(errorMsg);
         throw new Error(errorMsg);
       }
 
-      // Double-check: prevent duplicate completions for the same day using LOCAL DATE comparison
-      // This prevents timezone-related duplicates where server date != user date
-      const todayDateString = this.getLocalDateString(); // Get today as YYYY-MM-DD string in USER's timezone
-      
-      const { data: existingCompletions, error: checkError } = await this.supabase
+      // Verify against DB completions within the current period to prevent duplicates
+      const { data: periodCompletions, error: checkError } = await this.supabase
         .from('habit_completions')
         .select('id, completed_at')
         .eq('habit_business_id', habitBusinessId)
-        .eq('user_id', user.id);
-      
+        .eq('user_id', user.id)
+        .gte('completed_at', periodStart.toISOString());
+
       if (checkError) {
         console.error('Error checking existing completions:', checkError);
-      } else if (existingCompletions && existingCompletions.length > 0) {
-        // Check if any completion was recorded for today using LOCAL DATE STRING comparison
-        // This is more reliable than timezone-dependent date comparisons
-        const todayCompletions = existingCompletions.filter(completion => {
-          const completionDateLocal = this.getLocalDateString(new Date(completion.completed_at));
-          console.log(`🔍 Checking completion: DB date=${completionDateLocal}, Today=${todayDateString}`);
-          return completionDateLocal === todayDateString;
-        });
-        
-        console.log(`📅 Found ${todayCompletions.length} existing completions for today (${todayDateString}):`, 
-          todayCompletions.map(c => ({ id: c.id, date: c.completed_at })));
-        
-        if (todayCompletions.length >= goalValue) {
-          const errorMsg = `Already completed ${todayCompletions.length}/${goalValue} times today. Cannot complete again.`;
-          await this.showErrorToast(errorMsg);
-          throw new Error(errorMsg);
-        }
+      } else if (periodCompletions && periodCompletions.length >= goalValue) {
+        const countdown = this.habitIntervalService.formatCountdown(
+          this.habitIntervalService.getSecondsUntilReset(interval), interval
+        );
+        const errorMsg = `Already completed ${periodCompletions.length}/${goalValue} times this period. Resets in ${countdown}.`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Increment progress
@@ -765,22 +718,12 @@ export class HabitBusinessService {
       const isGoalCompleted = currentProgress >= goalValue;
       
       if (isGoalCompleted) {
-        if (habitBusiness.last_completed_at) {
-          const lastCompleted = new Date(habitBusiness.last_completed_at);
-          const timeDiff = now.getTime() - lastCompleted.getTime();
-          const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-          
-          if (habitBusiness.frequency === 'daily' && daysDiff === 1) {
-            newStreak += 1; // Consecutive day
-          } else if (habitBusiness.frequency === 'weekly' && daysDiff >= 7 && daysDiff < 14) {
-            newStreak += 1; // Consecutive week
-          } else if (daysDiff > (habitBusiness.frequency === 'daily' ? 1 : 7)) {
-            newStreak = 1; // Streak broken, start over
-          } else {
-            newStreak += 1; // First completion or continuing streak
-          }
+        if (this.habitIntervalService.wasCompletedInPreviousPeriod(habitBusiness)) {
+          newStreak += 1; // Previous period completed: streak continues
+        } else if (habitBusiness.last_completed_at) {
+          newStreak = 1; // Previous period missed: streak resets
         } else {
-          newStreak = 1; // First completion
+          newStreak = 1; // First ever completion
         }
       }
 
@@ -1161,9 +1104,7 @@ export class HabitBusinessService {
         `)
         .eq('user_id', userId)
         .eq('is_active', true)
-        .eq('frequency', 'daily')
-        .or(`last_completed_at.is.null,last_completed_at.lt.${today}`)
-        .order('created_at', { ascending: false });
+        .order('display_order', { ascending: true });
 
       if (error) {
         console.error('Error fetching today\'s habits:', error);
@@ -1548,7 +1489,7 @@ export class HabitBusinessService {
         business_type_id: newBusinessTypeId,
         business_name: newBusinessName,
         habit_description: newHabitDescription,
-        frequency: oldBusiness.frequency,
+        recurrence_interval: oldBusiness.recurrence_interval ?? (oldBusiness.frequency === 'weekly' ? '7d' : '24h'),
         goal_value: oldBusiness.goal_value || 1 // Use existing goal_value or default to 1
       });
 
@@ -2031,7 +1972,7 @@ export class HabitBusinessService {
       await this.cleanupInvalidCompletions();
       
       const { data, error } = await this.supabase
-        .rpc('reset_outdated_daily_habits');
+        .rpc('reset_outdated_habits');
 
       if (error) {
         console.error('Error resetting outdated daily habits:', error);
@@ -2057,7 +1998,7 @@ export class HabitBusinessService {
         console.log('✅ No daily habits needed resetting');
       }
     } catch (error) {
-      console.error('Error in resetOutdatedDailyHabits:', error);
+      console.error('Error in resetOutdatedDailyHabits:', error); // method kept for backwards compat
       // Don't throw error - this is a nice-to-have feature
     }
   }
@@ -3237,63 +3178,10 @@ export class HabitBusinessService {
   }
 
   /**
-   * Check if a habit is completed for today/this week
-   * (Helper method for internal use in ordering logic)
+   * Check if a habit is completed for the current interval period.
+   * Delegates to HabitIntervalService.
    */
   private isHabitCompleteForToday(habitBusiness: HabitBusiness): boolean {
-    if (!habitBusiness.last_completed_at) {
-      return false;
-    }
-    
-    // For multi-completion habits, check if the goal is fully completed
-    const goalValue = habitBusiness.goal_value || 1;
-    const currentProgress = habitBusiness.current_progress || 0;
-    
-    // If it's a multi-completion habit and goal isn't fully met, it's not "completed"
-    if (goalValue > 1 && currentProgress < goalValue) {
-      return false;
-    }
-    
-    // Also check if there's any current progress - if it's 0, then it's not really "completed"
-    if (currentProgress === 0) {
-      return false;
-    }
-    
-    if (habitBusiness.frequency === 'daily') {
-      // For daily habits, check if completed today
-      const completionDate = new Date(habitBusiness.last_completed_at);
-      const today = new Date();
-      
-      const todayString = today.getFullYear() + '-' + 
-        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(today.getDate()).padStart(2, '0');
-      
-      const completionString = completionDate.getFullYear() + '-' + 
-        String(completionDate.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(completionDate.getDate()).padStart(2, '0');
-      
-      return completionString === todayString;
-      
-    } else if (habitBusiness.frequency === 'weekly') {
-      // For weekly habits, check if completed this week
-      const now = new Date();
-      const completionDate = new Date(habitBusiness.last_completed_at);
-      
-      // Get the start of this week (Monday)
-      const startOfThisWeek = new Date(now);
-      const dayOfWeek = startOfThisWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const daysUntilMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust so Monday = 0
-      startOfThisWeek.setDate(startOfThisWeek.getDate() - daysUntilMonday);
-      startOfThisWeek.setHours(0, 0, 0, 0);
-      
-      // Get the end of this week (Sunday)
-      const endOfThisWeek = new Date(startOfThisWeek);
-      endOfThisWeek.setDate(endOfThisWeek.getDate() + 6);
-      endOfThisWeek.setHours(23, 59, 59, 999);
-      
-      return completionDate >= startOfThisWeek && completionDate <= endOfThisWeek;
-    }
-    
-    return false;
+    return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
   }
 }

@@ -74,7 +74,7 @@ export class CreateHabitBusinessPage implements OnInit {
   selectedBusinessType: BusinessType | null = null;
   habitName = '';
   habitDescription = '';
-  frequency: 'daily' | 'weekly' = 'daily';
+  recurrenceInterval: '24h' | '7d' = '24h';
   goalValue = 1;
 
   constructor(
@@ -154,8 +154,8 @@ export class CreateHabitBusinessPage implements OnInit {
     return !!(this.selectedBusinessType && 
               this.habitName.trim() &&
               this.habitDescription.trim() && 
-              this.frequency &&
-              this.goalValue > 0 && this.goalValue <= 99);
+              this.recurrenceInterval &&
+              this.goalValue > 0 && this.goalValue <= 20);
   }
 
   async createHabitBusiness() {
@@ -185,7 +185,7 @@ export class CreateHabitBusinessPage implements OnInit {
         business_type_id: this.selectedBusinessType!.id,
         business_name: this.habitName.trim(),
         habit_description: this.habitDescription.trim(),
-        frequency: this.frequency,
+        recurrence_interval: this.recurrenceInterval,
         goal_value: this.goalValue
       };
 

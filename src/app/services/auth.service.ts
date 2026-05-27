@@ -1,8 +1,8 @@
 // src/app/services/auth.service.ts
 
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../../environments/environment';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',
@@ -10,20 +10,8 @@ import { environment } from '../../environments/environment';
 export class AuthService {
   public supabase: SupabaseClient;
 
-  constructor() {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce'
-      },
-      global: {
-        headers: {
-          'X-Client-Info': 'habit-tycoon-web'
-        }
-      }
-    });
+  constructor(private supabaseService: SupabaseService) {
+    this.supabase = supabaseService.client;
   }
 
   // Google OAuth sign up

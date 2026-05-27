@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../../environments/environment';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from './supabase.service';
 
 export interface Friend {
   id: string;
@@ -56,8 +56,8 @@ export interface Challenge {
 export class SocialService {
   private supabase: SupabaseClient;
 
-  constructor() {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+  constructor(supabaseService: SupabaseService) {
+    this.supabase = supabaseService.client;
   }
 
   // Posts and Feed

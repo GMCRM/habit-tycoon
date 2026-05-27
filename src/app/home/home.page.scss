@@ -335,6 +335,20 @@ button, span, div, ion-button {
           line-height: 1.4;
         }
         
+        .habit-period-status {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          margin-top: 8px;
+          font-size: 0.78rem;
+          color: rgba(255, 255, 255, 0.55);
+
+          .period-progress {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.75);
+          }
+        }
+
         .habit-stats {
           display: flex;
           flex-wrap: wrap;

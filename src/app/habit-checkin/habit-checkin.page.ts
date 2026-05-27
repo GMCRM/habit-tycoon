@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { 
   IonContent, 
   IonHeader, 
@@ -18,6 +19,8 @@ import {
   AlertController
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, HabitBusiness, UpgradeCalculation, BusinessStock, StockHolding } from '../services/habit-business.service';
+import { HabitIntervalService } from '../services/habit-interval.service';
+import { CountdownTickService } from '../services/countdown-tick.service';
 import { AuthService } from '../services/auth.service';
 import { addIcons } from 'ionicons';
 import { 
@@ -72,14 +75,21 @@ interface StockDisplay extends StockHolding {
     RouterLink
   ]
 })
-export class HabitCheckinPage implements OnInit {
+export class HabitCheckinPage implements OnInit, OnDestroy {
   loading = true;
   currentUser: any = null;
   userProfile: any = null;
   
   // Habit data
+  habits: HabitWithCompletion[] = [];
+  /** @deprecated use habits — kept for template backward compat */
   todaysHabits: HabitWithCompletion[] = [];
+  /** @deprecated use habits — kept for template backward compat */
   weeklyHabits: HabitWithCompletion[] = [];
+
+  // Countdown timer state
+  countdowns: Record<string, string> = {};
+  private tickSub?: Subscription;
   
   // UI state
   completingHabitId: string | null = null;
@@ -113,15 +123,30 @@ export class HabitCheckinPage implements OnInit {
     private authService: AuthService,
     private router: Router,
     private toastController: ToastController,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private habitIntervalService: HabitIntervalService,
+    private countdownTickService: CountdownTickService
   ) {
     addIcons({flame,checkmarkCircle,business,trendingUp,add,addCircle,trophy,checkmark,cash,calendar,list,calendarOutline,trendingDown});
   }
 
   async ngOnInit() {
+    this.countdownTickService.register();
+    this.tickSub = this.countdownTickService.tick$.subscribe(() => {
+      this.habits.forEach(hb => {
+        const interval = this.habitIntervalService.resolveInterval(hb);
+        const secs = this.habitIntervalService.getSecondsUntilReset(interval);
+        this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
+      });
+    });
     await this.loadUserAndHabits();
     await this.loadStockData();
     this.setupDate();
+  }
+
+  ngOnDestroy() {
+    this.tickSub?.unsubscribe();
+    this.countdownTickService.unregister();
   }
 
   private setupDate() {
@@ -154,15 +179,19 @@ export class HabitCheckinPage implements OnInit {
       
       // Load all habit-businesses
       const allHabits = await this.habitBusinessService.getUserHabitBusinesses(user.id);
-      
-      // Separate daily and weekly habits
-      this.todaysHabits = allHabits
-        .filter(habit => habit.frequency === 'daily')
-        .map(habit => this.addCompletionStatus(habit));
-        
-      this.weeklyHabits = allHabits
-        .filter(habit => habit.frequency === 'weekly')
-        .map(habit => this.addCompletionStatus(habit));
+
+      // Single unified habits array (no daily/weekly split)
+      this.habits = allHabits.map(habit => this.addCompletionStatus(habit));
+      // Backward-compat aliases so existing template references still work
+      this.todaysHabits = this.habits.filter(h => this.habitIntervalService.resolveInterval(h) === '24h');
+      this.weeklyHabits = this.habits.filter(h => this.habitIntervalService.resolveInterval(h) === '7d');
+
+      // Seed initial countdown values
+      this.habits.forEach(hb => {
+        const interval = this.habitIntervalService.resolveInterval(hb);
+        const secs = this.habitIntervalService.getSecondsUntilReset(interval);
+        this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
+      });
       
       // Calculate stats
       this.calculateStats();
@@ -176,29 +205,11 @@ export class HabitCheckinPage implements OnInit {
   }
 
   private addCompletionStatus(habit: HabitBusiness): HabitWithCompletion {
-    // Use local timezone date comparison for consistency
-    const today = this.getLocalDateString(new Date());
-    const lastCompleted = habit.last_completed_at ? 
-      this.getLocalDateString(new Date(habit.last_completed_at)) : null;
-    
-    let completedToday = false;
-    let completedThisWeek = false;
-    
-    if (habit.frequency === 'daily') {
-      completedToday = lastCompleted === today;
-    } else if (habit.frequency === 'weekly') {
-      // Check if completed this week (last 7 days)
-      if (habit.last_completed_at) {
-        const lastCompletedDate = new Date(habit.last_completed_at);
-        const now = new Date();
-        const daysDiff = (now.getTime() - lastCompletedDate.getTime()) / (1000 * 3600 * 24);
-        completedThisWeek = daysDiff < 7;
-      }
-    }
-    
+    const completedToday = this.habitIntervalService.isHabitCompleteForCurrentPeriod(habit);
+    const completedThisWeek = completedToday && this.habitIntervalService.resolveInterval(habit) === '7d';
+
     // Calculate potential earnings with streak multiplier
     const nextStreak = habit.streak + 1;
-    // Day 1: $1.00 (0x bonus), Day 2: $1.10 (0.1x bonus), Day 3: $1.20 (0.2x bonus), etc.
     const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
     const potentialEarnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
     
@@ -212,19 +223,17 @@ export class HabitCheckinPage implements OnInit {
   }
 
   private calculateStats() {
-    this.totalHabits = this.todaysHabits.length;
-    this.completedToday = this.todaysHabits.filter(h => h.completedToday).length;
-    this.activeStreaks = [...this.todaysHabits, ...this.weeklyHabits]
-      .filter(h => h.streak > 0).length;
+    this.totalHabits = this.habits.length;
+    this.completedToday = this.habits.filter(h => h.completedToday).length;
+    this.activeStreaks = this.habits.filter(h => h.streak > 0).length;
     
     // Set aliases for template
     this.totalActiveStreaks = this.activeStreaks;
     
-    // Calculate daily earnings (only for habits completed today)
-    this.dailyEarnings = this.todaysHabits
+    // Calculate earnings for habits completed in the current period
+    this.dailyEarnings = this.habits
       .filter(h => h.completedToday)
       .reduce((total, habit) => {
-        // Day 1: 0x bonus, Day 2: 0.1x bonus, etc.
         const streakMultiplier = habit.streak === 1 ? 0 : (habit.streak - 1) * 0.1;
         const earnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
         return total + earnings;

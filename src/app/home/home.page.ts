@@ -1,7 +1,8 @@
-import { Component, HostListener, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { 
   IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, 
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon, 
@@ -12,6 +13,8 @@ import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { HabitUpdateService } from '../services/habit-update.service';
+import { HabitIntervalService } from '../services/habit-interval.service';
+import { CountdownTickService } from '../services/countdown-tick.service';
 import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
@@ -24,7 +27,7 @@ import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, bu
   styleUrls: ['home.page.scss'],
   imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, CdkDropList, CdkDrag],
 })
-export class HomePage implements OnDestroy {
+export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;
   userProfile: any = null;
   hasCheckedAuth = false;
@@ -65,6 +68,10 @@ export class HomePage implements OnDestroy {
   isMobileScreen = false;
   statsCards: any[] = [];
 
+  // Countdown timer state
+  countdowns: Record<string, string> = {};
+  private tickSub?: Subscription;
+
   constructor(
     private router: Router,
     private authService: AuthService,
@@ -73,7 +80,9 @@ export class HomePage implements OnDestroy {
     private habitUpdateService: HabitUpdateService,
     private toastController: ToastController,
     private alertController: AlertController,
-    private modalController: ModalController
+    private modalController: ModalController,
+    private habitIntervalService: HabitIntervalService,
+    private countdownTickService: CountdownTickService
   ) {
     addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour, shield });
     this.setRandomTagline();
@@ -177,7 +186,9 @@ export class HomePage implements OnDestroy {
           };
         }
         
-        // Load dashboard data after user is confirmed
+        // Load dashboard data after user is confirmed.
+        // Reset isLoading first so loadDashboardData's own guard doesn't skip it.
+        this.isLoading = false;
         await this.loadDashboardData();
         this.hasCheckedAuth = true;
       }
@@ -379,127 +390,17 @@ export class HomePage implements OnDestroy {
   }
 
   /**
-   * Check if a habit has been completed today (or this week for weekly habits)
-   * Fixed to properly handle date comparisons and weekly reset logic
+   * Check if a habit has been completed for the current interval period.
    */
   isCompletedToday(habitBusiness: HabitBusiness): boolean {
-    if (!habitBusiness.last_completed_at) {
-      return false;
-    }
-    
-    // For multi-completion habits, check if the goal is fully completed
-    const goalValue = habitBusiness.goal_value || 1;
-    const currentProgress = habitBusiness.current_progress || 0;
-    
-    // If it's a multi-completion habit and goal isn't fully met, it's not "completed"
-    if (goalValue > 1 && currentProgress < goalValue) {
-      return false;
-    }
-    
-    // Also check if there's any current progress - if it's 0, then it's not really "completed"
-    if (currentProgress === 0) {
-      return false;
-    }
-    
-    if (habitBusiness.frequency === 'daily') {
-      // For daily habits, check if completed today
-      const today = new Date();
-      const todayString = today.getFullYear() + '-' + 
-        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(today.getDate()).padStart(2, '0');
-      
-      const completionDate = new Date(habitBusiness.last_completed_at);
-      const completionString = completionDate.getFullYear() + '-' + 
-        String(completionDate.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(completionDate.getDate()).padStart(2, '0');
-      
-      return completionString === todayString;
-      
-    } else if (habitBusiness.frequency === 'weekly') {
-      // For weekly habits, check if completed this week
-      const now = new Date();
-      const completionDate = new Date(habitBusiness.last_completed_at);
-      
-      // Get the start of this week (Monday)
-      const startOfThisWeek = new Date(now);
-      const dayOfWeek = startOfThisWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const daysUntilMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust so Monday = 0
-      startOfThisWeek.setDate(startOfThisWeek.getDate() - daysUntilMonday);
-      startOfThisWeek.setHours(0, 0, 0, 0);
-      
-      // Get the start of the completion week
-      const startOfCompletionWeek = new Date(completionDate);
-      const completionDayOfWeek = startOfCompletionWeek.getDay();
-      const completionDaysUntilMonday = completionDayOfWeek === 0 ? 6 : completionDayOfWeek - 1;
-      startOfCompletionWeek.setDate(startOfCompletionWeek.getDate() - completionDaysUntilMonday);
-      startOfCompletionWeek.setHours(0, 0, 0, 0);
-      
-      const isSameWeek = startOfThisWeek.getTime() === startOfCompletionWeek.getTime();
-      console.log(`🔍 Weekly habit ${habitBusiness.business_name}: this week=${startOfThisWeek.toDateString()}, completion week=${startOfCompletionWeek.toDateString()}, same=${isSameWeek}, progress=${currentProgress}, goal=${goalValue}`);
-      
-      return isSameWeek;
-    }
-    
-    return false;
+    return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
   }
 
   /**
-   * Check if a multi-completion habit has reached its goal for this period
+   * Check if a multi-completion habit has reached its goal for the current period.
    */
   isGoalCompleted(habitBusiness: HabitBusiness): boolean {
-    const goalValue = habitBusiness.goal_value || 1;
-    const currentProgress = habitBusiness.current_progress || 0;
-    
-    // First check if the progress meets the goal
-    if (currentProgress < goalValue) {
-      return false; // Goal not met regardless of timing
-    }
-    
-    // If goal is met, check if it's for the current period (today for daily, this week for weekly)
-    if (!habitBusiness.last_completed_at) {
-      return false; // No completion record
-    }
-    
-    if (habitBusiness.frequency === 'daily') {
-      // For daily habits, check if last completion was today
-      const today = new Date();
-      const todayString = today.getFullYear() + '-' + 
-        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(today.getDate()).padStart(2, '0');
-      
-      const completionDate = new Date(habitBusiness.last_completed_at);
-      const completionString = completionDate.getFullYear() + '-' + 
-        String(completionDate.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(completionDate.getDate()).padStart(2, '0');
-      
-      return completionString === todayString;
-      
-    } else if (habitBusiness.frequency === 'weekly') {
-      // For weekly habits, check if last completion was this week
-      const now = new Date();
-      const completionDate = new Date(habitBusiness.last_completed_at);
-      
-      // Get the start of this week (Monday)
-      const startOfThisWeek = new Date(now);
-      const dayOfWeek = startOfThisWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const daysUntilMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust so Monday = 0
-      startOfThisWeek.setDate(startOfThisWeek.getDate() - daysUntilMonday);
-      startOfThisWeek.setHours(0, 0, 0, 0);
-      
-      // Get the start of the completion week
-      const startOfCompletionWeek = new Date(completionDate);
-      const completionDayOfWeek = startOfCompletionWeek.getDay();
-      const completionDaysUntilMonday = completionDayOfWeek === 0 ? 6 : completionDayOfWeek - 1;
-      startOfCompletionWeek.setDate(startOfCompletionWeek.getDate() - completionDaysUntilMonday);
-      startOfCompletionWeek.setHours(0, 0, 0, 0);
-      
-      const isSameWeek = startOfThisWeek.getTime() === startOfCompletionWeek.getTime();
-      console.log(`🔍 Weekly habit ${habitBusiness.business_name}: this week=${startOfThisWeek.toDateString()}, completion week=${startOfCompletionWeek.toDateString()}, same=${isSameWeek}, progress=${currentProgress}, goal=${goalValue}`);
-      
-      return isSameWeek;
-    }
-    
-    return false;
+    return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
   }
 
   /**
@@ -689,27 +590,27 @@ export class HomePage implements OnDestroy {
             value: habitBusiness.habit_description
           },
           {
-            name: 'frequency',
+            name: 'recurrenceInterval',
             type: 'radio',
-            label: 'Daily (Every Day 🔥)',
-            value: 'daily',
-            checked: habitBusiness.frequency === 'daily'
+            label: 'Daily 🔥',
+            value: '24h',
+            checked: this.habitIntervalService.resolveInterval(habitBusiness) === '24h'
           },
           {
-            name: 'frequency',
+            name: 'recurrenceInterval',
             type: 'radio',
-            label: 'Weekly (Every Week 📅)',
-            value: 'weekly',
-            checked: habitBusiness.frequency === 'weekly'
+            label: 'Weekly 📅',
+            value: '7d',
+            checked: this.habitIntervalService.resolveInterval(habitBusiness) === '7d'
           },
           {
             name: 'goalValue',
             type: 'number',
-            placeholder: 'Enter goal (1-99)',
-            label: `Completion Goal (per ${habitBusiness.frequency || 'period'})`,
+            placeholder: 'Enter goal (1-20)',
+            label: `Completion Goal (per ${this.habitIntervalService.getIntervalLabel(this.habitIntervalService.resolveInterval(habitBusiness))})`,
             value: habitBusiness.goal_value?.toString() || '1',
             min: 1,
-            max: 99
+            max: 20
           }
         ],
         buttons: [
@@ -744,9 +645,9 @@ export class HomePage implements OnDestroy {
                   return false; // Keep alert open
                 }
 
-                if (!data.frequency || (data.frequency !== 'daily' && data.frequency !== 'weekly')) {
+                if (!data.recurrenceInterval || (data.recurrenceInterval !== '24h' && data.recurrenceInterval !== '7d')) {
                   const errorToast = await this.toastController.create({
-                    message: '❌ Please select a frequency (daily or weekly)!',
+                    message: '❌ Please select an interval (Daily or Weekly)!',
                     duration: 2000,
                     position: 'top',
                     color: 'danger'
@@ -757,9 +658,9 @@ export class HomePage implements OnDestroy {
 
                 // Validate goal value
                 const goalValue = parseInt(data.goalValue, 10);
-                if (isNaN(goalValue) || goalValue < 1 || goalValue > 99) {
+                if (isNaN(goalValue) || goalValue < 1 || goalValue > 20) {
                   const errorToast = await this.toastController.create({
-                    message: '❌ Daily completion goal must be between 1 and 99!',
+                    message: '❌ Completion goal must be between 1 and 20!',
                     duration: 2000,
                     position: 'top',
                     color: 'danger'
@@ -772,7 +673,7 @@ export class HomePage implements OnDestroy {
                 await this.habitBusinessService.updateHabitBusiness(habitBusiness.id, {
                   business_name: data.businessName.trim(),
                   habit_description: data.habitDescription.trim(),
-                  frequency: data.frequency as 'daily' | 'weekly',
+                  frequency: data.recurrenceInterval === '7d' ? 'weekly' : 'daily',
                   goal_value: goalValue
                 });
 
@@ -1056,7 +957,20 @@ export class HomePage implements OnDestroy {
     }
   }
 
+  ngOnInit() {
+    this.countdownTickService.register();
+    this.tickSub = this.countdownTickService.tick$.subscribe(() => {
+      this.habitBusinesses.forEach(hb => {
+        const interval = this.habitIntervalService.resolveInterval(hb);
+        const secs = this.habitIntervalService.getSecondsUntilReset(interval);
+        this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
+      });
+    });
+  }
+
   ngOnDestroy() {
+    this.tickSub?.unsubscribe();
+    this.countdownTickService.unregister();
     this.stopAutoCarousel();
     // Clean up any ongoing hold timers
     Object.values(this.holdingStates).forEach(state => {
