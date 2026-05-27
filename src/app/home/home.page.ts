@@ -16,6 +16,7 @@ import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
+import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { addIcons } from 'ionicons';
@@ -562,151 +563,50 @@ export class HomePage implements OnInit, OnDestroy {
   }
   async editHabitBusiness(habitBusiness: HabitBusiness) {
     console.log('✏️ Editing habit business:', habitBusiness);
-    
     try {
-      // Show modern alert with inputs instead of native prompts
-      const alert = await this.alertController.create({
-        header: 'Edit Habit Business',
-        message: 'Update your habit business details:',
-        inputs: [
-          {
-            name: 'businessName',
-            type: 'text',
-            placeholder: 'Enter business name',
-            label: 'Business Name',
-            value: habitBusiness.business_name
-          },
-          {
-            name: 'habitDescription',
-            type: 'textarea',
-            placeholder: 'Enter habit description',
-            label: 'Habit Description',
-            value: habitBusiness.habit_description
-          },
-          {
-            name: 'recurrenceInterval',
-            type: 'radio',
-            label: 'Daily 🔥',
-            value: '24h',
-            checked: this.habitIntervalService.resolveInterval(habitBusiness) === '24h'
-          },
-          {
-            name: 'recurrenceInterval',
-            type: 'radio',
-            label: 'Weekly 📅',
-            value: '7d',
-            checked: this.habitIntervalService.resolveInterval(habitBusiness) === '7d'
-          },
-          {
-            name: 'goalValue',
-            type: 'number',
-            placeholder: 'Enter goal (1-20)',
-            label: `Completion Goal (per ${this.habitIntervalService.getIntervalLabel(this.habitIntervalService.resolveInterval(habitBusiness))})`,
-            value: habitBusiness.goal_value?.toString() || '1',
-            min: 1,
-            max: 20
-          }
-        ],
-        buttons: [
-          {
-            text: 'Cancel',
-            role: 'cancel'
-          },
-          {
-            text: 'Save',
-            handler: async (data) => {
-              try {
-                // Validate inputs
-                if (!data.businessName?.trim()) {
-                  const errorToast = await this.toastController.create({
-                    message: '❌ Business name cannot be empty!',
-                    duration: 2000,
-                    position: 'top',
-                    color: 'danger'
-                  });
-                  await errorToast.present();
-                  return false; // Keep alert open
-                }
-
-                if (!data.habitDescription?.trim()) {
-                  const errorToast = await this.toastController.create({
-                    message: '❌ Habit description cannot be empty!',
-                    duration: 2000,
-                    position: 'top',
-                    color: 'danger'
-                  });
-                  await errorToast.present();
-                  return false; // Keep alert open
-                }
-
-                if (!data.recurrenceInterval || (data.recurrenceInterval !== '24h' && data.recurrenceInterval !== '7d')) {
-                  const errorToast = await this.toastController.create({
-                    message: '❌ Please select an interval (Daily or Weekly)!',
-                    duration: 2000,
-                    position: 'top',
-                    color: 'danger'
-                  });
-                  await errorToast.present();
-                  return false; // Keep alert open
-                }
-
-                // Validate goal value
-                const goalValue = parseInt(data.goalValue, 10);
-                if (isNaN(goalValue) || goalValue < 1 || goalValue > 20) {
-                  const errorToast = await this.toastController.create({
-                    message: '❌ Completion goal must be between 1 and 20!',
-                    duration: 2000,
-                    position: 'top',
-                    color: 'danger'
-                  });
-                  await errorToast.present();
-                  return false; // Keep alert open
-                }
-
-                // Update the habit business
-                await this.habitBusinessService.updateHabitBusiness(habitBusiness.id, {
-                  business_name: data.businessName.trim(),
-                  habit_description: data.habitDescription.trim(),
-                  frequency: data.recurrenceInterval === '7d' ? 'weekly' : 'daily',
-                  goal_value: goalValue
-                });
-
-                // Show success toast
-                const successToast = await this.toastController.create({
-                  message: `✅ Habit business "${data.businessName}" updated successfully!`,
-                  duration: 2000,
-                  position: 'top',
-                  color: 'success'
-                });
-                await successToast.present();
-
-                // Reload dashboard data to show updated information
-                await this.loadDashboardData();
-
-                return true; // Close alert
-              } catch (error) {
-                console.error('Error editing habit business:', error);
-                
-                const errorMessage = (error as any)?.message || 'Unknown error occurred';
-                const errorToast = await this.toastController.create({
-                  message: `❌ Failed to update habit business: ${errorMessage}`,
-                  duration: 3000,
-                  position: 'top',
-                  color: 'danger'
-                });
-                await errorToast.present();
-                
-                return false; // Keep alert open
-              }
-            }
-          }
-        ]
+      const modal = await this.modalController.create({
+        component: EditHabitModalComponent,
+        componentProps: {
+          habitBusiness,
+          modalController: this.modalController
+        },
+        breakpoints: [0, 1],
+        initialBreakpoint: 1
       });
 
-      await alert.present();
+      await modal.present();
+      const { data, role } = await modal.onWillDismiss();
 
+      if (role !== 'save' || !data) return;
+
+      try {
+        await this.habitBusinessService.updateHabitBusiness(habitBusiness.id, {
+          business_name: data.businessName,
+          habit_description: data.habitDescription,
+          recurrence_interval: data.recurrenceInterval,
+          frequency: data.recurrenceInterval === '7d' ? 'weekly' : 'daily',
+          goal_value: data.goalValue
+        });
+
+        const successToast = await this.toastController.create({
+          message: `✅ "${data.businessName}" updated successfully!`,
+          duration: 2000,
+          position: 'top',
+          color: 'success'
+        });
+        await successToast.present();
+        await this.loadDashboardData();
+      } catch (error) {
+        const errorToast = await this.toastController.create({
+          message: `❌ Failed to update: ${(error as any)?.message || 'Unknown error'}`,
+          duration: 3000,
+          position: 'top',
+          color: 'danger'
+        });
+        await errorToast.present();
+      }
     } catch (error) {
-      console.error('Error creating edit alert:', error);
+      console.error('Error opening edit modal:', error);
     }
   }
 

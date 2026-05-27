@@ -454,6 +454,7 @@ export class HabitBusinessService {
     business_name?: string;
     habit_description?: string;
     frequency?: 'daily' | 'weekly';
+    recurrence_interval?: '24h' | '7d';
     goal_value?: number;
   }): Promise<void> {
     try {

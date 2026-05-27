@@ -1,0 +1,41 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Edit Habit Business</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">Cancel</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-item>
+    <ion-label position="stacked">Business Name</ion-label>
+    <ion-input [(ngModel)]="businessName" placeholder="Enter business name"></ion-input>
+  </ion-item>
+
+  <ion-item>
+    <ion-label position="stacked">Habit Description</ion-label>
+    <ion-textarea [(ngModel)]="habitDescription" placeholder="Enter habit description" rows="3" autoGrow="true"></ion-textarea>
+  </ion-item>
+
+  <div class="segment-label">Interval</div>
+  <ion-segment [(ngModel)]="recurrenceInterval">
+    <ion-segment-button value="24h">
+      <ion-label>Daily 🔥</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="7d">
+      <ion-label>Weekly 📅</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <ion-item>
+    <ion-label position="stacked">Completions per {{ recurrenceInterval === '7d' ? 'week' : 'day' }}</ion-label>
+    <ion-input type="number" [(ngModel)]="goalValue" min="1" max="20" placeholder="1"></ion-input>
+  </ion-item>
+</ion-content>
+
+<ion-footer class="ion-padding">
+  <ion-button expand="block" (click)="save()" [disabled]="!businessName.trim() || !habitDescription.trim()">
+    Save Changes
+  </ion-button>
+</ion-footer>
