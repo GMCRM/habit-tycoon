@@ -27,13 +27,13 @@
           <p>Invest in your friends' success and earn dividends!</p>
         </div>
         <div class="cash-display" *ngIf="userProfile">
-          <div class="networth-display" (click)="toggleNetWorthDisplay()">
+          <div class="networth-display" (click)="showMoneyInfo('networth')">
             <div class="networth-amount clickable">
               ${{ getDisplayedNetWorth() }}
             </div>
             <div class="networth-label">NET WORTH</div>
           </div>
-          <div class="cash-section" (click)="toggleCashDisplay()">
+          <div class="cash-section" (click)="showMoneyInfo('cash')">
             <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
             <div class="cash-label">HABIT CASH</div>
           </div>

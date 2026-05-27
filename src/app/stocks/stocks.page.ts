@@ -1069,4 +1069,35 @@ export class StocksPage implements OnInit, OnDestroy {
   toggleCashDisplay(): void {
     this.showDetailedCash = !this.showDetailedCash;
   }
+
+  /**
+   * Show an explanation for in-game currency values.
+   */
+  async showMoneyInfo(type: 'networth' | 'cash'): Promise<void> {
+    const isNetWorth = type === 'networth';
+    const header = isNetWorth ? 'What is Net Worth?' : 'What is Habit Cash?';
+    const amount = isNetWorth
+      ? (this.userProfile?.net_worth || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : (this.userProfile?.cash || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const message = isNetWorth
+      ? `
+        <p><strong>Current Net Worth:</strong> $${amount}</p>
+        <p><strong>Net Worth</strong> is your total in-game value, including your Habit Cash and other game assets.</p>
+        <p><strong>Disclaimer:</strong> Habit Cash and Net Worth are virtual, in-game values only and are <strong>not real-world currency</strong>.</p>
+      `
+      : `
+        <p><strong>Current Habit Cash:</strong> $${amount}</p>
+        <p><strong>Habit Cash</strong> is your spendable in-game money earned by completing habits and other in-game actions.</p>
+        <p><strong>Disclaimer:</strong> Habit Cash and Net Worth are virtual, in-game values only and are <strong>not real-world currency</strong>.</p>
+      `;
+
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['Got it']
+    });
+
+    await alert.present();
+  }
 }
