@@ -1081,16 +1081,8 @@ export class StocksPage implements OnInit, OnDestroy {
       : (this.userProfile?.cash || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const message = isNetWorth
-      ? `
-        <p><strong>Current Net Worth:</strong> $${amount}</p>
-        <p><strong>Net Worth</strong> is your total in-game value, including your Habit Cash and other game assets.</p>
-        <p><strong>Disclaimer:</strong> Habit Cash and Net Worth are virtual, in-game values only and are <strong>not real-world currency</strong>.</p>
-      `
-      : `
-        <p><strong>Current Habit Cash:</strong> $${amount}</p>
-        <p><strong>Habit Cash</strong> is your spendable in-game money earned by completing habits and other in-game actions.</p>
-        <p><strong>Disclaimer:</strong> Habit Cash and Net Worth are virtual, in-game values only and are <strong>not real-world currency</strong>.</p>
-      `;
+      ? `Current Net Worth: $${amount}\n\nNet Worth is your total in-game value, including your Habit Cash and other game assets.\n\nDisclaimer: Habit Cash and Net Worth are virtual, in-game values only and are not real-world currency.`
+      : `Current Habit Cash: $${amount}\n\nHabit Cash is your spendable in-game money earned by completing habits and other in-game actions.\n\nDisclaimer: Habit Cash and Net Worth are virtual, in-game values only and are not real-world currency.`;
 
     const alert = await this.alertController.create({
       header,
