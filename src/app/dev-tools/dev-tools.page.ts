@@ -22,6 +22,7 @@ export class DevToolsPage {
   isFixingStockPrices = false;
   isFixingLemonadeStocks = false;
   isAddingMoney = false;
+  isRemovingMoney = false;
   currentUser: any = null;
   userProfile: any = null;
   dividendTestResult: any = null;
@@ -638,6 +639,58 @@ Check console for detailed logs.`;
       await this.showToast(`❌ Failed to add test money: ${(error as any)?.message || 'Unknown error'}`, 'danger');
     } finally {
       this.isAddingMoney = false;
+    }
+  }
+
+  /**
+   * Reset user's cash to $100 for testing low-money scenarios
+   */
+  async removeAllMoneyBut100() {
+    this.isRemovingMoney = true;
+    try {
+      if (!this.currentUser) {
+        throw new Error('User not authenticated');
+      }
+
+      // Calculate net worth with $100 cash + business value
+      let businessValue = 0;
+      try {
+        const { data: habitBusinesses } = await this.authService.supabase
+          .from('habit_businesses')
+          .select('id, business_type_id, business_types(base_cost)')
+          .eq('user_id', this.currentUser.id);
+
+        if (habitBusinesses && habitBusinesses.length > 0) {
+          businessValue = habitBusinesses.reduce((total: number, business: any) => {
+            const baseCost = business.business_types?.base_cost || 0;
+            return total + baseCost * 0.7;
+          }, 0);
+        }
+      } catch (e) {
+        console.error('⚠️ Error calculating business value:', e);
+      }
+
+      const newCash = 100;
+      const calculatedNetWorth = newCash + businessValue;
+
+      const { error } = await this.authService.supabase
+        .from('user_profiles')
+        .update({
+          cash: newCash,
+          net_worth: calculatedNetWorth,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', this.currentUser.id);
+
+      if (error) throw error;
+
+      await this.loadCurrentUser();
+      await this.showToast(`🗑️ Cash reset to $100. Net Worth: $${calculatedNetWorth.toLocaleString()}`, 'warning');
+    } catch (error) {
+      console.error('❌ Failed to remove money:', error);
+      await this.showToast(`❌ Failed to remove money: ${(error as any)?.message || 'Unknown error'}`, 'danger');
+    } finally {
+      this.isRemovingMoney = false;
     }
   }
 }

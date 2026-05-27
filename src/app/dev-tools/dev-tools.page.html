@@ -310,6 +310,18 @@
 
         <ion-button
           expand="block"
+          fill="solid"
+          color="danger"
+          (click)="removeAllMoneyBut100()"
+          [disabled]="isRemovingMoney"
+          class="ion-margin-bottom"
+        >
+          <ion-icon name="trash" slot="start"></ion-icon>
+          {{ isRemovingMoney ? 'Removing...' : 'Remove All Money But $100 🗑️' }}
+        </ion-button>
+
+        <ion-button
+          expand="block"
           fill="outline"
           color="warning"
           (click)="testDividendProcessing()"
