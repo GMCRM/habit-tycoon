@@ -88,7 +88,6 @@ export class HomePage implements OnInit, OnDestroy {
     this.setRandomTagline();
     this.checkScreenSize();
     this.setupStatsCards();
-    this.loadCurrentUser();
   }
 
   /**
@@ -124,17 +123,12 @@ export class HomePage implements OnInit, OnDestroy {
     // Set a new random tagline each time the page is entered
     this.setRandomTagline();
     
-    // Always try to refresh - but let the methods handle duplicate prevention
     if (this.currentUser && this.hasCheckedAuth) {
       console.log('🔄 User established, refreshing dashboard data and user profile...');
-      // Force refresh dashboard data
-      this.isLoading = false; // Reset loading state
-      this.refreshUserProfile(); // Add profile refresh
+      this.refreshUserProfile();
       this.loadDashboardData();
-    } else {
+    } else if (!this.isLoading) {
       console.log('🔄 Initial user load needed...');
-      // Reset loading state and load user
-      this.isLoading = false;
       this.loadCurrentUser();
     }
   }
