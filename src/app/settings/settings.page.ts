@@ -63,6 +63,7 @@ export class SettingsPage implements OnInit {
   isUpdatingProfile = false;
   isUpdatingPassword = false;
   isDeletingProfile = false;
+  isResettingAccount = false;
   
   // Toast messages
   showToast = false;
@@ -72,6 +73,8 @@ export class SettingsPage implements OnInit {
   // Confirmation states
   showDeleteConfirmation = false;
   deleteConfirmationText = '';
+  showResetConfirmation = false;
+  resetConfirmationText = '';
   
   currentUser: any = null;
   isGoogleUser = false; // New property to track if user signed in with Google
@@ -175,6 +178,48 @@ export class SettingsPage implements OnInit {
   cancelDeleteProfile() {
     this.showDeleteConfirmation = false;
     this.deleteConfirmationText = '';
+  }
+
+  showResetAccountConfirmation() {
+    this.showResetConfirmation = true;
+  }
+
+  cancelResetAccount() {
+    this.showResetConfirmation = false;
+    this.resetConfirmationText = '';
+  }
+
+  async confirmResetAccount() {
+    if (this.resetConfirmationText.toLowerCase() !== 'reset') {
+      this.showToastMessage('Please type "RESET" to confirm', 'danger');
+      return;
+    }
+
+    if (!this.currentUser) {
+      this.showToastMessage('No user found to reset', 'danger');
+      return;
+    }
+
+    this.isResettingAccount = true;
+    try {
+      await this.authService.resetAccountProgressKeepFriends();
+
+      this.showToastMessage('Account reset complete. Friend connections were kept.', 'success');
+      this.showResetConfirmation = false;
+      this.resetConfirmationText = '';
+
+      // Reload fresh profile values after reset.
+      await this.loadUserData();
+
+      setTimeout(() => {
+        this.router.navigate(['/home'], { replaceUrl: true });
+      }, 1200);
+    } catch (error: any) {
+      console.error('Error resetting account:', error);
+      this.showToastMessage(error.message || 'Failed to reset account', 'danger');
+    } finally {
+      this.isResettingAccount = false;
+    }
   }
 
   async confirmDeleteProfile() {

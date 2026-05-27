@@ -487,6 +487,87 @@ export class AuthService {
     }
   }
 
+  // Reset account progress while preserving friendships and auth identity
+  async resetAccountProgressKeepFriends() {
+    const {
+      data: { user },
+      error: userError
+    } = await this.supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    const nowIso = new Date().toISOString();
+
+    const runDelete = async (table: string, filters: Array<{ column: string; value: string }>) => {
+      let query: any = this.supabase.from(table).delete();
+      for (const filter of filters) {
+        query = query.eq(filter.column, filter.value);
+      }
+
+      const { error } = await query;
+      if (error) {
+        console.warn(`Reset cleanup warning for ${table}:`, error.message);
+      }
+    };
+
+    // Social content cleanup (friendships are intentionally not touched)
+    await runDelete('social_likes', [{ column: 'user_id', value: user.id }]);
+    await runDelete('social_posts', [{ column: 'user_id', value: user.id }]);
+    await runDelete('challenge_participants', [{ column: 'user_id', value: user.id }]);
+    await runDelete('challenges', [{ column: 'creator_id', value: user.id }]);
+
+    // Notifications/pokes sent or received by this user
+    const { error: clearPokesError } = await this.supabase
+      .from('social_pokes')
+      .delete()
+      .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`);
+    if (clearPokesError) {
+      console.warn('Reset cleanup warning for social_pokes:', clearPokesError.message);
+    }
+
+    // Clear stockholder progress for this user
+    await runDelete('stock_dividend_distributions', [{ column: 'stockholder_id', value: user.id }]);
+    await runDelete('stock_holdings', [{ column: 'holder_id', value: user.id }]);
+
+    // Remove completion history
+    await runDelete('habit_completions', [{ column: 'user_id', value: user.id }]);
+
+    // Soft-delete all active habits owned by this user.
+    // Existing triggers handle stockholder effects for owned businesses.
+    const { error: deactivateHabitsError } = await this.supabase
+      .from('habit_businesses')
+      .update({
+        is_active: false,
+        current_progress: 0,
+        streak: 0,
+        updated_at: nowIso
+      })
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
+    if (deactivateHabitsError) {
+      throw new Error(`Failed to reset habits: ${deactivateHabitsError.message}`);
+    }
+
+    // Reset financial profile to a fresh-account baseline (friendships unchanged)
+    const { error: resetProfileError } = await this.supabase
+      .from('user_profiles')
+      .update({
+        cash: 100.00,
+        net_worth: 100.00,
+        updated_at: nowIso
+      })
+      .eq('id', user.id);
+
+    if (resetProfileError) {
+      throw new Error(`Failed to reset profile: ${resetProfileError.message}`);
+    }
+
+    return { success: true };
+  }
+
   // Test methods for database connectivity
   async testConnection() {
     try {
