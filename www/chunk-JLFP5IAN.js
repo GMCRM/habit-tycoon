@@ -57,13 +57,14 @@ import{jb as A,pb as B,q as H,s as x,t as I}from"./chunk-2FJLQ6LM.js";import{a a
               business_name,
               business_icon,
               streak,
+              is_active,
               business_types (
                 name,
                 icon
               )
             )
           )
-        `).eq("holder_id",t).gt("shares_owned",0);if(r)throw console.error("Error fetching stock holdings:",r),r;return e||[]}catch(e){throw console.error("Error in getUserStockHoldings:",e),e}})}getAvailableStocks(t){return _(this,null,function*(){try{let{data:e,error:r}=yield this.supabase.from("business_stocks").select(`
+        `).eq("holder_id",t).gt("shares_owned",0);if(r)throw console.error("Error fetching stock holdings:",r),r;return(e||[]).filter(s=>s.business_stocks?.habit_businesses?.is_active!==!1)}catch(e){throw console.error("Error in getUserStockHoldings:",e),e}})}getAvailableStocks(t){return _(this,null,function*(){try{let{data:e,error:r}=yield this.supabase.from("business_stocks").select(`
           *,
           habit_businesses (
             id,
