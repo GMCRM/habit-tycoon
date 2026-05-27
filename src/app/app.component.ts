@@ -11,8 +11,16 @@ import { AuthService } from './services/auth.service';
 export class AppComponent implements OnInit {
   constructor(private authService: AuthService, private router: Router) {}
 
+  private getCurrentRoutePath(): string {
+    const hashPath = window.location.hash?.replace(/^#/, '') || '';
+    if (hashPath.startsWith('/')) {
+      return hashPath;
+    }
+    return this.router.url || '/';
+  }
+
   async ngOnInit() {
-    console.log('🔍 AppComponent: Initializing app, current path:', window.location.pathname);
+    console.log('🔍 AppComponent: Initializing app, current path:', this.getCurrentRoutePath());
     
     // Check if user is already logged in when app starts
     try {
@@ -21,7 +29,7 @@ export class AppComponent implements OnInit {
       if (session) {
         console.log('✅ AppComponent: User session found');
         // User is logged in, redirect to home if on login/signup/root page only
-        const currentPath = window.location.pathname;
+        const currentPath = this.getCurrentRoutePath();
         if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
           console.log('🔄 AppComponent: Redirecting from auth page to home');
           this.router.navigate(['/home']);
@@ -32,9 +40,9 @@ export class AppComponent implements OnInit {
       } else {
         console.log('❌ AppComponent: No user session found');
         // User is not logged in, redirect to login if on any protected page
-        const currentPath = window.location.pathname;
-        const protectedPaths = ['/home', '/social', '/create-habit-business', '/habit-checkin', '/dev-tools'];
-        if (protectedPaths.includes(currentPath)) {
+        const currentPath = this.getCurrentRoutePath();
+        const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
+        if (!publicPaths.includes(currentPath)) {
           console.log('🔄 AppComponent: Redirecting from protected page to login');
           this.router.navigate(['/login']);
         }
@@ -42,9 +50,9 @@ export class AppComponent implements OnInit {
     } catch (error) {
       console.log('❌ AppComponent: Session check failed:', error);
       // If session check fails, only redirect if on a protected page
-      const currentPath = window.location.pathname;
-      const protectedPaths = ['/home', '/social', '/create-habit-business', '/habit-checkin', '/dev-tools'];
-      if (protectedPaths.includes(currentPath)) {
+      const currentPath = this.getCurrentRoutePath();
+      const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
+      if (!publicPaths.includes(currentPath)) {
         console.log('🔄 AppComponent: Redirecting from protected page to login (session check failed)');
         this.router.navigate(['/login']);
       }
@@ -52,7 +60,7 @@ export class AppComponent implements OnInit {
 
     // Listen to auth state changes
     this.authService.onAuthStateChange(async (event, session) => {
-      console.log('🔍 AppComponent: Auth state change:', event, 'current path:', window.location.pathname);
+      console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
       
       if (event === 'SIGNED_OUT') {
         console.log('🔄 AppComponent: User signed out, redirecting to login');
@@ -71,7 +79,7 @@ export class AppComponent implements OnInit {
         }
         
         // Only redirect to home if currently on login/signup page
-        const currentPath = window.location.pathname;
+        const currentPath = this.getCurrentRoutePath();
         if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
           console.log('🔄 AppComponent: User signed in from auth page, redirecting to home');
           this.router.navigate(['/home']);

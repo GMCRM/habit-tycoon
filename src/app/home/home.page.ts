@@ -124,12 +124,8 @@ export class HomePage implements OnInit, OnDestroy {
     // Set a new random tagline each time the page is entered
     this.setRandomTagline();
     
-    if (this.currentUser && this.hasCheckedAuth) {
-      console.log('🔄 User established, refreshing dashboard data and user profile...');
-      this.refreshUserProfile();
-      this.loadDashboardData();
-    } else if (!this.isLoading) {
-      console.log('🔄 Initial user load needed...');
+    if (!this.isLoading) {
+      console.log('🔄 Verifying auth state before loading home data...');
       this.loadCurrentUser();
     }
   }
@@ -160,33 +156,45 @@ export class HomePage implements OnInit, OnDestroy {
       const { data: { user } } = await this.authService.getUser();
       console.log('Current user from auth:', user);
       this.currentUser = user;
+
+      if (!user) {
+        console.log('❌ No authenticated user found, redirecting to login');
+        this.hasCheckedAuth = true;
+        this.habitBusinesses = [];
+        this.userProfile = null;
+        this.currentUser = null;
+        this.todaysHabits = [];
+        this.todaysEarnings = 0;
+        this.todaysStockEarnings = 0;
+        this.pendingHabitsCount = 0;
+        this.router.navigate(['/login'], { replaceUrl: true });
+        return;
+      }
       
       // Try to load user profile if user exists
-      if (user) {
-        // Check if user is admin
-        this.isAdmin = await this.adminService.isAdmin();
-        console.log('👤 Admin status:', this.isAdmin);
-        
-        try {
-          console.log('Attempting to ensure profile exists for user ID:', user.id);
-          this.userProfile = await this.authService.ensureUserProfileExists(user);
-          console.log('User profile ensured:', this.userProfile);
-        } catch (error) {
-          console.error('Profile creation/loading failed:', error);
-          // Initialize default profile if everything fails
-          this.userProfile = {
-            name: user.user_metadata?.['name'] || 'Entrepreneur',
-            cash: 100.00,
-            net_worth: 100.00
-          };
-        }
-        
-        // Load dashboard data after user is confirmed.
-        // Reset isLoading first so loadDashboardData's own guard doesn't skip it.
-        this.isLoading = false;
-        await this.loadDashboardData();
-        this.hasCheckedAuth = true;
+      // Check if user is admin
+      this.isAdmin = await this.adminService.isAdmin();
+      console.log('👤 Admin status:', this.isAdmin);
+      
+      try {
+        console.log('Attempting to ensure profile exists for user ID:', user.id);
+        this.userProfile = await this.authService.ensureUserProfileExists(user);
+        console.log('User profile ensured:', this.userProfile);
+      } catch (error) {
+        console.error('Profile creation/loading failed:', error);
+        // Initialize default profile if everything fails
+        this.userProfile = {
+          name: user.user_metadata?.['name'] || 'Entrepreneur',
+          cash: 100.00,
+          net_worth: 100.00
+        };
       }
+      
+      // Load dashboard data after user is confirmed.
+      // Reset isLoading first so loadDashboardData's own guard doesn't skip it.
+      this.isLoading = false;
+      await this.loadDashboardData();
+      this.hasCheckedAuth = true;
     } catch (error) {
       console.log('❌ No user logged in, redirecting to login');
       console.error('Auth error details:', error);
@@ -290,6 +298,16 @@ export class HomePage implements OnInit, OnDestroy {
   async logout() {
     try {
       await this.authService.signOut();
+
+      // Clear cached page state immediately so stale user data cannot reappear.
+      this.currentUser = null;
+      this.userProfile = null;
+      this.hasCheckedAuth = false;
+      this.habitBusinesses = [];
+      this.todaysHabits = [];
+      this.todaysEarnings = 0;
+      this.todaysStockEarnings = 0;
+      this.pendingHabitsCount = 0;
       
       // Show success toast instead of blocking alert
       const toast = await this.toastController.create({
@@ -300,7 +318,7 @@ export class HomePage implements OnInit, OnDestroy {
       });
       await toast.present();
       
-      this.router.navigate(['/login']);
+      this.router.navigate(['/login'], { replaceUrl: true });
     } catch (error) {
       // Show error toast instead of blocking alert
       const errorToast = await this.toastController.create({

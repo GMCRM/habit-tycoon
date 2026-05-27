@@ -8,16 +8,16 @@ export const authGuard: CanActivateFn = async () => {
 
   try {
     const {
-      data: { session }
-    } = await authService.getSession();
+      data: { user }
+    } = await authService.getUser();
 
-    if (session) {
+    if (user) {
       return true;
     }
 
     return router.createUrlTree(['/login']);
   } catch (error) {
-    console.error('Auth guard session check failed:', error);
+    console.error('Auth guard user check failed:', error);
     return router.createUrlTree(['/login']);
   }
 };
