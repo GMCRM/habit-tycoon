@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './guards/admin.guard';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -10,6 +11,7 @@ export const routes: Routes = [
   {
     path: 'home',
     loadComponent: () => import('./home/home.page').then((m) => m.HomePage),
+    canActivate: [authGuard],
   },
   {
     path: 'login',
@@ -22,27 +24,31 @@ export const routes: Routes = [
   {
     path: 'admin',
     loadComponent: () => import('./dev-tools/dev-tools.page').then((m) => m.DevToolsPage),
-    canActivate: [adminGuard]
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'create-habit-business',
-    loadComponent: () => import('./create-habit-business/create-habit-business.page').then( m => m.CreateHabitBusinessPage)
+    loadComponent: () => import('./create-habit-business/create-habit-business.page').then( m => m.CreateHabitBusinessPage),
+    canActivate: [authGuard],
   },
   {
     path: 'social',
-    loadComponent: () => import('./social/social.page').then( m => m.SocialPage)
+    loadComponent: () => import('./social/social.page').then( m => m.SocialPage),
+    canActivate: [authGuard],
   },
   {
     path: 'stocks',
-    loadComponent: () => import('./stocks/stocks.page').then( m => m.StocksPage)
+    loadComponent: () => import('./stocks/stocks.page').then( m => m.StocksPage),
+    canActivate: [authGuard],
   },
   {
     path: 'reset-password',
-    loadComponent: () => import('./reset-password/reset-password.page').then( m => m.ResetPasswordPage)
+    loadComponent: () => import('./reset-password/reset-password.page').then( m => m.ResetPasswordPage),
   },
   {
     path: 'settings',
-    loadComponent: () => import('./settings/settings.page').then( m => m.SettingsPage)
+    loadComponent: () => import('./settings/settings.page').then( m => m.SettingsPage),
+    canActivate: [authGuard],
   },
   {
     path: '**',
