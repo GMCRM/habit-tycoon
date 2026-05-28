@@ -527,9 +527,54 @@ export class AuthService {
       console.warn('Reset cleanup warning for social_pokes:', clearPokesError.message);
     }
 
-    // Clear stockholder progress for this user
+    // Clear stockholder progress for this user.
+    // First, restore any owned shares back to the market so the pool stays accurate.
+    const { data: userHoldings } = await this.supabase
+      .from('stock_holdings')
+      .select('stock_id, shares_owned')
+      .eq('holder_id', user.id)
+      .gt('shares_owned', 0);
+
+    if (userHoldings && userHoldings.length > 0) {
+      for (const holding of userHoldings) {
+        const { data: stockRow } = await this.supabase
+          .from('business_stocks')
+          .select('shares_available')
+          .eq('id', holding.stock_id)
+          .single();
+        if (stockRow) {
+          await this.supabase
+            .from('business_stocks')
+            .update({
+              shares_available: stockRow.shares_available + holding.shares_owned,
+              updated_at: nowIso
+            })
+            .eq('id', holding.stock_id);
+        }
+      }
+    }
+
     await runDelete('stock_dividend_distributions', [{ column: 'stockholder_id', value: user.id }]);
     await runDelete('stock_holdings', [{ column: 'holder_id', value: user.id }]);
+
+    // Remove purchase transaction history so the portfolio function (which queries
+    // stock_transactions) does not show ghost stocks after the reset.
+    const { error: clearBuyTxError } = await this.supabase
+      .from('stock_transactions')
+      .delete()
+      .eq('buyer_id', user.id)
+      .eq('transaction_type', 'purchase');
+    if (clearBuyTxError) {
+      console.warn('Reset cleanup warning for stock_transactions (purchases):', clearBuyTxError.message);
+    }
+    const { error: clearSellTxError } = await this.supabase
+      .from('stock_transactions')
+      .delete()
+      .eq('seller_id', user.id)
+      .eq('transaction_type', 'sale');
+    if (clearSellTxError) {
+      console.warn('Reset cleanup warning for stock_transactions (sales):', clearSellTxError.message);
+    }
 
     // Remove completion history
     await runDelete('habit_completions', [{ column: 'user_id', value: user.id }]);
