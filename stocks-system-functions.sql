@@ -87,15 +87,18 @@ SELECT hb.id,
     bs.price_multiplier,
     bs.shares_available,
     bs.total_shares_issued,
-    -- Calculate potential dividend per share: (base dividend * streak multiplier * progress bonus) / total shares
-    ROUND(
-        (
-            (hb.earnings_per_completion * 1.0) * LEAST(1 + (hb.streak * 0.01), 2) * CASE
-                WHEN hb.current_progress >= hb.goal_value THEN 1.5
-                ELSE 1
-            END
-        ) / COALESCE(bs.total_shares_issued, 100),
-        2
+    -- Minimum $0.01 per share per completion regardless of pool size
+    GREATEST(
+        ROUND(
+            (
+                (hb.earnings_per_completion * 1.0) * LEAST(1 + (hb.streak * 0.01), 2) * CASE
+                    WHEN hb.current_progress >= hb.goal_value THEN 1.5
+                    ELSE 1
+                END
+            ) / COALESCE(NULLIF(bs.total_shares_issued, 0), 100),
+            2
+        ),
+        0.01
     ) as potential_dividend
 FROM habit_businesses hb
     INNER JOIN user_profiles up ON hb.user_id = up.id
@@ -383,6 +386,7 @@ total_shares_issued INTEGER;
 shares_owned_by_others INTEGER;
 other_ownership_percentage NUMERIC;
 stock_boost_percentage NUMERIC;
+holder_count INTEGER;
 BEGIN -- Get completion details
 SELECT habit_business_id,
     user_id,
@@ -402,6 +406,14 @@ WHERE bs.habit_business_id = habit_business_uuid;
 IF stock_uuid IS NULL THEN RETURN;
 -- No stock exists for this business
 END IF;
+-- How many external stockholders are there?
+SELECT COUNT(*) INTO holder_count
+FROM stock_holdings
+WHERE stock_id = stock_uuid
+    AND shares_owned > 0;
+IF holder_count = 0 THEN RETURN;
+-- No stockholders, nothing to pay
+END IF;
 -- Calculate stock boost: 5% bonus per 10% of shares owned by others
 shares_owned_by_others := total_shares_issued - shares_owned_by_owner;
 other_ownership_percentage := (
@@ -409,11 +421,8 @@ other_ownership_percentage := (
 ) * 100;
 stock_boost_percentage := FLOOR(other_ownership_percentage / 10) * 5;
 stock_boost := base_earnings * (stock_boost_percentage / 100);
--- Calculate dividend pool (50% of stock boost goes to dividends)
+-- Calculate dividend pool (50% of stock boost goes to dividends, may be 0 — minimums still apply)
 total_dividend_pool := stock_boost * 0.5;
-IF total_dividend_pool <= 0 THEN RETURN;
--- No dividends to distribute
-END IF;
 -- Record dividend payment and get the ID
 INSERT INTO dividend_payments (
         stock_id,
@@ -432,12 +441,14 @@ VALUES (
         total_dividend_pool
     )
 RETURNING id INTO dividend_payment_uuid;
--- Get total shares owned by external investors (excluding owner)
+-- Get total shares owned by all stockholders
 SELECT COALESCE(SUM(shares_owned), 0) INTO dividend_per_share
 FROM stock_holdings
 WHERE stock_id = stock_uuid;
 IF dividend_per_share > 0 THEN dividend_per_share := total_dividend_pool / dividend_per_share;
--- Distribute dividends to stockholders
+ELSE dividend_per_share := 0;
+END IF;
+-- Distribute dividends (minimum $0.01 per stockholder enforced below)
 FOR stockholder IN
 SELECT holder_id,
     shares_owned
@@ -473,7 +484,6 @@ SET total_dividends_earned = total_dividends_earned + stockholder_dividend,
 WHERE holder_id = stockholder.holder_id
     AND stock_id = stock_uuid;
 END LOOP;
-END IF;
 END;
 $$;
 -- Function to get user's social pokes/notifications
