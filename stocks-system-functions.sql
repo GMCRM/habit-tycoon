@@ -444,6 +444,8 @@ SELECT holder_id,
 FROM stock_holdings
 WHERE stock_id = stock_uuid
     AND shares_owned > 0 LOOP stockholder_dividend := stockholder.shares_owned * dividend_per_share;
+-- Enforce minimum payout of $0.01 per stockholder per completion
+stockholder_dividend := GREATEST(stockholder_dividend, 0.01);
 -- Record dividend distribution
 INSERT INTO stock_dividend_distributions (
         dividend_payment_id,
