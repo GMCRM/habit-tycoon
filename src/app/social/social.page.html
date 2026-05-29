@@ -330,34 +330,34 @@
             <h2>🏆 Friends Leaderboard</h2>
           </div>
 
-          <div
+          <ion-card
             *ngIf="friendsLeaderboard.length > 0; else noLeaderboard"
-            class="leaderboard-list"
+            class="leaderboard-list-card"
           >
-            <ion-card
-              *ngFor="let user of friendsLeaderboard"
-              class="leaderboard-card"
-              [class.current-user]="user.name === 'You'"
-            >
-              <ion-card-content>
-                <div class="leaderboard-item">
-                  <div class="rank-badge" [class.top-three]="user.rank <= 3">
-                    <span *ngIf="user.rank === 1">🥇</span>
-                    <span *ngIf="user.rank === 2">🥈</span>
-                    <span *ngIf="user.rank === 3">🥉</span>
-                    <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
-                  </div>
-
-                  <div class="user-info">
-                    <h3>{{ user.name }}</h3>
-                    <p class="net-worth">
-                      Net Worth: ${{ user.net_worth || '0.00' }}
-                    </p>
-                  </div>
+            <ion-card-content>
+              <div
+                *ngFor="let user of friendsLeaderboard; let last = last"
+                class="leaderboard-row"
+                [class.current-user]="user.name === 'You'"
+              >
+                <div class="rank-badge" [class.top-three]="user.rank <= 3">
+                  <span *ngIf="user.rank === 1">🥇</span>
+                  <span *ngIf="user.rank === 2">🥈</span>
+                  <span *ngIf="user.rank === 3">🥉</span>
+                  <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
                 </div>
-              </ion-card-content>
-            </ion-card>
-          </div>
+
+                <div class="user-info">
+                  <h3>{{ user.name }}</h3>
+                  <p class="net-worth">
+                    Net Worth: ${{ user.net_worth || '0.00' }}
+                  </p>
+                </div>
+
+                <div *ngIf="!last" class="leaderboard-divider"></div>
+              </div>
+            </ion-card-content>
+          </ion-card>
 
           <ng-template #noLeaderboard>
             <div class="empty-state">
