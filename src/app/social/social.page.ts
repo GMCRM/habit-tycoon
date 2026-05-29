@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -29,8 +29,11 @@ import {
     BottomNavComponent, CommonModule, RouterLink
   ],
 })
-export class SocialPage implements OnInit {
+export class SocialPage implements OnInit, OnDestroy {
   private isInitialized = false;
+  private timeRefreshInterval: ReturnType<typeof setInterval> | null = null;
+  // Incrementing tick makes Angular re-evaluate formatTimeAgo() bindings
+  timeRefreshTick = 0;
   
   currentUser: any = null;
   userProfile: any = null;
@@ -67,6 +70,11 @@ export class SocialPage implements OnInit {
 
   async ionViewWillEnter() {
     console.log('🔍 SocialPage: ionViewWillEnter');
+
+    // Tick every 60s so formatTimeAgo() bindings re-evaluate automatically
+    if (!this.timeRefreshInterval) {
+      this.timeRefreshInterval = setInterval(() => { this.timeRefreshTick++; }, 60_000);
+    }
     
     // Always ensure data is loaded when entering the view
     if (!this.isInitialized) {
@@ -372,7 +380,7 @@ export class SocialPage implements OnInit {
     }
   }
 
-  formatTimeAgo(date: string): string {
+  formatTimeAgo(date: string, _tick = this.timeRefreshTick): string {
     const now = new Date();
     const postDate = new Date(date);
     const diffMs = now.getTime() - postDate.getTime();
@@ -726,6 +734,20 @@ export class SocialPage implements OnInit {
         color: 'danger'
       });
       await toast.present();
+    }
+  }
+
+  ionViewWillLeave() {
+    if (this.timeRefreshInterval) {
+      clearInterval(this.timeRefreshInterval);
+      this.timeRefreshInterval = null;
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.timeRefreshInterval) {
+      clearInterval(this.timeRefreshInterval);
+      this.timeRefreshInterval = null;
     }
   }
 
