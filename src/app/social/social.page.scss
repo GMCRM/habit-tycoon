@@ -297,8 +297,11 @@ ion-content {
   
   .leaderboard-item {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 20px; // Increased gap
+    justify-content: center;
+    text-align: center;
+    gap: 12px;
     padding: 8px 0; // Increased padding
     
     .rank-badge {
@@ -321,8 +324,8 @@ ion-content {
     }
     
     .user-info {
-      flex: 1;
       min-width: 0; // Prevents text overflow
+      text-align: center;
       
       h3 {
         margin: 0 0 8px 0; // Increased bottom margin
