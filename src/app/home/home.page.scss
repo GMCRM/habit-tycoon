@@ -1757,8 +1757,9 @@ button, span, div, ion-button {
   margin: 16px;
   cursor: pointer;
   
-  ion-icon {
+  ion-icon, .help-icon {
     font-size: 1.4rem;
+    color: var(--ion-color-medium);
     transition: color 0.2s ease;
     
     &:hover {
@@ -1772,7 +1773,9 @@ button, span, div, ion-button {
     transition: color 0.2s ease;
   }
   
-  &:hover .help-text {
+  &:hover .help-text,
+  &:hover ion-icon,
+  &:hover .help-icon {
     color: var(--ion-color-primary);
   }
 }
