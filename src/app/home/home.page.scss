@@ -1943,16 +1943,14 @@ button, span, div, ion-button {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
     background: var(--business-item-background);
     border: var(--business-item-border);
-    transform: rotate(5deg);
-    opacity: 0.9;
+    // No rotation, full opacity — looks identical to the resting card
+    opacity: 1;
   }
 
   .cdk-drag-placeholder {
-    opacity: 0.3;
-    background: rgba(var(--ion-color-primary-rgb), 0.1);
-    border: 2px dashed var(--ion-color-primary);
-    border-radius: 12px;
-    min-height: 120px;
+    // Hide the ghost hole left behind — the preview card fills the visual role
+    opacity: 0;
+    visibility: hidden;
   }
 
   .cdk-drag-animating {
@@ -1970,18 +1968,22 @@ button, span, div, ion-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    // Larger touch target on mobile
+    width: 36px;
+    height: 36px;
     cursor: grab;
     color: var(--ion-color-medium);
-    margin-top: 20px; // Align with content
+    margin-top: 14px; // Align with content
+    // Required for CDK touch drag to be restricted to this handle
+    touch-action: none;
     
     &:active {
       cursor: grabbing;
     }
     
     ion-icon {
-      font-size: 18px;
+      font-size: 20px;
+      pointer-events: none;
     }
     
     &:hover {
@@ -1991,6 +1993,8 @@ button, span, div, ion-button {
   
   .item-content {
     flex: 1;
+    // Allow normal touch scrolling on card content — only the handle triggers drag
+    touch-action: auto;
   }
 }
 
