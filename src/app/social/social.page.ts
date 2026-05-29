@@ -37,7 +37,7 @@ export class SocialPage implements OnInit, OnDestroy {
   
   currentUser: any = null;
   userProfile: any = null;
-  selectedSegment: 'friends' | 'notifications' | 'requests' | 'leaderboard' = 'leaderboard';
+  selectedSegment: 'friends' | 'notifications' | 'leaderboard' = 'leaderboard';
   
   // Social data
   friends: Friend[] = [];
@@ -61,8 +61,8 @@ export class SocialPage implements OnInit, OnDestroy {
     
     // Restore the previously selected tab from localStorage (only if the user has explicitly chosen one)
     const savedTab = localStorage.getItem('social-selected-tab');
-    if (savedTab && ['friends', 'notifications', 'requests', 'leaderboard'].includes(savedTab)) {
-      this.selectedSegment = savedTab as 'friends' | 'notifications' | 'requests' | 'leaderboard';
+    if (savedTab && ['friends', 'notifications', 'leaderboard'].includes(savedTab)) {
+      this.selectedSegment = savedTab as 'friends' | 'notifications' | 'leaderboard';
     } else {
       this.selectedSegment = 'leaderboard';
     }
@@ -754,6 +754,10 @@ export class SocialPage implements OnInit, OnDestroy {
   // Getter methods for template use
   get unreadNotificationsCount(): number {
     return this.notifications.filter(n => !n.is_read).length;
+  }
+
+  get totalNotificationsBadgeCount(): number {
+    return this.unreadNotificationsCount + this.pendingRequests.length;
   }
 
   get hasUnreadNotifications(): boolean {

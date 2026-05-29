@@ -42,15 +42,8 @@
           <ion-segment-button value="notifications">
             <ion-icon name="notifications-outline"></ion-icon>
             <ion-label>Notifications</ion-label>
-            <ion-badge *ngIf="notifications.length > 0" color="danger"
-              >{{ unreadNotificationsCount }}</ion-badge
-            >
-          </ion-segment-button>
-          <ion-segment-button value="requests">
-            <ion-icon name="notifications"></ion-icon>
-            <ion-label>Requests</ion-label>
-            <ion-badge *ngIf="pendingRequests.length > 0" color="danger"
-              >{{ pendingRequests.length }}</ion-badge
+            <ion-badge *ngIf="totalNotificationsBadgeCount > 0" color="danger"
+              >{{ totalNotificationsBadgeCount }}</ion-badge
             >
           </ion-segment-button>
           <ion-segment-button value="friends">
@@ -115,6 +108,58 @@
             >
               Mark All Read
             </ion-button>
+          </div>
+
+          <!-- Incoming Friend Requests (shown at top of notifications) -->
+          <div *ngIf="pendingRequests.length > 0" class="requests-section">
+            <h3 class="requests-section-title">📬 Friend Requests ({{ pendingRequests.length }})</h3>
+            <div class="requests-list">
+              <ion-card
+                *ngFor="let request of pendingRequests"
+                class="request-card"
+              >
+                <ion-card-content>
+                  <div class="request-info">
+                    <div class="request-details">
+                      <h4>{{ request.sender_profile?.name || 'Unknown User' }}</h4>
+                      <p class="request-email">{{ request.sender_profile?.email }}</p>
+                      <p class="request-time">{{ formatTimeAgo(request.created_at) }}</p>
+                    </div>
+                    <div class="request-actions">
+                      <ion-button fill="solid" color="success" (click)="acceptRequest(request.id)">
+                        <ion-icon name="checkmark" slot="start"></ion-icon>
+                        Accept
+                      </ion-button>
+                      <ion-button fill="outline" color="danger" (click)="declineRequest(request.id)">
+                        <ion-icon name="close" slot="start"></ion-icon>
+                        Decline
+                      </ion-button>
+                    </div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+            </div>
+          </div>
+
+          <!-- Sent Requests -->
+          <div *ngIf="sentRequests.length > 0" class="requests-section">
+            <h3 class="requests-section-title">📤 Sent Requests ({{ sentRequests.length }})</h3>
+            <div class="requests-list">
+              <ion-card
+                *ngFor="let request of sentRequests"
+                class="request-card"
+              >
+                <ion-card-content>
+                  <div class="request-info">
+                    <div class="request-details">
+                      <h4>{{ request.recipient_profile?.name || 'Unknown User' }}</h4>
+                      <p class="request-email">{{ request.recipient_profile?.email }}</p>
+                      <p class="request-status">Pending since {{ formatTimeAgo(request.created_at) }}</p>
+                    </div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+            </div>
           </div>
 
           <div
@@ -205,120 +250,15 @@
           </div>
 
           <ng-template #noNotifications>
-            <div class="empty-state">
+            <div *ngIf="pendingRequests.length === 0 && sentRequests.length === 0" class="empty-state">
               <ion-icon name="notifications-outline"></ion-icon>
               <h3>No notifications</h3>
               <p>
-                You'll see notifications here when friends send reminders or hit
-                habit milestones!
+                You'll see notifications here when friends send reminders, hit
+                habit milestones, or send you friend requests!
               </p>
             </div>
           </ng-template>
-        </div>
-
-        <!-- Friend Requests Tab -->
-        <div
-          *ngIf="selectedSegment === 'requests'"
-          class="tab-content requests-tab"
-        >
-          <div class="requests-header">
-            <h2>📬 Friend Requests</h2>
-            <ion-button
-              fill="outline"
-              color="primary"
-              size="small"
-              (click)="addFriend()"
-            >
-              <ion-icon name="person-add" slot="start"></ion-icon>
-              Add Friend
-            </ion-button>
-          </div>
-
-          <!-- Incoming Requests -->
-          <div *ngIf="pendingRequests.length > 0" class="requests-section">
-            <h3>Incoming Requests ({{ pendingRequests.length }})</h3>
-            <div class="requests-list">
-              <ion-card
-                *ngFor="let request of pendingRequests"
-                class="request-card"
-              >
-                <ion-card-content>
-                  <div class="request-info">
-                    <div class="request-details">
-                      <h4>
-                        {{ request.sender_profile?.name || 'Unknown User' }}
-                      </h4>
-                      <p class="request-email">
-                        {{ request.sender_profile?.email }}
-                      </p>
-                      <p class="request-time">
-                        {{ formatTimeAgo(request.created_at) }}
-                      </p>
-                    </div>
-                    <div class="request-actions">
-                      <ion-button
-                        fill="solid"
-                        color="success"
-                        (click)="acceptRequest(request.id)"
-                      >
-                        <ion-icon name="checkmark" slot="start"></ion-icon>
-                        Accept
-                      </ion-button>
-                      <ion-button
-                        fill="outline"
-                        color="danger"
-                        (click)="declineRequest(request.id)"
-                      >
-                        <ion-icon name="close" slot="start"></ion-icon>
-                        Decline
-                      </ion-button>
-                    </div>
-                  </div>
-                </ion-card-content>
-              </ion-card>
-            </div>
-          </div>
-
-          <!-- Sent Requests -->
-          <div *ngIf="sentRequests.length > 0" class="requests-section">
-            <h3>Sent Requests ({{ sentRequests.length }})</h3>
-            <div class="requests-list">
-              <ion-card
-                *ngFor="let request of sentRequests"
-                class="request-card"
-              >
-                <ion-card-content>
-                  <div class="request-info">
-                    <div class="request-details">
-                      <h4>
-                        {{ request.recipient_profile?.name || 'Unknown User' }}
-                      </h4>
-                      <p class="request-email">
-                        {{ request.recipient_profile?.email }}
-                      </p>
-                      <p class="request-status">
-                        Pending since {{ formatTimeAgo(request.created_at) }}
-                      </p>
-                    </div>
-                  </div>
-                </ion-card-content>
-              </ion-card>
-            </div>
-          </div>
-
-          <!-- No Requests -->
-          <div
-            *ngIf="pendingRequests.length === 0 && sentRequests.length === 0"
-            class="empty-state"
-          >
-            <ion-icon name="notifications"></ion-icon>
-            <h3>No friend requests</h3>
-            <p>Send a friend request to start connecting with other users!</p>
-            <ion-button fill="solid" color="primary" (click)="addFriend()">
-              <ion-icon name="person-add" slot="start"></ion-icon>
-              Add Friend
-            </ion-button>
-          </div>
         </div>
 
         <!-- Leaderboard Tab -->

@@ -459,17 +459,19 @@ h2 {
   }
 }
 
-// Friend requests section
+// Friend requests section (shown inside Notifications tab)
 .requests-section {
-  margin-bottom: 32px; // Increased spacing between sections
-  
-  h3 {
+  margin-bottom: 32px;
+
+  h3, .requests-section-title {
     color: var(--ion-color-primary);
-    font-size: 1.2rem; // Slightly larger
+    font-size: 1.1rem;
     font-weight: 600;
-    margin: 0 0 16px 0; // Remove left padding to use full width
+    margin: 0 0 16px 0;
     opacity: 0.9;
-    text-shadow: 0 0 6px rgba(255, 215, 0, 0.3); // Add glow
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
   }
 }
 
