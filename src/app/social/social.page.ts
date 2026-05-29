@@ -34,7 +34,7 @@ export class SocialPage implements OnInit {
   
   currentUser: any = null;
   userProfile: any = null;
-  selectedSegment: 'friends' | 'notifications' | 'requests' | 'leaderboard' = 'friends';
+  selectedSegment: 'friends' | 'notifications' | 'requests' | 'leaderboard' = 'leaderboard';
   
   // Social data
   friends: Friend[] = [];
@@ -56,10 +56,12 @@ export class SocialPage implements OnInit {
   ) {
     addIcons({settings,logOut,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business});
     
-    // Restore the previously selected tab from localStorage
+    // Restore the previously selected tab from localStorage (only if the user has explicitly chosen one)
     const savedTab = localStorage.getItem('social-selected-tab');
     if (savedTab && ['friends', 'notifications', 'requests', 'leaderboard'].includes(savedTab)) {
       this.selectedSegment = savedTab as 'friends' | 'notifications' | 'requests' | 'leaderboard';
+    } else {
+      this.selectedSegment = 'leaderboard';
     }
   }
 
