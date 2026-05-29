@@ -1,15 +1,47 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { AuthService } from './services/auth.service';
+
+// If the app was backgrounded longer than this (ms), force a full reload so
+// Angular, Supabase auth, and all subscriptions start fresh.
+const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   imports: [IonApp, IonRouterOutlet],
 })
-export class AppComponent implements OnInit {
-  constructor(private authService: AuthService, private router: Router) {}
+export class AppComponent implements OnInit, OnDestroy {
+  private hiddenAt: number | null = null;
+  private onVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      this.hiddenAt = Date.now();
+    } else {
+      const hiddenMs = this.hiddenAt ? Date.now() - this.hiddenAt : 0;
+      this.hiddenAt = null;
+      if (hiddenMs > STALE_THRESHOLD_MS) {
+        // App was backgrounded too long — hard reload for a clean state.
+        window.location.reload();
+        return;
+      }
+      // Short absence: re-enter NgZone and refresh the Supabase JWT so
+      // subsequent API calls don't get 401s.
+      this.ngZone.run(async () => {
+        try {
+          await this.authService.supabase.auth.refreshSession();
+        } catch {
+          // Session already valid or offline — ignore.
+        }
+      });
+    }
+  };
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private ngZone: NgZone
+  ) {}
 
   private getCurrentRoutePath(): string {
     const hashPath = window.location.hash?.replace(/^#/, '') || '';
@@ -20,6 +52,18 @@ export class AppComponent implements OnInit {
   }
 
   async ngOnInit() {
+    // --- Resume / bfcache handling ---
+    // 'pageshow' fires on bfcache restores (event.persisted = true).
+    // On iOS Chrome the page is completely frozen in bfcache; the only
+    // reliable fix is a hard reload so Angular starts fresh.
+    window.addEventListener('pageshow', (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+    // Track foreground/background transitions.
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+
     console.log('🔍 AppComponent: Initializing app, current path:', this.getCurrentRoutePath());
     
     // Check if user is already logged in when app starts
@@ -89,5 +133,9 @@ export class AppComponent implements OnInit {
         // If user signs in while on other pages, stay there
       }
     });
+  }
+
+  ngOnDestroy() {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
   }
 }
