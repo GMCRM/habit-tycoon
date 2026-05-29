@@ -156,12 +156,15 @@ SELECT sh.id,
     (sh.shares_owned * bs.current_stock_price) as current_value,
     (sh.shares_owned * bs.current_stock_price) - sh.total_invested as profit_loss,
     sh.total_dividends_earned,
-    -- Calculate daily dividend rate: 100% of earnings per completion * streak multiplier * ownership percentage
-    ROUND(
-        (hb.earnings_per_completion * 1.0) * LEAST(1 + (hb.streak * 0.01), 2) * (
-            sh.shares_owned::NUMERIC / bs.total_shares_issued::NUMERIC
+    -- Estimated dividend per completion: apply same GREATEST($0.01) floor as the payout function
+    GREATEST(
+        ROUND(
+            (hb.earnings_per_completion * 1.0) * LEAST(1 + (hb.streak * 0.01), 2) * (
+                sh.shares_owned::NUMERIC / COALESCE(NULLIF(bs.total_shares_issued, 0), 100)::NUMERIC
+            ),
+            2
         ),
-        2
+        0.01
     ) as daily_dividend_rate,
     hb.streak
 FROM stock_holdings sh
