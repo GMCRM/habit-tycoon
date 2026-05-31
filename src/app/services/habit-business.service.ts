@@ -945,6 +945,186 @@ export class HabitBusinessService {
   }
 
   /**
+   * Complete a daily habit for YESTERDAY (backdated one day).
+   * Only available for daily habits (recurrence_interval === '24h', goal_value === 1)
+   * that were not completed yesterday. Pays earnings, updates streak, and
+   * distributes dividends to stockholders — all at yesterday's rate.
+   */
+  async completeHabitYesterday(habitBusinessId: string): Promise<void> {
+    try {
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+      if (userError || !user) throw new Error('User not authenticated');
+
+      const { data: habitBusiness, error: habitError } = await this.supabase
+        .from('habit_businesses')
+        .select('*')
+        .eq('id', habitBusinessId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (habitError || !habitBusiness) throw new Error('Habit-business not found');
+
+      const interval = this.habitIntervalService.resolveInterval(habitBusiness);
+      if (interval !== '24h') throw new Error('Backdated completion only available for daily habits');
+
+      const now = new Date();
+      const yesterdayStart = this.habitIntervalService.getPreviousPeriodStart('24h', now);
+      const todayStart = this.habitIntervalService.getCurrentPeriodStart('24h', now);
+
+      // Guard: check if already completed yesterday
+      const { data: yesterdayCompletions } = await this.supabase
+        .from('habit_completions')
+        .select('id')
+        .eq('habit_business_id', habitBusinessId)
+        .eq('user_id', user.id)
+        .gte('completed_at', yesterdayStart.toISOString())
+        .lt('completed_at', todayStart.toISOString());
+
+      if (yesterdayCompletions && yesterdayCompletions.length > 0) {
+        await this.showErrorToast('This habit was already completed yesterday!');
+        throw new Error('This habit was already completed yesterday');
+      }
+
+      // Streak: was the habit completed the day before yesterday?
+      const dayBeforeYesterdayStart = new Date(yesterdayStart.getTime() - 24 * 60 * 60 * 1000);
+      let newStreak = 1;
+      if (habitBusiness.last_completed_at) {
+        const lastCompleted = new Date(habitBusiness.last_completed_at);
+        if (lastCompleted >= dayBeforeYesterdayStart && lastCompleted < yesterdayStart) {
+          newStreak = (habitBusiness.streak || 0) + 1; // Consecutive — streak continues
+        } else {
+          newStreak = 1; // Gap — streak resets
+        }
+      }
+
+      // Earnings (yesterday's rate)
+      const streakMultiplier = newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      const baseEarnings = habitBusiness.earnings_per_completion;
+      const baseTotal = baseEarnings + baseEarnings * streakMultiplier;
+
+      // Stock boost
+      let stockBoost = 0;
+      let stockInfoId: string | null = null;
+      const { data: stockData } = await this.supabase
+        .from('business_stocks')
+        .select('id, shares_owned_by_owner, total_shares_issued')
+        .eq('habit_business_id', habitBusinessId)
+        .single();
+
+      if (stockData) {
+        stockInfoId = stockData.id;
+        const sharesOwnedByOthers = stockData.total_shares_issued - stockData.shares_owned_by_owner;
+        const otherOwnershipPct = (sharesOwnedByOthers / stockData.total_shares_issued) * 100;
+        const boostPct = Math.floor(otherOwnershipPct / 10) * 5;
+        stockBoost = baseTotal * (boostPct / 100);
+      }
+
+      const totalEarnings = baseTotal + stockBoost;
+
+      // Completion timestamp = yesterday at 6 PM local time
+      const yesterdayDateString = this.getLocalDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+      const completionTime = new Date(`${yesterdayDateString}T18:00:00`);
+
+      console.log('📅 Recording BACKDATED completion for yesterday:', {
+        yesterday: yesterdayDateString,
+        completionTimestamp: completionTime.toISOString(),
+        newStreak,
+        totalEarnings
+      });
+
+      // Insert completion record
+      const { data: completionData, error: completionError } = await this.supabase
+        .from('habit_completions')
+        .insert({
+          habit_business_id: habitBusinessId,
+          user_id: user.id,
+          earnings: totalEarnings,
+          streak_count: newStreak,
+          completed_at: completionTime.toISOString()
+        })
+        .select()
+        .single();
+
+      if (completionError) {
+        if (completionError.code === '23505') {
+          await this.showErrorToast('This habit was already completed yesterday!');
+        } else {
+          await this.showErrorToast('Failed to record backdated completion. Please try again.');
+        }
+        throw completionError;
+      }
+
+      // Process dividends for stockholders
+      if (stockInfoId) {
+        try {
+          if (stockData && (stockData.total_shares_issued - stockData.shares_owned_by_owner) > 0) {
+            try {
+              const { error: rpcError } = await this.supabase.rpc('process_habit_completion_dividends', {
+                completion_uuid: completionData.id
+              });
+              if (rpcError) throw rpcError;
+              console.log('✅ Dividends processed for backdated completion');
+            } catch {
+              await this.processDividendsManually(habitBusinessId, totalEarnings, stockInfoId);
+            }
+          }
+        } catch (dividendError) {
+          console.error('⚠️ Warning: Failed to process dividends for backdated completion:', dividendError);
+        }
+      }
+
+      // Update habit-business stats
+      // Do NOT change current_progress — it tracks the *current* (today's) period
+      const { error: updateError } = await this.supabase
+        .from('habit_businesses')
+        .update({
+          streak: newStreak,
+          total_completions: habitBusiness.total_completions + 1,
+          total_earnings: habitBusiness.total_earnings + totalEarnings,
+          last_completed_at: completionTime.toISOString(),
+          updated_at: now.toISOString()
+        })
+        .eq('id', habitBusinessId);
+
+      if (updateError) throw updateError;
+
+      // Update stock price based on new streak
+      try {
+        await this.supabase.rpc('update_stock_price_by_streak', { habit_business_uuid: habitBusinessId });
+      } catch (priceError) {
+        console.error('⚠️ Warning: Failed to update stock price:', priceError);
+      }
+
+      // Pay earnings to user
+      const { data: profile, error: profileError } = await this.supabase
+        .from('user_profiles')
+        .select('cash, net_worth')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) throw new Error('Could not load user profile');
+
+      const { error: updateCashError } = await this.supabase
+        .from('user_profiles')
+        .update({
+          cash: profile.cash + totalEarnings,
+          net_worth: profile.net_worth + totalEarnings,
+          updated_at: now.toISOString()
+        })
+        .eq('id', user.id);
+
+      if (updateCashError) throw new Error('Habit completed but failed to add earnings');
+
+    } catch (error) {
+      console.error('Error in completeHabitYesterday:', error);
+      if (error instanceof Error && !error.message.includes('already completed yesterday')) {
+        await this.showErrorToast('Failed to complete habit for yesterday. Please try again.');
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Undo a habit completion for today
    */
   async undoHabitCompletion(habitBusinessId: string): Promise<void> {

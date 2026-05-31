@@ -4,7 +4,6 @@
 -- meaning portfolio cards showed $0.00 for low-earning businesses even though the
 -- actual payout function always pays at least $0.01. Also guards against
 -- division-by-zero when total_shares_issued is 0.
-
 CREATE OR REPLACE FUNCTION get_user_stock_portfolio(user_uuid UUID) RETURNS TABLE (
         holding_id UUID,
         stock_id UUID,
@@ -40,9 +39,9 @@ SELECT sh.id,
     -- Estimated dividend per completion: apply same GREATEST($0.01) floor as payout function
     GREATEST(
         ROUND(
-            (hb.earnings_per_completion * 1.0)
-            * LEAST(1 + (hb.streak * 0.01), 2)
-            * (sh.shares_owned::NUMERIC / COALESCE(NULLIF(bs.total_shares_issued, 0), 100)::NUMERIC),
+            (hb.earnings_per_completion * 1.0) * LEAST(1 + (hb.streak * 0.01), 2) * (
+                sh.shares_owned::NUMERIC / COALESCE(NULLIF(bs.total_shares_issued, 0), 100)::NUMERIC
+            ),
             2
         ),
         0.01
@@ -59,5 +58,4 @@ WHERE sh.holder_id = user_uuid
 ORDER BY current_value DESC;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION get_user_stock_portfolio(UUID) TO authenticated;

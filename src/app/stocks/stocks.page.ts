@@ -610,13 +610,6 @@ export class StocksPage implements OnInit, OnDestroy {
       );
 
       if (result.success) {
-        const toast = await this.toastController.create({
-          message: `✅ Sold ${sharesToSell} shares for $${result.net_proceeds.toFixed(2)}`,
-          duration: 3000,
-          color: 'success'
-        });
-        await toast.present();
-
         // Reload portfolio and user profile to reflect changes
         await this.loadPortfolio();
         await this.loadFriendBusinesses(); // Refresh available stocks too
@@ -624,14 +617,6 @@ export class StocksPage implements OnInit, OnDestroy {
       } else {
         throw new Error(result.error);
       }
-    } catch (error) {
-      console.error('Error executing stock sale:', error);
-      const toast = await this.toastController.create({
-        message: `Error selling stocks: ${error}`,
-        duration: 3000,
-        color: 'danger'
-      });
-      await toast.present();
     } finally {
       this.isLoading = false;
     }
@@ -783,6 +768,8 @@ export class StocksPage implements OnInit, OnDestroy {
       return;
     }
 
+    const sharesToSell = this.sellQuantity;
+
     try {
       // Find the actual portfolio item
       const portfolioItem = this.portfolio.find(p => p.stockId === this.selectedHolding.stockId);
@@ -790,19 +777,19 @@ export class StocksPage implements OnInit, OnDestroy {
         throw new Error('Portfolio item not found');
       }
 
-      await this.executeSale(portfolioItem, this.sellQuantity);
+      await this.executeSale(portfolioItem, sharesToSell);
       this.closeSellModal();
       
       const toast = await this.toastController.create({
-        message: `Successfully sold ${this.sellQuantity} shares!`,
+        message: `✅ Successfully sold ${sharesToSell} shares!`,
         duration: 3000,
         color: 'success'
       });
       await toast.present();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error selling shares:', error);
       const toast = await this.toastController.create({
-        message: 'Failed to sell shares. Please try again.',
+        message: `❌ Failed to sell shares: ${error?.message || error}`,
         duration: 3000,
         color: 'danger'
       });

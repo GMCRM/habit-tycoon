@@ -123,6 +123,25 @@ export class HabitIntervalService {
   }
 
   /**
+   * Returns true if this is a daily habit that was NOT completed yesterday
+   * and has prior completion history. Used to decide whether to show the
+   * "missed yesterday" prompt before a new completion.
+   *
+   * Only applies to simple daily habits (goal_value === 1).
+   */
+  didMissYesterday(habit: HabitBusiness, now: Date = new Date()): boolean {
+    if (this.resolveInterval(habit) !== '24h') return false;
+    if ((habit.goal_value || 1) !== 1) return false;
+    if (!habit.last_completed_at) return false; // Never completed before
+
+    const yesterdayStart = this.getPreviousPeriodStart('24h', now);
+    const lastCompleted = new Date(habit.last_completed_at);
+
+    // If last completion is before yesterday's start, the user missed yesterday
+    return lastCompleted < yesterdayStart;
+  }
+
+  /**
    * Returns a label for the interval suitable for UI display.
    */
   getIntervalLabel(interval: RecurrenceInterval): string {

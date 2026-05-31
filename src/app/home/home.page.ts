@@ -992,12 +992,74 @@ export class HomePage implements OnInit, OnDestroy {
 
     // Complete the habit after a brief success animation
     setTimeout(async () => {
-      await this.completeHabitBusiness(habitBusiness);
-      
+      // Show "missed yesterday" prompt for daily habits that weren't done yesterday
+      if (this.habitIntervalService.didMissYesterday(habitBusiness)) {
+        await this.showMissedYesterdayAlert(habitBusiness);
+      } else {
+        await this.completeHabitBusiness(habitBusiness);
+      }
+
       // Reset state after completion
       state.isCompleting = false;
       state.progress = 0;
     }, 300);
+  }
+
+  /**
+   * Show a prompt when the user tries to complete a habit they missed yesterday.
+   * Lets them choose to mark yesterday or today as complete.
+   */
+  private async showMissedYesterdayAlert(habitBusiness: HabitBusiness) {
+    const alert = await this.alertController.create({
+      header: '⏰ Forgot to mark your habit yesterday?',
+      message: 'You missed marking this habit yesterday. Did you complete it? You can still mark it as complete.\n\nSelect which day to complete:',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'Yesterday',
+          handler: () => {
+            // Run async in background so the alert closes immediately
+            (async () => {
+              try {
+                await this.habitBusinessService.completeHabitYesterday(habitBusiness.id);
+                const toast = await this.toastController.create({
+                  message: `✅ "${habitBusiness.business_name}" marked complete for yesterday! Earnings added.`,
+                  duration: 3000,
+                  position: 'top',
+                  color: 'success'
+                });
+                await toast.present();
+                this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+                await this.loadCurrentUser();
+                await this.loadDashboardData();
+                await this.moveCompletedHabitsToBottom();
+              } catch (error) {
+                const errorMessage = (error as any)?.message || 'Unknown error occurred';
+                const errorToast = await this.toastController.create({
+                  message: `❌ Failed: ${errorMessage}`,
+                  duration: 3000,
+                  position: 'top',
+                  color: 'danger'
+                });
+                await errorToast.present();
+              }
+            })();
+          }
+        },
+        {
+          text: 'Today',
+          handler: () => {
+            (async () => {
+              await this.completeHabitBusiness(habitBusiness);
+            })();
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   /**
