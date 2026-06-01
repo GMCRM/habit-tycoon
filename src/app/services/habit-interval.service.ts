@@ -130,23 +130,38 @@ export class HabitIntervalService {
    * Only applies to simple daily habits (goal_value === 1).
    */
   didMissYesterday(habit: HabitBusiness, now: Date = new Date()): boolean {
-    if (this.resolveInterval(habit) !== '24h') return false;
-    if ((habit.goal_value || 1) !== 1) return false;
+    const interval = this.resolveInterval(habit);
+    if (interval !== '24h') {
+      console.log('[didMissYesterday] SKIP: interval is', interval);
+      return false;
+    }
+    if ((habit.goal_value || 1) !== 1) {
+      console.log('[didMissYesterday] SKIP: goal_value is', habit.goal_value);
+      return false;
+    }
 
     const yesterdayStart = this.getPreviousPeriodStart('24h', now);
     const todayStart = this.getCurrentPeriodStart('24h', now);
 
     // Habit must have existed before today (can't miss yesterday on a brand-new habit)
     const habitCreatedAt = new Date(habit.created_at);
-    if (habitCreatedAt >= todayStart) return false;
+    if (habitCreatedAt >= todayStart) {
+      console.log('[didMissYesterday] SKIP: habit created today', habitCreatedAt);
+      return false;
+    }
 
     // If never completed, the habit existed yesterday and was missed
-    if (!habit.last_completed_at) return true;
+    if (!habit.last_completed_at) {
+      console.log('[didMissYesterday] TRUE: never completed');
+      return true;
+    }
 
     const lastCompleted = new Date(habit.last_completed_at);
+    const result = lastCompleted < yesterdayStart;
+    console.log('[didMissYesterday] lastCompleted:', lastCompleted, '| yesterdayStart:', yesterdayStart, '| result:', result);
 
     // If last completion is before yesterday's start, the user missed yesterday
-    return lastCompleted < yesterdayStart;
+    return result;
   }
 
   /**

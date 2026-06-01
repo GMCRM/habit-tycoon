@@ -993,7 +993,9 @@ export class HomePage implements OnInit, OnDestroy {
     // Complete the habit after a brief success animation
     setTimeout(async () => {
       // Show "missed yesterday" prompt for daily habits that weren't done yesterday
-      if (this.habitIntervalService.didMissYesterday(habitBusiness)) {
+      const missedYesterday = this.habitIntervalService.didMissYesterday(habitBusiness);
+      console.log('[completeHolding] habit:', habitBusiness.business_name, '| recurrence_interval:', habitBusiness.recurrence_interval, '| goal_value:', habitBusiness.goal_value, '| created_at:', habitBusiness.created_at, '| last_completed_at:', habitBusiness.last_completed_at, '| didMissYesterday:', missedYesterday);
+      if (missedYesterday) {
         await this.showMissedYesterdayAlert(habitBusiness);
       } else {
         await this.completeHabitBusiness(habitBusiness);
