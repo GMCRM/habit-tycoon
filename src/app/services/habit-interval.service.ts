@@ -132,9 +132,17 @@ export class HabitIntervalService {
   didMissYesterday(habit: HabitBusiness, now: Date = new Date()): boolean {
     if (this.resolveInterval(habit) !== '24h') return false;
     if ((habit.goal_value || 1) !== 1) return false;
-    if (!habit.last_completed_at) return false; // Never completed before
 
     const yesterdayStart = this.getPreviousPeriodStart('24h', now);
+    const todayStart = this.getCurrentPeriodStart('24h', now);
+
+    // Habit must have existed before today (can't miss yesterday on a brand-new habit)
+    const habitCreatedAt = new Date(habit.created_at);
+    if (habitCreatedAt >= todayStart) return false;
+
+    // If never completed, the habit existed yesterday and was missed
+    if (!habit.last_completed_at) return true;
+
     const lastCompleted = new Date(habit.last_completed_at);
 
     // If last completion is before yesterday's start, the user missed yesterday
