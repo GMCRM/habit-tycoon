@@ -65,73 +65,89 @@ export class AppComponent implements OnInit, OnDestroy {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
 
     console.log('🔍 AppComponent: Initializing app, current path:', this.getCurrentRoutePath());
-    
-    // Check if user is already logged in when app starts
-    try {
-      const { data: { session } } = await this.authService.getSession();
-      
-      if (session) {
-        console.log('✅ AppComponent: User session found');
-        // User is logged in, redirect to home if on login/signup/root page only
-        const currentPath = this.getCurrentRoutePath();
-        if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
-          console.log('🔄 AppComponent: Redirecting from auth page to home');
-          this.router.navigate(['/home']);
+
+    // Detect OAuth callback: when Supabase PKCE redirects back it appends ?code=
+    // to the URL.  If we're in that flow, skip the immediate session check —
+    // Supabase's detectSessionInUrl will exchange the code and fire SIGNED_IN,
+    // which the onAuthStateChange listener below handles.  Doing a session check
+    // here before the exchange completes sees "no session" and would incorrectly
+    // push the user to /login (causing a blank screen while the exchange races).
+    const urlParams = new URLSearchParams(window.location.search);
+    const isOAuthCallback = urlParams.has('code') || urlParams.has('error_code');
+
+    if (!isOAuthCallback) {
+      // Check if user is already logged in when app starts
+      try {
+        const { data: { session } } = await this.authService.getSession();
+        
+        if (session) {
+          console.log('✅ AppComponent: User session found');
+          // User is logged in, redirect to home if on login/signup/root page only
+          const currentPath = this.getCurrentRoutePath();
+          if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
+            console.log('🔄 AppComponent: Redirecting from auth page to home');
+            this.router.navigate(['/home']);
+          } else {
+            console.log('🔍 AppComponent: Staying on current protected page:', currentPath);
+          }
+          // For other protected pages (like /social, /home, etc.), stay on current page
         } else {
-          console.log('🔍 AppComponent: Staying on current protected page:', currentPath);
+          console.log('❌ AppComponent: No user session found');
+          // User is not logged in, redirect to login if on any protected page
+          const currentPath = this.getCurrentRoutePath();
+          const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
+          if (!publicPaths.includes(currentPath)) {
+            console.log('🔄 AppComponent: Redirecting from protected page to login');
+            this.router.navigate(['/login']);
+          }
         }
-        // For other protected pages (like /social, /home, etc.), stay on current page
-      } else {
-        console.log('❌ AppComponent: No user session found');
-        // User is not logged in, redirect to login if on any protected page
+      } catch (error) {
+        console.log('❌ AppComponent: Session check failed:', error);
+        // If session check fails, only redirect if on a protected page
         const currentPath = this.getCurrentRoutePath();
         const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
         if (!publicPaths.includes(currentPath)) {
-          console.log('🔄 AppComponent: Redirecting from protected page to login');
+          console.log('🔄 AppComponent: Redirecting from protected page to login (session check failed)');
           this.router.navigate(['/login']);
         }
       }
-    } catch (error) {
-      console.log('❌ AppComponent: Session check failed:', error);
-      // If session check fails, only redirect if on a protected page
-      const currentPath = this.getCurrentRoutePath();
-      const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
-      if (!publicPaths.includes(currentPath)) {
-        console.log('🔄 AppComponent: Redirecting from protected page to login (session check failed)');
-        this.router.navigate(['/login']);
-      }
+    } else {
+      console.log('🔍 AppComponent: OAuth callback detected — skipping session check, waiting for SIGNED_IN event');
     }
 
     // Listen to auth state changes
     this.authService.onAuthStateChange(async (event, session) => {
-      console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
-      
-      if (event === 'SIGNED_OUT') {
-        console.log('🔄 AppComponent: User signed out, redirecting to login');
-        this.router.navigate(['/login']);
-      } else if (event === 'SIGNED_IN') {
-        console.log('🔄 AppComponent: User signed in, ensuring profile exists...');
+      // Run inside NgZone so Angular change detection picks up the navigation.
+      this.ngZone.run(async () => {
+        console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
         
-        // Ensure user profile exists with proper cash initialization
-        // This is critical for OAuth users on Safari/iPad
-        try {
-          await this.authService.ensureUserProfileExists(session?.user);
-          console.log('✅ AppComponent: User profile ensured');
-        } catch (error) {
-          console.error('❌ AppComponent: Failed to ensure user profile:', error);
-          // Don't block the sign-in process, but log the error
+        if (event === 'SIGNED_OUT') {
+          console.log('🔄 AppComponent: User signed out, redirecting to login');
+          this.router.navigate(['/login']);
+        } else if (event === 'SIGNED_IN') {
+          console.log('🔄 AppComponent: User signed in, ensuring profile exists...');
+          
+          // Ensure user profile exists with proper cash initialization
+          // This is critical for OAuth users on Safari/iPad
+          try {
+            await this.authService.ensureUserProfileExists(session?.user);
+            console.log('✅ AppComponent: User profile ensured');
+          } catch (error) {
+            console.error('❌ AppComponent: Failed to ensure user profile:', error);
+            // Don't block the sign-in process, but log the error
+          }
+          
+          // Only redirect to home if currently on login/signup/root page (or OAuth callback)
+          const currentPath = this.getCurrentRoutePath();
+          if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/' || isOAuthCallback) {
+            console.log('🔄 AppComponent: User signed in from auth page, redirecting to home');
+            this.router.navigate(['/home']);
+          } else {
+            console.log('🔍 AppComponent: User signed in, staying on current page:', currentPath);
+          }
+          // If user signs in while on other pages, stay there
         }
-        
-        // Only redirect to home if currently on login/signup page
-        const currentPath = this.getCurrentRoutePath();
-        if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
-          console.log('🔄 AppComponent: User signed in from auth page, redirecting to home');
-          this.router.navigate(['/home']);
-        } else {
-          console.log('🔍 AppComponent: User signed in, staying on current page:', currentPath);
-        }
-        // If user signs in while on other pages, stay there
-      }
+      });
     });
   }
 

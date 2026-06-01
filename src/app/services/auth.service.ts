@@ -46,12 +46,17 @@ export class AuthService {
     if (this.isMobile()) {
       return `io.ionic.habittycoon://auth/callback`; // Custom URL scheme for mobile
     } else {
-      // For GitHub Pages, we need to include the base path and account for hash routing
+      // For PKCE flow, the redirect URL must NOT contain a hash fragment.
+      // Supabase appends ?code= as a query param; if the redirect URL already
+      // has a hash (#/home), the code lands before the hash and Angular's hash
+      // router can't see it cleanly, causing a race where the auth guard fires
+      // before the code is exchanged.  Use the plain base path and let the
+      // SIGNED_IN event drive navigation to /home.
       const isGitHubPages = window.location.hostname === 'gmcrm.github.io';
       if (isGitHubPages) {
-        return `${window.location.origin}/habit-tycoon/#/home`; // GitHub Pages redirect with hash routing
+        return `${window.location.origin}/habit-tycoon/`; // GitHub Pages base URL (no hash)
       } else {
-        return `${window.location.origin}/#/home`; // Local/other web redirect with hash routing
+        return `${window.location.origin}/`; // Local/other web base URL (no hash)
       }
     }
   }
