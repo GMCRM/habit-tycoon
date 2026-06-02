@@ -45,6 +45,12 @@ export class SocialPage implements OnInit, OnDestroy {
   pendingRequests: any[] = [];
   sentRequests: any[] = [];
   friendsLeaderboard: any[] = [];
+
+  // Leaderboard view state
+  leaderboardView: 'networth' | 'cashearned' = 'networth';
+  cashPeriodFilter: 'weekly' | 'monthly' = 'weekly';
+  cashLeaderboard: any[] = [];
+  isLoadingCash = false;
   
   // UI state
   isLoading = false;
@@ -255,6 +261,34 @@ export class SocialPage implements OnInit, OnDestroy {
     this.selectedSegment = event.detail.value;
     // Save the selected tab to localStorage
     localStorage.setItem('social-selected-tab', this.selectedSegment);
+  }
+
+  async onLeaderboardViewChange(view: 'networth' | 'cashearned') {
+    this.leaderboardView = view;
+    if (view === 'cashearned' && this.cashLeaderboard.length === 0) {
+      await this.loadCashLeaderboard();
+    }
+  }
+
+  async onCashPeriodChange(event: any) {
+    this.cashPeriodFilter = event.detail.value;
+    await this.loadCashLeaderboard();
+  }
+
+  async loadCashLeaderboard() {
+    if (!this.currentUser) return;
+    this.isLoadingCash = true;
+    try {
+      this.cashLeaderboard = await this.socialService.getFriendsCashLeaderboard(
+        this.currentUser.id,
+        this.cashPeriodFilter
+      );
+    } catch (error) {
+      console.error('Error loading cash leaderboard:', error);
+      this.cashLeaderboard = [{ id: this.currentUser.id, name: 'You', cash_earned: 0, rank: 1 }];
+    } finally {
+      this.isLoadingCash = false;
+    }
   }
 
   goBack() {

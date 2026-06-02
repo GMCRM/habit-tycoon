@@ -764,4 +764,76 @@ export class SocialService {
       }];
     }
   }
+
+  // Habit Cash Earned Leaderboard (weekly or monthly)
+  async getFriendsCashLeaderboard(userId: string, period: 'weekly' | 'monthly'): Promise<any[]> {
+    try {
+      // Get current user profile
+      const { data: userProfile, error: userError } = await this.supabase
+        .from('user_profiles')
+        .select('id, name')
+        .eq('id', userId)
+        .single();
+
+      if (userError) {
+        console.error('Error loading user profile for cash leaderboard:', userError);
+      }
+
+      // Get friends
+      const friends = await this.getFriends(userId);
+
+      // Build list of all user IDs (self + friends)
+      const allIds: string[] = [userId, ...friends.map(f => f.friend_profile.id)];
+
+      // Query aggregated earnings via SECURITY DEFINER function
+      const { data: earningsData, error: earningsError } = await this.supabase
+        .rpc('get_users_cash_earned', { user_ids: allIds, period });
+
+      if (earningsError) {
+        console.error('Error loading cash earned leaderboard:', earningsError);
+      }
+
+      // Build a lookup map from the results
+      const earningsMap: Record<string, number> = {};
+      if (earningsData) {
+        for (const row of earningsData) {
+          earningsMap[row.user_id] = Number(row.total_earned) || 0;
+        }
+      }
+
+      // Assemble leaderboard entries
+      const leaderboard: any[] = [
+        {
+          id: userId,
+          name: 'You',
+          cash_earned: earningsMap[userId] ?? 0,
+          rank: 1
+        }
+      ];
+
+      if (friends.length > 0) {
+        const friendEntries = friends.map(f => ({
+          id: f.friend_profile.id,
+          name: f.friend_profile.name,
+          cash_earned: earningsMap[f.friend_profile.id] ?? 0,
+          rank: 0
+        }));
+        leaderboard.push(...friendEntries);
+
+        // Sort descending by cash_earned and assign ranks
+        leaderboard.sort((a, b) => b.cash_earned - a.cash_earned);
+        leaderboard.forEach((entry, i) => { entry.rank = i + 1; });
+      }
+
+      return leaderboard;
+    } catch (error) {
+      console.error('Error loading friends cash leaderboard:', error);
+      return [{
+        id: userId,
+        name: 'You',
+        cash_earned: 0,
+        rank: 1
+      }];
+    }
+  }
 }

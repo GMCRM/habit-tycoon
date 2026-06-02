@@ -212,7 +212,7 @@ ion-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   padding: 0 20px; // Match card content padding (20px) to align with friend name text
   
   h2 {
@@ -222,6 +222,66 @@ ion-content {
     font-weight: bold;
     text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
     text-align: center;
+  }
+}
+
+// Leaderboard view toggle (Net Worth / Habit Cash pill)
+.leaderboard-view-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 20px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  width: fit-content;
+  align-self: center;
+  margin-left: auto;
+  margin-right: auto;
+
+  .view-toggle-btn {
+    flex: 1;
+    padding: 9px 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.55);
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+
+    &.active {
+      background: rgba(255, 215, 0, 0.18);
+      color: var(--ion-color-primary);
+    }
+  }
+}
+
+// Period filter segment (Weekly / Monthly)
+.cash-period-segment {
+  margin-bottom: 16px;
+  --background: rgba(255, 255, 255, 0.05);
+
+  ion-segment-button {
+    --color: rgba(255, 255, 255, 0.6);
+    --color-checked: var(--ion-color-primary);
+    --indicator-color: rgba(255, 215, 0, 0.2);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+}
+
+// Loading state for cash leaderboard
+.cash-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+
+  ion-spinner {
+    color: var(--ion-color-primary);
+    width: 36px;
+    height: 36px;
   }
 }
 
