@@ -19,7 +19,11 @@ export class SupabaseService {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        // Set to false so Supabase does NOT auto-exchange the ?code= param on
+        // createClient(). We call exchangeCodeForSession() explicitly in
+        // AppComponent so we have a direct, awaitable handle on the result
+        // instead of racing against Supabase's internal lock.
+        detectSessionInUrl: false,
         flowType: 'pkce',
       },
       global: {

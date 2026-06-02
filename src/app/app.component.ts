@@ -137,31 +137,36 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      // OAuth callback path.
-      // SIGNED_IN may have already fired before our listener was registered
-      // (Supabase exchanges the code as part of createClient(), which happens
-      // before Angular's ngOnInit).  Poll getSession() as a reliable fallback.
-      console.log('🔍 AppComponent: OAuth callback detected — polling for session...');
-      let attempts = 0;
-      const pollForSession = async () => {
-        if (navigatedToHome) return; // Listener already handled it
-        attempts++;
-        try {
-          const { data: { session } } = await this.authService.getSession();
-          if (session) {
-            console.log('✅ AppComponent: OAuth session confirmed via poll');
-            this.ngZone.run(() => goHome(session.user));
-          } else if (attempts < 20) {
-            setTimeout(pollForSession, 400); // retry up to ~8 s
-          } else {
-            console.log('❌ AppComponent: OAuth session poll timed out, going to login');
-            this.router.navigate(['/login']);
-          }
-        } catch {
-          if (attempts < 20) setTimeout(pollForSession, 400);
+      // OAuth callback — exchange the code ourselves so we have a direct,
+      // awaitable result instead of racing against Supabase's internal lock.
+      // detectSessionInUrl is false in SupabaseService so Supabase will NOT
+      // attempt the exchange on its own.
+      if (urlParams.has('error_code')) {
+        console.error('❌ AppComponent: OAuth error:', urlParams.get('error_description'));
+        this.ngZone.run(() => this.router.navigate(['/login']));
+        return;
+      }
+
+      const code = urlParams.get('code')!;
+      console.log('🔍 AppComponent: OAuth callback — exchanging code for session...');
+      try {
+        const { data, error } = await this.authService.supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('❌ AppComponent: Code exchange failed:', error.message);
+          this.ngZone.run(() => this.router.navigate(['/login']));
+        } else if (data.session) {
+          console.log('✅ AppComponent: Code exchange succeeded');
+          // goHome may also be triggered by the SIGNED_IN listener above;
+          // navigatedToHome guards against a double navigation.
+          this.ngZone.run(async () => await goHome(data.session!.user));
+        } else {
+          console.error('❌ AppComponent: No session after code exchange');
+          this.ngZone.run(() => this.router.navigate(['/login']));
         }
-      };
-      setTimeout(pollForSession, 200);
+      } catch (err) {
+        console.error('❌ AppComponent: Code exchange threw:', err);
+        this.ngZone.run(() => this.router.navigate(['/login']));
+      }
     }
   }
 
