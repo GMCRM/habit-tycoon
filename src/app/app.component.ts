@@ -141,7 +141,16 @@ export class AppComponent implements OnInit, OnDestroy {
           const currentPath = this.getCurrentRoutePath();
           if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/' || isOAuthCallback) {
             console.log('🔄 AppComponent: User signed in from auth page, redirecting to home');
-            this.router.navigate(['/home']);
+            await this.router.navigate(['/home']);
+            // Clean the ?code= (and any other OAuth params) from the URL now that
+            // the PKCE exchange is done.  Leaving ?code= in the URL means a hard
+            // refresh would try to re-exchange an already-used, expired code —
+            // Supabase would get no SIGNED_IN event, the session check would be
+            // skipped (isOAuthCallback=true), and the user would see a black screen.
+            if (isOAuthCallback && window.location.search) {
+              const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+              window.history.replaceState(null, '', cleanUrl);
+            }
           } else {
             console.log('🔍 AppComponent: User signed in, staying on current page:', currentPath);
           }
