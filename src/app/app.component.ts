@@ -53,111 +53,116 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     // --- Resume / bfcache handling ---
-    // 'pageshow' fires on bfcache restores (event.persisted = true).
-    // On iOS Chrome the page is completely frozen in bfcache; the only
-    // reliable fix is a hard reload so Angular starts fresh.
     window.addEventListener('pageshow', (event: PageTransitionEvent) => {
       if (event.persisted) {
         window.location.reload();
       }
     });
-    // Track foreground/background transitions.
     document.addEventListener('visibilitychange', this.onVisibilityChange);
 
     console.log('🔍 AppComponent: Initializing app, current path:', this.getCurrentRoutePath());
 
-    // Detect OAuth callback: when Supabase PKCE redirects back it appends ?code=
-    // to the URL.  If we're in that flow, skip the immediate session check —
-    // Supabase's detectSessionInUrl will exchange the code and fire SIGNED_IN,
-    // which the onAuthStateChange listener below handles.  Doing a session check
-    // here before the exchange completes sees "no session" and would incorrectly
-    // push the user to /login (causing a blank screen while the exchange races).
     const urlParams = new URLSearchParams(window.location.search);
     const isOAuthCallback = urlParams.has('code') || urlParams.has('error_code');
 
+    // Guard to prevent double-navigation if both the listener and the OAuth
+    // poller resolve a session at nearly the same time.
+    let navigatedToHome = false;
+    const goHome = async (user: any) => {
+      if (navigatedToHome) return;
+      navigatedToHome = true;
+      try {
+        await this.authService.ensureUserProfileExists(user);
+      } catch (e) {
+        console.error('❌ AppComponent: Failed to ensure user profile:', e);
+      }
+      console.log('🔄 AppComponent: Navigating to home');
+      await this.router.navigate(['/home']);
+      // Strip ?code= so a hard-refresh doesn't attempt to re-exchange an
+      // already-used code (which would leave the user stuck on login).
+      if (window.location.search) {
+        const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+        window.history.replaceState(null, '', cleanUrl);
+      }
+    };
+
+    // CRITICAL: register the auth-state listener SYNCHRONOUSLY before any
+    // await.  Supabase begins the PKCE code exchange the moment createClient()
+    // is called (in SupabaseService constructor).  By the time ngOnInit runs,
+    // the exchange may already be complete and SIGNED_IN already fired.
+    // Registering here (before any await) gives us the best chance of catching
+    // it; the OAuth poller below is the fallback for when we still miss it.
+    this.authService.onAuthStateChange(async (event, session) => {
+      this.ngZone.run(async () => {
+        console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
+
+        if (event === 'SIGNED_OUT') {
+          console.log('🔄 AppComponent: User signed out, redirecting to login');
+          navigatedToHome = false; // Reset so next sign-in works
+          this.router.navigate(['/login']);
+        } else if (event === 'SIGNED_IN') {
+          console.log('🔄 AppComponent: SIGNED_IN event received');
+          const currentPath = this.getCurrentRoutePath();
+          if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/' || isOAuthCallback) {
+            await goHome(session?.user);
+          }
+        }
+      });
+    });
+
     if (!isOAuthCallback) {
-      // Check if user is already logged in when app starts
+      // Normal startup: check for an existing session and navigate accordingly.
       try {
         const { data: { session } } = await this.authService.getSession();
-        
         if (session) {
           console.log('✅ AppComponent: User session found');
-          // User is logged in, redirect to home if on login/signup/root page only
           const currentPath = this.getCurrentRoutePath();
           if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
-            console.log('🔄 AppComponent: Redirecting from auth page to home');
             this.router.navigate(['/home']);
-          } else {
-            console.log('🔍 AppComponent: Staying on current protected page:', currentPath);
           }
-          // For other protected pages (like /social, /home, etc.), stay on current page
         } else {
           console.log('❌ AppComponent: No user session found');
-          // User is not logged in, redirect to login if on any protected page
           const currentPath = this.getCurrentRoutePath();
           const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
           if (!publicPaths.includes(currentPath)) {
-            console.log('🔄 AppComponent: Redirecting from protected page to login');
             this.router.navigate(['/login']);
           }
         }
       } catch (error) {
         console.log('❌ AppComponent: Session check failed:', error);
-        // If session check fails, only redirect if on a protected page
         const currentPath = this.getCurrentRoutePath();
         const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
         if (!publicPaths.includes(currentPath)) {
-          console.log('🔄 AppComponent: Redirecting from protected page to login (session check failed)');
           this.router.navigate(['/login']);
         }
       }
     } else {
-      console.log('🔍 AppComponent: OAuth callback detected — skipping session check, waiting for SIGNED_IN event');
-    }
-
-    // Listen to auth state changes
-    this.authService.onAuthStateChange(async (event, session) => {
-      // Run inside NgZone so Angular change detection picks up the navigation.
-      this.ngZone.run(async () => {
-        console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
-        
-        if (event === 'SIGNED_OUT') {
-          console.log('🔄 AppComponent: User signed out, redirecting to login');
-          this.router.navigate(['/login']);
-        } else if (event === 'SIGNED_IN') {
-          console.log('🔄 AppComponent: User signed in, ensuring profile exists...');
-          
-          // Ensure user profile exists with proper cash initialization
-          // This is critical for OAuth users on Safari/iPad
-          try {
-            await this.authService.ensureUserProfileExists(session?.user);
-            console.log('✅ AppComponent: User profile ensured');
-          } catch (error) {
-            console.error('❌ AppComponent: Failed to ensure user profile:', error);
-            // Don't block the sign-in process, but log the error
-          }
-          
-          // Only redirect to home if currently on login/signup/root page (or OAuth callback)
-          const currentPath = this.getCurrentRoutePath();
-          if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/' || isOAuthCallback) {
-            console.log('🔄 AppComponent: User signed in from auth page, redirecting to home');
-            await this.router.navigate(['/home']);
-            // Clean the ?code= (and any other OAuth params) from the URL now that
-            // the PKCE exchange is done.  Leaving ?code= in the URL means a hard
-            // refresh would try to re-exchange an already-used, expired code —
-            // Supabase would get no SIGNED_IN event, the session check would be
-            // skipped (isOAuthCallback=true), and the user would see a black screen.
-            if (isOAuthCallback && window.location.search) {
-              const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
-              window.history.replaceState(null, '', cleanUrl);
-            }
+      // OAuth callback path.
+      // SIGNED_IN may have already fired before our listener was registered
+      // (Supabase exchanges the code as part of createClient(), which happens
+      // before Angular's ngOnInit).  Poll getSession() as a reliable fallback.
+      console.log('🔍 AppComponent: OAuth callback detected — polling for session...');
+      let attempts = 0;
+      const pollForSession = async () => {
+        if (navigatedToHome) return; // Listener already handled it
+        attempts++;
+        try {
+          const { data: { session } } = await this.authService.getSession();
+          if (session) {
+            console.log('✅ AppComponent: OAuth session confirmed via poll');
+            this.ngZone.run(() => goHome(session.user));
+          } else if (attempts < 20) {
+            setTimeout(pollForSession, 400); // retry up to ~8 s
           } else {
-            console.log('🔍 AppComponent: User signed in, staying on current page:', currentPath);
+            console.log('❌ AppComponent: OAuth session poll timed out, going to login');
+            this.router.navigate(['/login']);
           }
-          // If user signs in while on other pages, stay there
+        } catch {
+          if (attempts < 20) setTimeout(pollForSession, 400);
         }
-      });
-    });
+      };
+      setTimeout(pollForSession, 200);
+    }
   }
 
   ngOnDestroy() {
