@@ -68,6 +68,12 @@ export class AppComponent implements OnInit, OnDestroy {
     // Guard to prevent double-navigation if both the listener and the OAuth
     // poller resolve a session at nearly the same time.
     let navigatedToHome = false;
+    // True only while exchangeCodeForSession() is in-flight. Prevents a
+    // spurious SIGNED_OUT event (fired when Supabase invalidates a stale
+    // old session it finds in localStorage on startup) from racing with the
+    // new-session SIGNED_IN and sending Chrome Mac users back to /login.
+    let isExchangingCode = false;
+
     const goHome = async (user: any) => {
       if (navigatedToHome) return;
       navigatedToHome = true;
@@ -97,6 +103,16 @@ export class AppComponent implements OnInit, OnDestroy {
         console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
 
         if (event === 'SIGNED_OUT') {
+          // Ignore SIGNED_OUT while the OAuth code exchange is in-flight.
+          // On Chrome (desktop) Supabase fires SIGNED_OUT when it finds and
+          // invalidates a stale session stored in localStorage from a prior
+          // visit. If this event arrives after SIGNED_IN the unguarded
+          // router.navigate(['/login']) call would override the successful
+          // exchange and boot the user back to the login screen.
+          if (isExchangingCode) {
+            console.log('🔍 AppComponent: Ignoring SIGNED_OUT during OAuth code exchange');
+            return;
+          }
           console.log('🔄 AppComponent: User signed out, redirecting to login');
           navigatedToHome = false; // Reset so next sign-in works
           this.router.navigate(['/login']);
@@ -109,6 +125,14 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       });
     });
+
+    // Strip ?code= from the URL immediately so that if the page is ever
+    // restored from Chrome's bfcache the already-used code is not visible and
+    // won't trigger a second (doomed) exchange attempt.
+    if (isOAuthCallback && window.location.search && !urlParams.has('error_code')) {
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+      window.history.replaceState(null, '', cleanUrl);
+    }
 
     if (!isOAuthCallback) {
       // Normal startup: check for an existing session and navigate accordingly.
@@ -149,6 +173,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
       const code = urlParams.get('code')!;
       console.log('🔍 AppComponent: OAuth callback — exchanging code for session...');
+      isExchangingCode = true;
       try {
         const { data, error } = await this.authService.supabase.auth.exchangeCodeForSession(code);
         if (error) {
@@ -166,6 +191,8 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch (err) {
         console.error('❌ AppComponent: Code exchange threw:', err);
         this.ngZone.run(() => this.router.navigate(['/login']));
+      } finally {
+        isExchangingCode = false;
       }
     }
   }
