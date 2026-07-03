@@ -281,6 +281,7 @@ VALUES (
 -- Deduct cash from buyer
 UPDATE user_profiles
 SET cash = cash - total_cost,
+    net_worth = COALESCE(net_worth, 0) - total_cost,
     updated_at = NOW()
 WHERE id = buyer_id;
 RETURN jsonb_build_object(
@@ -475,9 +476,10 @@ VALUES (
         dividend_per_share,
         stockholder_dividend
     );
--- Add dividend to stockholder's cash
+-- Add dividend to stockholder's cash and update net worth
 UPDATE user_profiles
 SET cash = cash + stockholder_dividend,
+    net_worth = COALESCE(net_worth, 0) + stockholder_dividend,
     updated_at = NOW()
 WHERE id = stockholder.holder_id;
 -- Update total dividends earned in holding
@@ -508,7 +510,17 @@ SELECT sp.id,
     sp.type,
     sp.is_read,
     sp.created_at,
-    (sp.metadata->>'business_name')::TEXT
+    -- If the poke references a private habit_business_id, prefer the public business type name
+    CASE
+        WHEN sp.metadata ? 'habit_business_id' THEN (
+            SELECT bt.name
+            FROM habit_businesses hb2
+                LEFT JOIN business_types bt ON bt.id = hb2.business_type_id
+            WHERE hb2.id = (sp.metadata->>'habit_business_id')::UUID
+            LIMIT 1
+        )
+        ELSE (sp.metadata->>'business_name')::TEXT
+    END AS business_name
 FROM social_pokes sp
     INNER JOIN user_profiles up ON sp.from_user_id = up.id
 WHERE sp.to_user_id = user_uuid
@@ -652,8 +664,10 @@ VALUES (
         'sale'
     );
 -- Add proceeds to seller's cash
+-- Add proceeds to seller's cash and update net worth
 UPDATE user_profiles
 SET cash = cash + net_proceeds,
+    net_worth = COALESCE(net_worth, 0) + net_proceeds,
     updated_at = NOW()
 WHERE id = seller_id;
 RETURN jsonb_build_object(

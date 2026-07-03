@@ -96,24 +96,40 @@
 
               <div class="business-settings">
                 <ion-item lines="none" class="business-input">
-                  <ion-label position="stacked">Reset Interval</ion-label>
+                  <ion-label position="stacked">Schedule</ion-label>
                   <ion-select
                     [(ngModel)]="recurrenceInterval"
-                    placeholder="Select interval"
+                    placeholder="Select schedule"
                   >
                     <ion-select-option value="24h"
                       >Every Day 🔥</ion-select-option
                     >
-                    <ion-select-option value="7d"
-                      >Every Week 📅</ion-select-option
+                    <ion-select-option value="specific_days"
+                      >Specific Days 📅</ion-select-option
                     >
                   </ion-select>
                 </ion-item>
 
+                <!-- Day picker — only shown for specific_days -->
+                <div *ngIf="recurrenceInterval === 'specific_days'" class="day-picker-section">
+                  <div class="day-picker-label">Active Days</div>
+                  <div class="day-chips">
+                    <button
+                      *ngFor="let dow of dayDows; let i = index"
+                      class="day-chip"
+                      [class.active]="isDayActive(dow)"
+                      (click)="toggleDay(dow)"
+                      type="button"
+                    >{{ dayLabels[i] }}</button>
+                  </div>
+                  <div *ngIf="activeDays.length === 0" class="day-picker-warning">
+                    Select at least one active day
+                  </div>
+                </div>
+
                 <ion-item lines="none" class="business-input">
                   <ion-label position="stacked"
-                    >Required Completions (per {{ recurrenceInterval === '7d' ?
-                    'week' : 'day' }})</ion-label
+                    >Completions per day</ion-label
                   >
                   <ion-input
                     [(ngModel)]="goalValue"
@@ -123,10 +139,7 @@
                     placeholder="e.g., 1, 3, 5..."
                   ></ion-input>
                   <ion-note slot="helper">
-                    {{ goalValue > 1 ? 'Complete ' + goalValue + ' times per ' +
-                    (recurrenceInterval === '7d' ? 'week' : 'day') + ' for
-                    maximum earnings!' : 'Complete once per ' +
-                    (recurrenceInterval === '7d' ? 'week' : 'day') + '.' }}
+                    {{ goalValue > 1 ? 'Complete ' + goalValue + ' times per active day for maximum earnings!' : 'Complete once per active day.' }}
                   </ion-note>
                 </ion-item>
               </div>
@@ -231,7 +244,7 @@
               </div>
               <div class="business-actions">
                 <div class="frequency-badge">
-                  {{ recurrenceInterval === '7d' ? '📅 Weekly' : '🔥 Daily' }}
+                  {{ recurrenceInterval === 'specific_days' ? '📅 Specific Days' : '🔥 Daily' }}
                 </div>
               </div>
             </div>

@@ -26,21 +26,35 @@
     ></ion-textarea>
   </ion-item>
 
-  <div class="segment-label">Interval</div>
+  <div class="segment-label">Schedule</div>
   <ion-segment [(ngModel)]="recurrenceInterval">
     <ion-segment-button value="24h">
       <ion-label>Daily 🔥</ion-label>
     </ion-segment-button>
-    <ion-segment-button value="7d">
-      <ion-label>Weekly 📅</ion-label>
+    <ion-segment-button value="specific_days">
+      <ion-label>Specific Days 📅</ion-label>
     </ion-segment-button>
   </ion-segment>
 
+  <!-- Day picker — only shown for specific_days -->
+  <div *ngIf="recurrenceInterval === 'specific_days'" class="day-picker-section">
+    <div class="day-picker-label">Active Days</div>
+    <div class="day-chips">
+      <button
+        *ngFor="let dow of dayDows; let i = index"
+        class="day-chip"
+        [class.active]="isDayActive(dow)"
+        (click)="toggleDay(dow)"
+        type="button"
+      >{{ dayLabels[i] }}</button>
+    </div>
+    <div *ngIf="activeDays.length === 0" class="day-picker-warning">
+      Select at least one active day
+    </div>
+  </div>
+
   <ion-item>
-    <ion-label position="stacked"
-      >Completions per
-      {{ recurrenceInterval === "7d" ? "week" : "day" }}</ion-label
-    >
+    <ion-label position="stacked">Completions per day</ion-label>
     <ion-input
       type="number"
       [(ngModel)]="goalValue"
@@ -55,7 +69,7 @@
   <ion-button
     expand="block"
     (click)="save()"
-    [disabled]="!businessName.trim() || !habitDescription.trim()"
+    [disabled]="!isSaveValid"
   >
     Save Changes
   </ion-button>

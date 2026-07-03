@@ -74,8 +74,26 @@ export class CreateHabitBusinessPage implements OnInit {
   selectedBusinessType: BusinessType | null = null;
   habitName = '';
   habitDescription = '';
-  recurrenceInterval: '24h' | '7d' = '24h';
+  recurrenceInterval: '24h' | 'specific_days' = '24h';
+  activeDays: number[] = [1, 2, 3, 4, 5]; // Mon–Fri default
   goalValue = 1;
+
+  // Day labels for the day picker (0=Sun … 6=Sat)
+  readonly dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  readonly dayDows   = [0, 1, 2, 3, 4, 5, 6];
+
+  toggleDay(dow: number) {
+    const idx = this.activeDays.indexOf(dow);
+    if (idx >= 0) {
+      this.activeDays = this.activeDays.filter(d => d !== dow);
+    } else {
+      this.activeDays = [...this.activeDays, dow].sort((a, b) => a - b);
+    }
+  }
+
+  isDayActive(dow: number): boolean {
+    return this.activeDays.includes(dow);
+  }
 
   constructor(
     private habitBusinessService: HabitBusinessService,
@@ -151,10 +169,12 @@ export class CreateHabitBusinessPage implements OnInit {
   }
 
   get isFormValid(): boolean {
+    const daysValid = this.recurrenceInterval !== 'specific_days' || this.activeDays.length > 0;
     return !!(this.selectedBusinessType && 
               this.habitName.trim() &&
               this.habitDescription.trim() && 
               this.recurrenceInterval &&
+              daysValid &&
               this.goalValue > 0 && this.goalValue <= 20);
   }
 
@@ -186,7 +206,8 @@ export class CreateHabitBusinessPage implements OnInit {
         business_name: this.habitName.trim(),
         habit_description: this.habitDescription.trim(),
         recurrence_interval: this.recurrenceInterval,
-        goal_value: this.goalValue
+        goal_value: this.goalValue,
+        active_days: this.recurrenceInterval === 'specific_days' ? this.activeDays : undefined
       };
 
       console.log('Creating habit-business:', request);

@@ -416,6 +416,21 @@ export class HomePage implements OnInit, OnDestroy {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
   }
 
+  /** True when today is one of the habit's active days (or it's a daily habit). */
+  isTodayActiveDay(habitBusiness: HabitBusiness): boolean {
+    return this.habitIntervalService.isTodayActiveDay(habitBusiness);
+  }
+
+  /** Label of the next active day for a specific_days habit (e.g. "Monday"). */
+  getNextActiveDayLabel(habitBusiness: HabitBusiness): string {
+    return this.habitIntervalService.getNextActiveDayLabel(habitBusiness.active_days || []);
+  }
+
+  /** Active day DOW array for chip rendering (0=Sun…6=Sat). */
+  readonly allDows = [0, 1, 2, 3, 4, 5, 6];
+  readonly dayChipLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  readonly today = new Date();
+
   /**
    * Undo habit completion for today
    */
@@ -602,8 +617,8 @@ export class HomePage implements OnInit, OnDestroy {
           business_name: data.businessName,
           habit_description: data.habitDescription,
           recurrence_interval: data.recurrenceInterval,
-          frequency: data.recurrenceInterval === '7d' ? 'weekly' : 'daily',
-          goal_value: data.goalValue
+          goal_value: data.goalValue,
+          active_days: data.activeDays
         });
 
         const successToast = await this.toastController.create({
@@ -874,7 +889,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.tickSub = this.countdownTickService.tick$.subscribe(() => {
       this.habitBusinesses.forEach(hb => {
         const interval = this.habitIntervalService.resolveInterval(hb);
-        const secs = this.habitIntervalService.getSecondsUntilReset(interval);
+        const secs = this.habitIntervalService.getSecondsUntilReset(interval, new Date(), hb.active_days);
         this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
       });
     });

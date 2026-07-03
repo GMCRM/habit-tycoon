@@ -17,6 +17,8 @@ DECLARE v_streak INTEGER;
 v_total_completions INTEGER;
 v_business_name TEXT;
 v_business_icon TEXT;
+v_business_type_name TEXT;
+v_business_type_icon TEXT;
 v_achiever_name TEXT;
 v_milestone_key TEXT;
 v_milestone_emoji TEXT;
@@ -28,11 +30,16 @@ BEGIN -- 1. Load the habit business details
 SELECT hb.streak,
     hb.total_completions,
     hb.business_name,
-    hb.business_icon INTO v_streak,
+    hb.business_icon,
+    bt.name,
+    bt.icon INTO v_streak,
     v_total_completions,
     v_business_name,
-    v_business_icon
+    v_business_icon,
+    v_business_type_name,
+    v_business_type_icon
 FROM habit_businesses hb
+    LEFT JOIN business_types bt ON bt.id = hb.business_type_id
 WHERE hb.id = habit_business_uuid
     AND hb.user_id = achiever_user_id;
 -- If the habit wasn't found or doesn't belong to this user, bail out silently
@@ -77,7 +84,8 @@ SELECT COALESCE(up.name, 'A friend') INTO v_achiever_name
 FROM user_profiles up
 WHERE up.id = achiever_user_id;
 -- Build the message
-v_message := v_achiever_name || ' just hit ' || v_milestone_emoji || ' on ' || v_business_icon || ' ' || v_business_name || '!';
+-- Use the public business type name (not the user's private habit name) in friend-facing messages
+v_message := v_achiever_name || ' just hit ' || v_milestone_emoji || ' on ' || COALESCE(v_business_type_icon, v_business_icon, '') || ' ' || COALESCE(v_business_type_name, v_business_name) || '!';
 -- 5. Insert one notification per accepted friend (both friendship directions)
 FOR v_friend_id IN
 SELECT f.friend_id AS friend_id

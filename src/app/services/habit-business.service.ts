@@ -21,9 +21,10 @@ export interface HabitBusiness {
   business_icon: string;
   cost: number;
   habit_description: string;
-  recurrence_interval: '24h' | '7d';
+  recurrence_interval: '24h' | '7d' | 'specific_days'; // '7d' kept for backward compat
   frequency?: 'daily' | 'weekly'; // @deprecated — use recurrence_interval
-  goal_value: number; // How many times per interval period (e.g., 5/day, 3/week)
+  active_days?: number[]; // DOW array (0=Sun…6=Sat), only used for 'specific_days'
+  goal_value: number; // How many times per active day (e.g., 3 push-up sets/day)
   current_progress: number; // Current completions for this interval period
   earnings_per_completion: number;
   streak: number;
@@ -42,8 +43,9 @@ export interface CreateHabitBusinessRequest {
   business_type_id: number;
   business_name: string;
   habit_description: string;
-  recurrence_interval: '24h' | '7d';
+  recurrence_interval: '24h' | 'specific_days';
   goal_value: number;
+  active_days?: number[]; // required when recurrence_interval === 'specific_days'
 }
 
 export interface BusinessStock {
@@ -295,7 +297,7 @@ export class HabitBusinessService {
       const nextOrderValue = (existingHabits?.length || 0) + 1;
 
       // Create the habit-business
-      const habitBusinessData = {
+      const habitBusinessData: any = {
         user_id: user.id,
         business_type_id: request.business_type_id,
         business_name: request.business_name,
@@ -303,7 +305,8 @@ export class HabitBusinessService {
         cost: businessType.base_cost,
         habit_description: request.habit_description,
         recurrence_interval: request.recurrence_interval,
-        frequency: request.recurrence_interval === '7d' ? 'weekly' : 'daily', // backward compat
+        frequency: 'daily', // backward compat — specific_days behaves like daily
+        active_days: request.recurrence_interval === 'specific_days' ? (request.active_days || []) : null,
         goal_value: request.goal_value,
         current_progress: 0,
         earnings_per_completion: this.calculateReasonableEarnings(businessType.base_pay, request.goal_value), // Use reasonable earnings calculation
@@ -453,9 +456,9 @@ export class HabitBusinessService {
   async updateHabitBusiness(habitBusinessId: string, updates: {
     business_name?: string;
     habit_description?: string;
-    frequency?: 'daily' | 'weekly';
-    recurrence_interval?: '24h' | '7d';
+    recurrence_interval?: '24h' | 'specific_days';
     goal_value?: number;
+    active_days?: number[];
   }): Promise<void> {
     try {
       // Get current user
@@ -566,10 +569,10 @@ export class HabitBusinessService {
         throw deleteError;
       }
 
-      // Add sell value to user's cash
+      // Add sell value to user's cash and net worth
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
-        .select('cash')
+        .select('cash, net_worth')
         .eq('id', user.id)
         .single();
 
@@ -578,17 +581,19 @@ export class HabitBusinessService {
       }
 
       const newCash = profile.cash + sellValue;
+      const newNetWorth = (profile.net_worth || 0) + sellValue;
 
       const { error: updateCashError } = await this.supabase
         .from('user_profiles')
         .update({ 
           cash: newCash,
+          net_worth: newNetWorth,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
 
       if (updateCashError) {
-        console.error('Error updating user cash after sale:', updateCashError);
+        console.error('Error updating user cash/net_worth after sale:', updateCashError);
         throw new Error('Habit business deleted but failed to add sale proceeds');
       }
 

@@ -494,17 +494,15 @@
                   <p class="habit-description">{{ hb.habit_description }}</p>
                   <div class="habit-stats">
                     <div class="stat-item">
-                      <div class="stat-label">Interval</div>
+                      <div class="stat-label">Schedule</div>
                       <div class="stat-value frequency">
-                        {{ hb.recurrence_interval === '7d' ? '7 Days' : '1 Day'
-                        }}
+                        {{ hb.recurrence_interval === 'specific_days' ? 'Specific Days' : '1 Day' }}
                       </div>
                     </div>
                     <div class="stat-item">
                       <div class="stat-label">Streak</div>
                       <div class="stat-value streak">
-                        {{ hb.streak }} {{ hb.recurrence_interval === '7d' ?
-                        'weeks' : 'days' }}
+                        {{ hb.streak }} days
                       </div>
                     </div>
                     <div class="stat-item">
@@ -514,13 +512,30 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- Day chips — only shown for specific_days habits -->
+                  <div *ngIf="hb.recurrence_interval === 'specific_days' || hb.frequency === 'weekly'" class="habit-day-chips">
+                    <span
+                      *ngFor="let dow of allDows; let i = index"
+                      class="habit-day-chip"
+                      [class.active]="(hb.active_days || []).includes(dow)"
+                      [class.today]="dow === today.getDay()"
+                    >{{ dayChipLabels[i] }}</span>
+                    <span *ngIf="!isTodayActiveDay(hb)" class="next-active-label">
+                      Next: {{ getNextActiveDayLabel(hb) }}
+                    </span>
+                  </div>
+
                   <div class="habit-period-status">
                     <span class="period-progress"
                       >{{ hb.current_progress || 0 }}/{{ hb.goal_value || 1 }}
                       completions</span
                     >
-                    <span class="period-reset"
+                    <span *ngIf="isTodayActiveDay(hb)" class="period-reset"
                       >&bull; resets in {{ countdowns[hb.id] || '...' }}</span
+                    >
+                    <span *ngIf="!isTodayActiveDay(hb)" class="period-reset rest-day"
+                      >&bull; rest day</span
                     >
                   </div>
 

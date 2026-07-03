@@ -135,7 +135,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
     this.tickSub = this.countdownTickService.tick$.subscribe(() => {
       this.habits.forEach(hb => {
         const interval = this.habitIntervalService.resolveInterval(hb);
-        const secs = this.habitIntervalService.getSecondsUntilReset(interval);
+        const secs = this.habitIntervalService.getSecondsUntilReset(interval, new Date(), hb.active_days);
         this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
       });
     });
@@ -184,12 +184,12 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
       this.habits = allHabits.map(habit => this.addCompletionStatus(habit));
       // Backward-compat aliases so existing template references still work
       this.todaysHabits = this.habits.filter(h => this.habitIntervalService.resolveInterval(h) === '24h');
-      this.weeklyHabits = this.habits.filter(h => this.habitIntervalService.resolveInterval(h) === '7d');
+      this.weeklyHabits = this.habits.filter(h => this.habitIntervalService.resolveInterval(h) === 'specific_days');
 
       // Seed initial countdown values
       this.habits.forEach(hb => {
         const interval = this.habitIntervalService.resolveInterval(hb);
-        const secs = this.habitIntervalService.getSecondsUntilReset(interval);
+        const secs = this.habitIntervalService.getSecondsUntilReset(interval, new Date(), hb.active_days);
         this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
       });
       
@@ -206,7 +206,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
 
   private addCompletionStatus(habit: HabitBusiness): HabitWithCompletion {
     const completedToday = this.habitIntervalService.isHabitCompleteForCurrentPeriod(habit);
-    const completedThisWeek = completedToday && this.habitIntervalService.resolveInterval(habit) === '7d';
+    const completedThisWeek = completedToday && this.habitIntervalService.resolveInterval(habit) === 'specific_days';
 
     // Calculate potential earnings with streak multiplier
     const nextStreak = habit.streak + 1;

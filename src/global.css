@@ -1,0 +1,141 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+/**
+ * Ionic Dark Mode
+ * -----------------------------------------------------
+ * For more info, please see:
+ * https://ionicframework.com/docs/theming/dark-mode
+ */
+/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+@import '@ionic/angular/css/palettes/dark.system.css';
+/**
+ * Custom Modal Styles
+ * -----------------------------------------------------
+ */
+/* Upgrade Modal */
+.upgrade-modal .modal-wrapper {
+  --height: auto;
+  --max-height: 90vh;
+  --max-width: 500px;
+  --width: 95%;
+  --border-radius: 16px;
+}
+
+.upgrade-modal .modal-wrapper .modal-shadow {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure vertical scrolling works in modal content */
+.upgrade-modal ion-content {
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Hide scrollbar for WebKit browsers */
+}
+.upgrade-modal ion-content::-webkit-scrollbar {
+  display: none;
+}
+.upgrade-modal ion-content {
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for the modal content element specifically */
+.upgrade-modal .inner-scroll::-webkit-scrollbar {
+  display: none;
+}
+.upgrade-modal .inner-scroll {
+  scrollbar-width: none;
+}
+
+/* Target Ionic's internal scroll elements */
+.upgrade-modal .scroll-content::-webkit-scrollbar,
+.upgrade-modal .scroll-y::-webkit-scrollbar,
+.upgrade-modal .scroll-inner::-webkit-scrollbar {
+  display: none;
+  width: 0 !important;
+}
+.upgrade-modal .scroll-content,
+.upgrade-modal .scroll-y,
+.upgrade-modal .scroll-inner {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Global scrollbar hiding for all elements within upgrade modal */
+.upgrade-modal *::-webkit-scrollbar {
+  display: none;
+  width: 0 !important;
+}
+.upgrade-modal * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Custom Alert Styles */
+.alert-wrapper {
+  --max-width: 400px;
+  --border-radius: 12px;
+}
+
+.disabled-button {
+  opacity: 0.5 !important;
+  pointer-events: none !important;
+}
+
+/* Desktop-only utility class for hiding elements on mobile screens */
+@media (max-width: 1299px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Fix for iPad Safari - force ion-title to align left */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  ion-toolbar ion-title {
+    text-align: left !important;
+    padding-left: 16px !important;
+    justify-content: flex-start !important;
+    /* Specifically target the title element */
+  }
+  ion-toolbar ion-title .toolbar-title {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    padding-left: 0 !important;
+  }
+  /* Additional specificity for iPad */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    ion-header ion-toolbar ion-title {
+      text-align: left !important;
+      justify-content: flex-start !important;
+      padding-left: 16px !important;
+    }
+    ion-header ion-toolbar ion-title .toolbar-title {
+      text-align: left !important;
+      justify-content: flex-start !important;
+    }
+  }
+}/*# sourceMappingURL=global.css.map */
