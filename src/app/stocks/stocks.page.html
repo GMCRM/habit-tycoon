@@ -618,6 +618,18 @@
                   <div class="stat-item">
                     <div style="display: flex; gap: 8px; align-items: center">
                       <ion-button
+                        *ngIf="canBuyMoreShares(holding)"
+                        fill="outline"
+                        size="small"
+                        color="success"
+                        (click)="buyMoreShares(holding)"
+                        [disabled]="isLoading"
+                        class="buy-more-button"
+                      >
+                        <ion-icon name="add-circle" slot="start"></ion-icon>
+                        Buy
+                      </ion-button>
+                      <ion-button
                         fill="outline"
                         size="small"
                         color="warning"

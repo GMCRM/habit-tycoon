@@ -626,6 +626,33 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
+   * Find the live "available stocks" entry backing a portfolio holding,
+   * which is where shares_available is tracked.
+   */
+  getBusinessForHolding(holding: Portfolio): FriendBusiness | undefined {
+    return this.friendBusinesses.find(b => b.stockId === holding.stockId);
+  }
+
+  /**
+   * Whether more shares of an already-owned stock can still be bought
+   */
+  canBuyMoreShares(holding: Portfolio): boolean {
+    const business = this.getBusinessForHolding(holding);
+    return !!business && business.sharesAvailable > 0;
+  }
+
+  /**
+   * Buy one more share of a stock already held in the portfolio
+   */
+  async buyMoreShares(holding: Portfolio) {
+    const business = this.getBusinessForHolding(holding);
+    if (!business) {
+      return;
+    }
+    await this.buyShares(business, 1);
+  }
+
+  /**
    * Get price change percentage from base price
    */
   getPriceChangePercentage(business: FriendBusiness): number {
