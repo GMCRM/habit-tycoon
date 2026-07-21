@@ -337,7 +337,7 @@
                   <div class="user-info">
                     <h3>{{ user.name }}</h3>
                     <p class="net-worth">
-                      Net Worth: ${{ user.net_worth || '0.00' }}
+                      Net Worth: ${{ (user.net_worth || 0) | number:'1.2-2' }}
                     </p>
                   </div>
 
