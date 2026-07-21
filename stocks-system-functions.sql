@@ -131,6 +131,7 @@ CREATE OR REPLACE FUNCTION get_user_stock_portfolio(user_uuid UUID) RETURNS TABL
         business_id UUID,
         business_name TEXT,
         business_icon TEXT,
+        owner_id UUID,
         owner_name TEXT,
         shares_owned INTEGER,
         average_purchase_price NUMERIC,
@@ -148,6 +149,7 @@ SELECT sh.id,
     bt.name as business_name,
     -- Use business type name for privacy instead of personal habit name
     hb.business_icon,
+    hb.user_id as owner_id,
     up.name,
     sh.shares_owned,
     sh.average_purchase_price,
@@ -505,9 +507,9 @@ CREATE OR REPLACE FUNCTION get_user_social_notifications(user_uuid UUID) RETURNS
     ) LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN RETURN QUERY
 SELECT sp.id,
     up.name,
-    up.avatar_url,
+    '' as from_user_avatar,
     sp.message,
-    sp.type,
+    sp.type::TEXT,
     sp.is_read,
     sp.created_at,
     -- If the poke references a private habit_business_id, prefer the public business type name
@@ -588,7 +590,7 @@ CREATE OR REPLACE FUNCTION sell_stock_shares(
         stock_uuid UUID,
         shares_to_sell INTEGER
     ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE current_stock_price NUMERIC;
+DECLARE v_current_stock_price NUMERIC;
 holding_record RECORD;
 total_sale_value NUMERIC;
 capital_gains NUMERIC;
@@ -596,10 +598,10 @@ transaction_fee NUMERIC := 0.02;
 -- 2% transaction fee
 net_proceeds NUMERIC;
 BEGIN -- Get current stock price
-SELECT current_stock_price INTO current_stock_price
+SELECT current_stock_price INTO v_current_stock_price
 FROM business_stocks
 WHERE id = stock_uuid;
-IF current_stock_price IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Stock not found');
+IF v_current_stock_price IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Stock not found');
 END IF;
 -- Get user's holding
 SELECT * INTO holding_record
@@ -617,13 +619,13 @@ IF holding_record.shares_owned < shares_to_sell THEN RETURN jsonb_build_object(
 );
 END IF;
 -- Calculate sale proceeds
-total_sale_value := current_stock_price * shares_to_sell;
+total_sale_value := v_current_stock_price * shares_to_sell;
 transaction_fee := total_sale_value * 0.02;
 -- 2% fee
 net_proceeds := total_sale_value - transaction_fee;
 -- Calculate capital gains/loss
 capital_gains := (
-    current_stock_price - holding_record.average_purchase_price
+    v_current_stock_price - holding_record.average_purchase_price
 ) * shares_to_sell;
 -- Update or remove holding
 IF holding_record.shares_owned = shares_to_sell THEN -- Selling all shares - remove holding
@@ -659,7 +661,7 @@ VALUES (
         -- No specific buyer (back to market)
         seller_id,
         shares_to_sell,
-        current_stock_price,
+        v_current_stock_price,
         total_sale_value,
         'sale'
     );
@@ -676,7 +678,7 @@ RETURN jsonb_build_object(
     'shares_sold',
     shares_to_sell,
     'sale_price_per_share',
-    current_stock_price,
+    v_current_stock_price,
     'total_sale_value',
     total_sale_value,
     'transaction_fee',

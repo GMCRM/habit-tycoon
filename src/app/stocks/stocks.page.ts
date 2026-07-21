@@ -444,8 +444,7 @@ export class StocksPage implements OnInit, OnDestroy {
 
     try {
       // Get current user's name for the notification
-      const { data: userProfile } = await this.authService.getUserProfile(this.currentUser.id);
-      const currentUserName = userProfile?.name || this.currentUser?.email || 'A stockholder';
+      const currentUserName = this.userProfile?.name || this.currentUser?.email || 'A stockholder';
 
       await this.socialService.sendStockholderReminder(
         this.currentUser.id, 
@@ -907,7 +906,7 @@ export class StocksPage implements OnInit, OnDestroy {
                   fromUserId: this.currentUser.id,
                   toUserId: holding.ownerId,
                   businessName: holding.businessName,
-                  fromUserName: this.currentUser.user_metadata?.display_name || this.currentUser.email || 'A fellow investor',
+                  fromUserName: this.userProfile?.name || this.currentUser.email || 'A fellow investor',
                   currentUser: this.currentUser
                 });
 
@@ -916,7 +915,7 @@ export class StocksPage implements OnInit, OnDestroy {
                   this.currentUser.id,
                   holding.ownerId,
                   holding.businessName,
-                  this.currentUser.user_metadata?.display_name || this.currentUser.email || 'A fellow investor'
+                  this.userProfile?.name || this.currentUser.email || 'A fellow investor'
                 );
 
                 // Mark reminder as sent
