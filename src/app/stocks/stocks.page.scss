@@ -2138,7 +2138,7 @@ ion-content {
       
       p {
         margin: 5px 0 0 0;
-        color: var(--ion-color-medium);
+        color: rgba(255, 255, 255, 0.7);
         font-size: 0.95rem;
       }
     }
@@ -2243,65 +2243,3 @@ ion-content {
   }
 }
 
-// Dark mode adjustments
-@media (prefers-color-scheme: dark) {
-  .sell-modal-content {
-    .business-info {
-      .business-header {
-        h2 {
-          color: var(--ion-color-light);
-        }
-      }
-    }
-    
-    .holdings-info {
-      background: var(--ion-color-dark-tint);
-      
-      p {
-        color: var(--ion-color-light);
-        
-        strong {
-          color: var(--ion-color-light);
-        }
-      }
-    }
-    
-    .sell-controls {
-      ion-item {
-        --background: var(--ion-color-dark-tint);
-        --color: var(--ion-color-light);
-        --padding-start: 16px;
-        --padding-end: 16px;
-        --padding-top: 12px;
-        --padding-bottom: 12px;
-        --inner-padding-end: 8px;
-        min-height: 60px;
-        
-        ion-label {
-          color: var(--ion-color-light) !important;
-          margin-bottom: 8px !important;
-        }
-        
-        ion-select {
-          color: var(--ion-color-light);
-          --padding-top: 4px;
-          --padding-bottom: 4px;
-          min-height: 40px;
-        }
-      }
-      
-      .sell-preview {
-        background: var(--ion-color-dark);
-        border-color: var(--ion-color-primary);
-        
-        p {
-          color: var(--ion-color-light) !important;
-          
-          strong {
-            color: var(--ion-color-primary-tint) !important;
-          }
-        }
-      }
-    }
-  }
-}
