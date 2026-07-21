@@ -258,6 +258,15 @@ ion-content {
   }
 }
 
+// Countdown to the weekly leaderboard reset
+.weekly-reset-countdown {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
 // Period filter segment (Weekly / Monthly)
 .cash-period-segment {
   margin-bottom: 16px;

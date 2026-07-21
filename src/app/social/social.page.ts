@@ -286,7 +286,8 @@ export class SocialPage implements OnInit, OnDestroy {
     this.isLoadingCash = true;
     try {
       this.cashLeaderboard = await this.socialService.getFriendsCashLeaderboard(
-        this.currentUser.id
+        this.currentUser.id,
+        this.getCurrentWeekStart()
       );
     } catch (error) {
       console.error('Error loading cash leaderboard:', error);
@@ -301,7 +302,8 @@ export class SocialPage implements OnInit, OnDestroy {
     this.isLoadingCompleted = true;
     try {
       this.completedLeaderboard = await this.socialService.getFriendsHabitsCompletedLeaderboard(
-        this.currentUser.id
+        this.currentUser.id,
+        this.getCurrentWeekStart()
       );
     } catch (error) {
       console.error('Error loading habits completed leaderboard:', error);
@@ -309,6 +311,34 @@ export class SocialPage implements OnInit, OnDestroy {
     } finally {
       this.isLoadingCompleted = false;
     }
+  }
+
+  // Start of the current local week (Monday 00:00) — the weekly leaderboards' reset point
+  private getCurrentWeekStart(): Date {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // getDay(): 0 = Sunday .. 6 = Saturday; distance back to Monday
+    const daysSinceMonday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - daysSinceMonday);
+    return start;
+  }
+
+  // Formats the time remaining until the weekly leaderboards reset, e.g. "2d 5h 12m"
+  // `_tick` is unused but forces Angular to re-evaluate this binding on each timeRefreshInterval tick
+  getWeeklyResetCountdown(_tick = this.timeRefreshTick): string {
+    const nextReset = new Date(this.getCurrentWeekStart());
+    nextReset.setDate(nextReset.getDate() + 7);
+
+    const msRemaining = nextReset.getTime() - Date.now();
+    const totalMinutes = Math.max(0, Math.ceil(msRemaining / 60_000));
+
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
   }
 
   goBack() {

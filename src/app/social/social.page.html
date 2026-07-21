@@ -349,6 +349,10 @@
 
           <!-- Habit Cash Earned View -->
           <ng-container *ngIf="leaderboardView === 'cashearned'">
+            <p class="weekly-reset-countdown">
+              ⏱️ Resets in {{ getWeeklyResetCountdown() }}
+            </p>
+
             <!-- Metric Filter -->
             <ion-segment
               class="cash-period-segment"

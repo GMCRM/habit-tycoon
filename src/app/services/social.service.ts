@@ -765,8 +765,8 @@ export class SocialService {
     }
   }
 
-  // Weekly Habit Cash Earned Leaderboard
-  async getFriendsCashLeaderboard(userId: string): Promise<any[]> {
+  // Weekly Habit Cash Earned Leaderboard (resets at the start of the user's local week)
+  async getFriendsCashLeaderboard(userId: string, weekStart: Date): Promise<any[]> {
     try {
       // Get current user profile
       const { data: userProfile, error: userError } = await this.supabase
@@ -787,7 +787,7 @@ export class SocialService {
 
       // Query aggregated earnings via SECURITY DEFINER function
       const { data: earningsData, error: earningsError } = await this.supabase
-        .rpc('get_users_cash_earned', { user_ids: allIds, period: 'weekly' });
+        .rpc('get_users_cash_earned', { user_ids: allIds, period: 'weekly', week_start: weekStart.toISOString() });
 
       if (earningsError) {
         console.error('Error loading cash earned leaderboard:', earningsError);
@@ -837,8 +837,8 @@ export class SocialService {
     }
   }
 
-  // Weekly Habits Completed Leaderboard
-  async getFriendsHabitsCompletedLeaderboard(userId: string): Promise<any[]> {
+  // Weekly Habits Completed Leaderboard (resets at the start of the user's local week)
+  async getFriendsHabitsCompletedLeaderboard(userId: string, weekStart: Date): Promise<any[]> {
     try {
       // Get friends
       const friends = await this.getFriends(userId);
@@ -848,7 +848,7 @@ export class SocialService {
 
       // Query aggregated completion counts via SECURITY DEFINER function
       const { data: completionsData, error: completionsError } = await this.supabase
-        .rpc('get_users_habits_completed', { user_ids: allIds });
+        .rpc('get_users_habits_completed', { user_ids: allIds, week_start: weekStart.toISOString() });
 
       if (completionsError) {
         console.error('Error loading habits completed leaderboard:', completionsError);
