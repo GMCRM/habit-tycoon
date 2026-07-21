@@ -308,7 +308,23 @@ ion-content {
   .friend-info {
     display: flex;
     align-items: center;
-    
+
+    .delete-button {
+      --padding-start: 8px;
+      --padding-end: 8px;
+      --color: var(--ion-color-danger);
+      margin: 0;
+      flex-shrink: 0;
+
+      ion-icon {
+        font-size: 1.2rem;
+      }
+
+      &:hover {
+        --background: rgba(var(--ion-color-danger-rgb), 0.1);
+      }
+    }
+
     .friend-details {
       flex: 1;
       

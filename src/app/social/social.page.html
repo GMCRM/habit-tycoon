@@ -72,6 +72,15 @@
                   <div class="friend-details">
                     <h3>{{ friend.friend_profile?.name }}</h3>
                   </div>
+                  <ion-button
+                    fill="clear"
+                    size="small"
+                    color="danger"
+                    (click)="removeFriend(friend)"
+                    class="delete-button"
+                  >
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
                 </div>
               </ion-card-content>
             </ion-card>

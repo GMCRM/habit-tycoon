@@ -464,6 +464,48 @@ export class SocialPage implements OnInit, OnDestroy {
     }
   }
 
+  async removeFriend(friend: Friend) {
+    const alert = await this.alertController.create({
+      header: 'Remove Friend',
+      message: `Remove ${friend.friend_profile?.name || 'this friend'} from your friends list?`,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'Remove',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              await this.socialService.removeFriend(this.currentUser.id, friend.friend_profile.id);
+
+              this.friends = this.friends.filter(f => f.id !== friend.id);
+
+              const toast = await this.toastController.create({
+                message: '👋 Friend removed',
+                duration: 2000,
+                color: 'medium'
+              });
+              await toast.present();
+
+            } catch (error) {
+              console.error('Error removing friend:', error);
+              const toast = await this.toastController.create({
+                message: 'Failed to remove friend',
+                duration: 3000,
+                color: 'danger'
+              });
+              await toast.present();
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
   formatTimeAgo(date: string, _tick = this.timeRefreshTick): string {
     const now = new Date();
     const postDate = new Date(date);
