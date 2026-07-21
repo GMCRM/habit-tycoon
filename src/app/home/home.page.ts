@@ -1283,7 +1283,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (cash >= 1000 && !this.showDetailedCash) {
       return this.formatLargeNumber(cash);
     }
-    return cash.toFixed(2);
+    return cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /**
@@ -1294,7 +1294,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (netWorth >= 1000 && !this.showDetailedNetWorth) {
       return this.formatLargeNumber(netWorth);
     }
-    return netWorth.toFixed(2);
+    return netWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /**
