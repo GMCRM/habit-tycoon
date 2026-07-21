@@ -686,34 +686,6 @@ export class SocialService {
         }];
       }
 
-      // Calculate real net worth: cash + value of all habit businesses
-      let calculatedNetWorth = userProfile.cash || 0;
-      
-      try {
-        // Get user's habit businesses to calculate their total value
-        const { data: habitBusinesses } = await this.supabase
-          .from('habit_businesses')
-          .select(`
-            id, business_type_id, level,
-            business_types!inner(base_cost)
-          `)
-          .eq('user_id', userId);
-
-        if (habitBusinesses) {
-          // Calculate total value of businesses (assuming 70% of cost as current value)
-          const businessValue = habitBusinesses.reduce((total, business: any) => {
-            const businessCost = business.business_types?.base_cost || 0;
-            const currentValue = businessCost * 0.7; // 70% sell value
-            return total + currentValue;
-          }, 0);
-          
-          calculatedNetWorth += businessValue;
-        }
-      } catch (error) {
-        console.error('Error calculating business value:', error);
-        // Fall back to just cash if business calculation fails
-      }
-
       // Get friends data (now includes financial information)
       const friends = await this.getFriends(userId);
       

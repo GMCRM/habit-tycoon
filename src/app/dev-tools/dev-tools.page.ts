@@ -567,50 +567,12 @@ Check console for detailed logs.`;
 
       console.log(`💰 Current cash: $${currentCash.toLocaleString()}, adding $1,000,000 = new cash: $${newCash.toLocaleString()}`);
 
-      // Calculate correct net worth: new cash + business value
-      console.log('🏢 Calculating business value for net worth...');
-      let businessValue = 0;
-      try {
-        const { data: habitBusinesses, error: businessError } = await this.authService.supabase
-          .from('habit_businesses')
-          .select(`
-            id, 
-            business_type_id,
-            business_types(base_cost)
-          `)
-          .eq('user_id', this.currentUser.id);
-
-        if (businessError) {
-          console.error('❌ Business query error:', businessError);
-          throw businessError;
-        }
-
-        if (habitBusinesses && habitBusinesses.length > 0) {
-          console.log(`🏢 Found ${habitBusinesses.length} businesses:`, habitBusinesses);
-          businessValue = habitBusinesses.reduce((total, business: any) => {
-            const baseCost = business.business_types?.base_cost || 0;
-            const currentValue = baseCost * 0.7; // 70% sell value like social service
-            console.log(`  - Business ${business.id}: base_cost=${baseCost}, value=${currentValue}`);
-            return total + currentValue;
-          }, 0);
-          console.log(`🏢 Total business value: $${businessValue.toLocaleString()}`);
-        } else {
-          console.log('🏢 No businesses found for user');
-        }
-      } catch (error) {
-        console.error('⚠️ Error calculating business value:', error);
-      }
-
-      const calculatedNetWorth = newCash + businessValue;
-      console.log(`📈 Calculated net worth: $${newCash.toLocaleString()} (cash) + $${businessValue.toLocaleString()} (business) = $${calculatedNetWorth.toLocaleString()}`);
-
-      // Update both cash and net worth
-      console.log('💾 Updating database (cash and net worth)...');
+      // Update cash, then recompute net worth from scratch (cash + business value + portfolio value)
+      console.log('💾 Updating database (cash)...');
       const { data: updateResult, error } = await this.authService.supabase
         .from('user_profiles')
-        .update({ 
+        .update({
           cash: newCash,
-          net_worth: calculatedNetWorth,
           updated_at: new Date().toISOString()
         })
         .eq('id', this.currentUser.id)
@@ -619,6 +581,13 @@ Check console for detailed logs.`;
       if (error) {
         console.error('❌ Database update error:', error);
         throw error;
+      }
+
+      const { error: recalcError } = await this.authService.supabase.rpc('recalculate_net_worth', {
+        p_user_id: this.currentUser.id
+      });
+      if (recalcError) {
+        console.error('❌ Error recalculating net worth:', recalcError);
       }
 
       console.log('✅ Database update result:', updateResult);
@@ -652,40 +621,28 @@ Check console for detailed logs.`;
         throw new Error('User not authenticated');
       }
 
-      // Calculate net worth with $100 cash + business value
-      let businessValue = 0;
-      try {
-        const { data: habitBusinesses } = await this.authService.supabase
-          .from('habit_businesses')
-          .select('id, business_type_id, business_types(base_cost)')
-          .eq('user_id', this.currentUser.id);
-
-        if (habitBusinesses && habitBusinesses.length > 0) {
-          businessValue = habitBusinesses.reduce((total: number, business: any) => {
-            const baseCost = business.business_types?.base_cost || 0;
-            return total + baseCost * 0.7;
-          }, 0);
-        }
-      } catch (e) {
-        console.error('⚠️ Error calculating business value:', e);
-      }
-
       const newCash = 100;
-      const calculatedNetWorth = newCash + businessValue;
 
       const { error } = await this.authService.supabase
         .from('user_profiles')
         .update({
           cash: newCash,
-          net_worth: calculatedNetWorth,
           updated_at: new Date().toISOString()
         })
         .eq('id', this.currentUser.id);
 
       if (error) throw error;
 
+      const { error: recalcError } = await this.authService.supabase.rpc('recalculate_net_worth', {
+        p_user_id: this.currentUser.id
+      });
+      if (recalcError) {
+        console.error('❌ Error recalculating net worth:', recalcError);
+      }
+
       await this.loadCurrentUser();
-      await this.showToast(`🗑️ Cash reset to $100. Net Worth: $${calculatedNetWorth.toLocaleString()}`, 'warning');
+      const updatedNetWorth = this.userProfile?.net_worth || 0;
+      await this.showToast(`🗑️ Cash reset to $100. Net Worth: $${updatedNetWorth.toLocaleString()}`, 'warning');
     } catch (error) {
       console.error('❌ Failed to remove money:', error);
       await this.showToast(`❌ Failed to remove money: ${(error as any)?.message || 'Unknown error'}`, 'danger');

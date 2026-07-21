@@ -137,6 +137,17 @@ export class HabitBusinessService {
   }
 
   /**
+   * Recompute a user's net_worth from scratch (cash + business value + portfolio value)
+   * via the recalculate_net_worth() RPC, instead of nudging it by an ad hoc delta.
+   */
+  private async recalculateNetWorth(userId: string): Promise<void> {
+    const { error } = await this.supabase.rpc('recalculate_net_worth', { p_user_id: userId });
+    if (error) {
+      console.error('Error recalculating net worth:', error);
+    }
+  }
+
+  /**
    * Show an error toast message to the user
    */
   private async showErrorToast(message: string, duration: number = 4000) {
@@ -347,6 +358,8 @@ export class HabitBusinessService {
         // In a production app, you'd want to use a database transaction
         throw new Error('Habit-business created but failed to deduct payment');
       }
+
+      await this.recalculateNetWorth(user.id);
 
       // Success message
       await this.showSuccessToast(`✅ ${request.business_name} created successfully!`);
@@ -569,10 +582,10 @@ export class HabitBusinessService {
         throw deleteError;
       }
 
-      // Add sell value to user's cash and net worth
+      // Add sell value to user's cash
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
-        .select('cash, net_worth')
+        .select('cash')
         .eq('id', user.id)
         .single();
 
@@ -581,21 +594,22 @@ export class HabitBusinessService {
       }
 
       const newCash = profile.cash + sellValue;
-      const newNetWorth = (profile.net_worth || 0) + sellValue;
 
       const { error: updateCashError } = await this.supabase
         .from('user_profiles')
-        .update({ 
+        .update({
           cash: newCash,
-          net_worth: newNetWorth,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
 
       if (updateCashError) {
-        console.error('Error updating user cash/net_worth after sale:', updateCashError);
+        console.error('Error updating user cash after sale:', updateCashError);
         throw new Error('Habit business deleted but failed to add sale proceeds');
       }
+
+      // Business is now inactive, so its value has dropped out of net worth too — recalc from scratch
+      await this.recalculateNetWorth(user.id);
 
       return sellValue;
     } catch (error) {
@@ -913,7 +927,7 @@ export class HabitBusinessService {
       // Add earnings to user's cash
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
-        .select('cash, net_worth')
+        .select('cash')
         .eq('id', user.id)
         .single();
 
@@ -922,13 +936,11 @@ export class HabitBusinessService {
       }
 
       const newCash = profile.cash + totalEarnings;
-      const newNetWorth = profile.net_worth + totalEarnings;
 
       const { error: updateCashError } = await this.supabase
         .from('user_profiles')
-        .update({ 
+        .update({
           cash: newCash,
-          net_worth: newNetWorth,
           updated_at: now.toISOString()
         })
         .eq('id', user.id);
@@ -936,6 +948,8 @@ export class HabitBusinessService {
       if (updateCashError) {
         throw new Error('Habit completed but failed to add earnings');
       }
+
+      await this.recalculateNetWorth(user.id);
 
     } catch (error) {
       console.error('Error in completeHabit:', error);
@@ -1103,7 +1117,7 @@ export class HabitBusinessService {
       // Pay earnings to user
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
-        .select('cash, net_worth')
+        .select('cash')
         .eq('id', user.id)
         .single();
 
@@ -1113,12 +1127,13 @@ export class HabitBusinessService {
         .from('user_profiles')
         .update({
           cash: profile.cash + totalEarnings,
-          net_worth: profile.net_worth + totalEarnings,
           updated_at: now.toISOString()
         })
         .eq('id', user.id);
 
       if (updateCashError) throw new Error('Habit completed but failed to add earnings');
+
+      await this.recalculateNetWorth(user.id);
 
     } catch (error) {
       console.error('Error in completeHabitYesterday:', error);
@@ -1241,7 +1256,7 @@ export class HabitBusinessService {
       // Remove earnings from user's cash
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
-        .select('cash, net_worth')
+        .select('cash')
         .eq('id', user.id)
         .single();
 
@@ -1250,13 +1265,11 @@ export class HabitBusinessService {
       }
 
       const newCash = Math.max(0, profile.cash - todaysCompletion.earnings);
-      const newNetWorth = Math.max(0, profile.net_worth - todaysCompletion.earnings);
 
       const { error: updateCashError } = await this.supabase
         .from('user_profiles')
-        .update({ 
+        .update({
           cash: newCash,
-          net_worth: newNetWorth,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -1264,6 +1277,8 @@ export class HabitBusinessService {
       if (updateCashError) {
         throw new Error('Failed to remove earnings from cash');
       }
+
+      await this.recalculateNetWorth(user.id);
 
       // Delete the completion record
       const { error: deleteError } = await this.supabase
@@ -1394,31 +1409,31 @@ export class HabitBusinessService {
         // Update stockholder's cash
         const { data: profile, error: profileError } = await this.supabase
           .from('user_profiles')
-          .select('cash, net_worth')
+          .select('cash')
           .eq('id', holding.holder_id)
           .single();
-          
+
         if (profileError || !profile) {
           console.error('Error getting stockholder profile:', profileError);
           continue;
         }
-        
+
         const newCash = profile.cash + dividendAmount;
-        const newNetWorth = profile.net_worth + dividendAmount;
-        
+
         const { error: updateError } = await this.supabase
           .from('user_profiles')
           .update({
             cash: newCash,
-            net_worth: newNetWorth,
             updated_at: new Date().toISOString()
           })
           .eq('id', holding.holder_id);
-          
+
         if (updateError) {
           console.error('Error updating stockholder cash:', updateError);
           continue;
         }
+
+        await this.recalculateNetWorth(holding.holder_id);
         
         // Update holding's total dividends earned
         const { error: holdingUpdateError } = await this.supabase
@@ -1502,7 +1517,7 @@ export class HabitBusinessService {
         if (!profileError && profile) {
           const { error: updateCashError } = await this.supabase
             .from('user_profiles')
-            .update({ 
+            .update({
               cash: profile.cash + dividendAmount,
               updated_at: new Date().toISOString()
             })
@@ -1510,6 +1525,8 @@ export class HabitBusinessService {
 
           if (updateCashError) {
             console.error('Error updating stockholder cash:', updateCashError);
+          } else {
+            await this.recalculateNetWorth(holding.holder_id);
           }
         }
 
@@ -1748,6 +1765,9 @@ export class HabitBusinessService {
         console.error('Error deactivating old business:', deactivateError);
       }
 
+      // Cash, old business (now inactive), and new business have all changed — recalc from scratch
+      await this.recalculateNetWorth(user.id);
+
       return newHabitBusiness;
     } catch (error) {
       console.error('Error in upgradeBusiness:', error);
@@ -1982,6 +2002,8 @@ export class HabitBusinessService {
         await this.showErrorToast('Stock purchased but payment deduction failed. Please contact support.');
         throw new Error('Stock purchased but failed to deduct payment');
       }
+
+      await this.recalculateNetWorth(user.id);
 
       // Success message
       await this.showSuccessToast(`✅ Purchased ${shares} shares successfully!`);
