@@ -1250,10 +1250,14 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Format large numbers for display (1M, 1.1M, 1B, etc.)
+   * Format large numbers for display (1.1K, 1.1M, 1.1B, 1.1T, etc.)
    */
   formatLargeNumber(amount: number): string {
-    if (amount >= 1000000000) {
+    if (amount >= 1000000000000) {
+      // Trillions
+      const trillions = amount / 1000000000000;
+      return trillions >= 10 ? `${Math.floor(trillions)}T` : `${trillions.toFixed(1)}T`;
+    } else if (amount >= 1000000000) {
       // Billions
       const billions = amount / 1000000000;
       return billions >= 10 ? `${Math.floor(billions)}B` : `${billions.toFixed(1)}B`;
@@ -1261,8 +1265,12 @@ export class HomePage implements OnInit, OnDestroy {
       // Millions
       const millions = amount / 1000000;
       return millions >= 10 ? `${Math.floor(millions)}M` : `${millions.toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      // Thousands
+      const thousands = amount / 1000;
+      return thousands >= 10 ? `${Math.floor(thousands)}K` : `${thousands.toFixed(1)}K`;
     } else {
-      // Less than 1 million, show exact amount with commas for readability
+      // Less than 1 thousand, show exact amount with commas for readability
       return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
   }
@@ -1272,7 +1280,7 @@ export class HomePage implements OnInit, OnDestroy {
    */
   getDisplayedCash(): string {
     const cash = this.userProfile?.cash || 0;
-    if (cash >= 1000000 && !this.showDetailedCash) {
+    if (cash >= 1000 && !this.showDetailedCash) {
       return this.formatLargeNumber(cash);
     }
     return cash.toFixed(2);
@@ -1283,7 +1291,7 @@ export class HomePage implements OnInit, OnDestroy {
    */
   getDisplayedNetWorth(): string {
     const netWorth = this.userProfile?.net_worth || 0;
-    if (netWorth >= 1000000 && !this.showDetailedNetWorth) {
+    if (netWorth >= 1000 && !this.showDetailedNetWorth) {
       return this.formatLargeNumber(netWorth);
     }
     return netWorth.toFixed(2);
@@ -1301,29 +1309,6 @@ export class HomePage implements OnInit, OnDestroy {
    */
   toggleNetWorthDetail() {
     this.showDetailedNetWorth = !this.showDetailedNetWorth;
-  }
-
-  /**
-   * Show an explanation for in-game currency values.
-   */
-  async showMoneyInfo(type: 'networth' | 'cash') {
-    const isNetWorth = type === 'networth';
-    const header = isNetWorth ? 'What is Net Worth?' : 'What is Habit Cash?';
-    const amount = isNetWorth
-      ? (this.userProfile?.net_worth || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      : (this.userProfile?.cash || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    const message = isNetWorth
-      ? `Current Net Worth: $${amount}\n\nNet Worth is your total in-game value, including your Habit Cash and other game assets.\n\nDisclaimer: Habit Cash and Net Worth are virtual, in-game values only and are not real-world currency.`
-      : `Current Habit Cash: $${amount}\n\nHabit Cash is your spendable in-game money earned by completing habits and other in-game actions.\n\nDisclaimer: Habit Cash and Net Worth are virtual, in-game values only and are not real-world currency.`;
-
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['Got it']
-    });
-
-    await alert.present();
   }
 
   /**
