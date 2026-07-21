@@ -8,6 +8,11 @@
 ALTER TABLE habit_businesses
 ADD COLUMN IF NOT EXISTS active_days INTEGER[];
 
+-- Drop the OLD constraint now (it only allows '24h'/'7d') so the UPDATEs below
+-- are free to write 'specific_days' without being rejected mid-migration.
+ALTER TABLE habit_businesses
+DROP CONSTRAINT IF EXISTS habit_businesses_recurrence_interval_check;
+
 -- Step 2: Migrate all existing '7d' habits → 'specific_days' with all 7 days active
 --         (most conservative equivalent: behaves exactly like before on every day)
 UPDATE habit_businesses
@@ -22,10 +27,16 @@ SET recurrence_interval = 'specific_days',
 WHERE frequency = 'weekly'
   AND (recurrence_interval IS NULL OR recurrence_interval NOT IN ('specific_days', '24h'));
 
--- Step 3: Update CHECK constraint — remove '7d', add 'specific_days'
-ALTER TABLE habit_businesses
-DROP CONSTRAINT IF EXISTS habit_businesses_recurrence_interval_check;
+-- Catch-all: any row that still doesn't hold a value the new constraint will accept
+-- (NULL, stray/legacy text, etc.) — guarantees Step 3 below can't fail on unknown data.
+UPDATE habit_businesses
+SET recurrence_interval = 'specific_days',
+    active_days = COALESCE(active_days, ARRAY[0,1,2,3,4,5,6])
+WHERE recurrence_interval IS NULL
+   OR recurrence_interval NOT IN ('24h', 'specific_days');
 
+-- Step 3: Add the new CHECK constraint now that every row has been migrated
+-- to a value it accepts ('24h' or 'specific_days').
 ALTER TABLE habit_businesses
 ADD CONSTRAINT habit_businesses_recurrence_interval_check
 CHECK (recurrence_interval IN ('24h', 'specific_days'));
