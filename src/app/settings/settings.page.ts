@@ -17,13 +17,14 @@ import {
   IonIcon,
   IonToast,
   IonModal,
-  IonTextarea
+  IonTextarea,
+  IonToggle
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, fingerPrint } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -49,6 +50,7 @@ import { save, person, lockClosed, logoGoogle, trash, warning } from 'ionicons/i
     IonToast,
     IonModal,
     IonTextarea,
+    IonToggle,
     BottomNavComponent
   ]
 })
@@ -79,15 +81,24 @@ export class SettingsPage implements OnInit {
   currentUser: any = null;
   isGoogleUser = false; // New property to track if user signed in with Google
 
+  // Whether the habit complete/undo button responds to a single tap instead of a hold
+  tapToComplete = false;
+
   constructor(
     private authService: AuthService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,fingerPrint});
   }
 
   async ngOnInit() {
+    this.tapToComplete = localStorage.getItem('tap-to-complete') === 'true';
     await this.loadUserData();
+  }
+
+  onTapToCompleteChange(event: CustomEvent) {
+    this.tapToComplete = event.detail.checked;
+    localStorage.setItem('tap-to-complete', String(this.tapToComplete));
   }
 
   async loadUserData() {

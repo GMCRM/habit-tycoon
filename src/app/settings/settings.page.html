@@ -51,6 +51,32 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Habit Completion Settings Card -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="finger-print"></ion-icon>
+            Habit Completion
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-item lines="none">
+            <ion-label>
+              <h3>Tap to complete</h3>
+              <p>
+                {{ tapToComplete ? 'A single tap marks a habit complete or
+                undoes it.' : 'Hold down the complete button to confirm.' }}
+              </p>
+            </ion-label>
+            <ion-toggle
+              slot="end"
+              [checked]="tapToComplete"
+              (ionChange)="onTapToCompleteChange($event)"
+            ></ion-toggle>
+          </ion-item>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Password Settings Card - Only show for email/password users -->
       <ion-card *ngIf="!isGoogleUser">
         <ion-card-header>

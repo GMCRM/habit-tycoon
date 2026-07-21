@@ -815,6 +815,9 @@ export class HomePage implements OnInit, OnDestroy {
   private holdDuration = 1500; // 1.5 seconds to complete
   private updateInterval = 50; // Update progress every 50ms
 
+  // Whether the complete/undo button responds to a single tap instead of a hold
+  tapToComplete = false;
+
   // Carousel methods for mobile stats
   @HostListener('window:resize', ['$event'])
   onResize(event: any) {
@@ -891,6 +894,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.tapToComplete = localStorage.getItem('tap-to-complete') === 'true';
     this.countdownTickService.register();
     this.tickSub = this.countdownTickService.tick$.subscribe(() => {
       this.habitBusinesses.forEach(hb => {
@@ -1013,19 +1017,53 @@ export class HomePage implements OnInit, OnDestroy {
 
     // Complete the habit after a brief success animation
     setTimeout(async () => {
-      // Show "missed yesterday" prompt for daily habits that weren't done yesterday
-      const missedYesterday = this.habitIntervalService.didMissYesterday(habitBusiness);
-      console.log('[completeHolding] habit:', habitBusiness.business_name, '| recurrence_interval:', habitBusiness.recurrence_interval, '| goal_value:', habitBusiness.goal_value, '| created_at:', habitBusiness.created_at, '| last_completed_at:', habitBusiness.last_completed_at, '| didMissYesterday:', missedYesterday);
-      if (missedYesterday) {
-        await this.showMissedYesterdayAlert(habitBusiness);
-      } else {
-        await this.completeHabitBusiness(habitBusiness);
-      }
+      await this.runCompleteHabit(habitBusiness);
 
       // Reset state after completion
       state.isCompleting = false;
       state.progress = 0;
     }, 300);
+  }
+
+  /**
+   * Shared completion logic used by both the hold-to-complete and tap-to-complete flows
+   */
+  private async runCompleteHabit(habitBusiness: HabitBusiness) {
+    // Show "missed yesterday" prompt for daily habits that weren't done yesterday
+    const missedYesterday = this.habitIntervalService.didMissYesterday(habitBusiness);
+    console.log('[runCompleteHabit] habit:', habitBusiness.business_name, '| recurrence_interval:', habitBusiness.recurrence_interval, '| goal_value:', habitBusiness.goal_value, '| created_at:', habitBusiness.created_at, '| last_completed_at:', habitBusiness.last_completed_at, '| didMissYesterday:', missedYesterday);
+    if (missedYesterday) {
+      await this.showMissedYesterdayAlert(habitBusiness);
+    } else {
+      await this.completeHabitBusiness(habitBusiness);
+    }
+  }
+
+  /**
+   * Instantly complete a habit on a single tap (used when tap-to-complete is enabled)
+   */
+  async handleCompleteTap(habitBusiness: HabitBusiness, event: Event) {
+    event.preventDefault();
+
+    if (!this.holdingStates[habitBusiness.id]) {
+      this.holdingStates[habitBusiness.id] = {
+        isHolding: false,
+        progress: 0,
+        isCompleting: false,
+        isUndoing: false,
+        undoProgress: 0
+      };
+    }
+
+    const state = this.holdingStates[habitBusiness.id];
+    if (state.isCompleting) return;
+
+    state.isCompleting = true;
+    try {
+      await this.runCompleteHabit(habitBusiness);
+    } finally {
+      state.isCompleting = false;
+    }
   }
 
   /**
@@ -1178,10 +1216,37 @@ export class HomePage implements OnInit, OnDestroy {
     // Complete the undo after a brief animation
     setTimeout(async () => {
       await this.undoHabitCompletion(habitBusiness);
-      
+
       // Reset state after undo
       state.undoProgress = 0;
     }, 300);
+  }
+
+  /**
+   * Instantly undo a habit completion on a single tap (used when tap-to-complete is enabled)
+   */
+  async handleUndoTap(habitBusiness: HabitBusiness, event: Event) {
+    event.preventDefault();
+
+    if (!this.holdingStates[habitBusiness.id]) {
+      this.holdingStates[habitBusiness.id] = {
+        isHolding: false,
+        progress: 0,
+        isCompleting: false,
+        isUndoing: false,
+        undoProgress: 0
+      };
+    }
+
+    const state = this.holdingStates[habitBusiness.id];
+    if (state.isUndoing) return;
+
+    state.isUndoing = true;
+    try {
+      await this.undoHabitCompletion(habitBusiness);
+    } finally {
+      state.isUndoing = false;
+    }
   }
 
   /**

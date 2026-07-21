@@ -410,7 +410,7 @@
                       <!-- Complete/Undo buttons moved to far right -->
                       <!-- Single transforming button: Complete -> Undo -->
                       <div
-                        *ngIf="!isGoalCompleted(hb) || (hb.current_progress || 0) > 0"
+                        *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (hb.current_progress || 0) > 0)"
                         class="hold-complete-button"
                         [class.is-holding]="holdingStates[hb.id]?.isHolding"
                         [class.is-completing]="holdingStates[hb.id]?.isCompleting"
@@ -439,6 +439,40 @@
                           *ngIf="isGoalCompleted(hb)"
                         ></div>
 
+                        <!-- Icon changes based on mode -->
+                        <ion-icon
+                          [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
+                          class="button-icon"
+                        ></ion-icon>
+
+                        <!-- Text changes based on mode and progress -->
+                        <span class="button-text" *ngIf="isGoalCompleted(hb)">
+                          Undo
+                        </span>
+                        <span
+                          class="button-text"
+                          *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
+                        >
+                          Complete ({{ hb.current_progress || 0 }}/{{
+                          hb.goal_value }})
+                        </span>
+                        <span
+                          class="button-text"
+                          *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
+                        >
+                          Complete
+                        </span>
+                      </div>
+
+                      <!-- Tap-to-complete variant: single tap instead of holding -->
+                      <div
+                        *ngIf="tapToComplete && (!isGoalCompleted(hb) || (hb.current_progress || 0) > 0)"
+                        class="hold-complete-button"
+                        [class.is-completing]="holdingStates[hb.id]?.isCompleting"
+                        [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
+                        [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
+                        (click)="isGoalCompleted(hb) ? handleUndoTap(hb, $event) : handleCompleteTap(hb, $event)"
+                      >
                         <!-- Icon changes based on mode -->
                         <ion-icon
                           [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
