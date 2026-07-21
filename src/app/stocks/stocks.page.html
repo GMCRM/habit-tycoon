@@ -345,11 +345,11 @@
                     fill="solid"
                     color="success"
                     size="small"
-                    (click)="buyShares(business, 1)"
-                    [disabled]="isLoading"
+                    (click)="openBuyModal(business)"
+                    [disabled]="isLoading || !business.stockId || business.sharesAvailable <= 0"
                   >
                     <ion-icon name="add-circle" slot="start"></ion-icon>
-                    Buy 1 Share
+                    Buy Shares
                   </ion-button>
                 </div>
               </div>
@@ -627,7 +627,7 @@
                         fill="outline"
                         size="small"
                         color="success"
-                        (click)="openBuyModal(holding)"
+                        (click)="openBuyModal(getBusinessForHolding(holding))"
                         [disabled]="isLoading"
                         class="buy-more-button"
                       >
@@ -801,7 +801,7 @@
   <ng-template>
     <ion-header>
       <ion-toolbar>
-        <ion-title>Buy More Shares</ion-title>
+        <ion-title>Buy Shares</ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="closeBuyModal()">
             <ion-icon name="close"></ion-icon>

@@ -358,64 +358,6 @@ export class StocksPage implements OnInit, OnDestroy {
     }
   }
 
-  async buyShares(business: FriendBusiness, shares: number) {
-    if (!business.stockId) {
-      const toast = await this.toastController.create({
-        message: 'Stock not available for this business yet',
-        duration: 3000,
-        color: 'warning'
-      });
-      await toast.present();
-      return;
-    }
-
-    try {
-      const totalCost = business.stockPrice * shares;
-      
-      // Show confirmation alert
-      const alert = await this.alertController.create({
-        header: 'Confirm Purchase',
-        message: `Buy ${shares} shares of ${business.businessName} for $${totalCost.toFixed(2)}?`,
-        buttons: [
-          {
-            text: 'Cancel',
-            role: 'cancel'
-          },
-          {
-            text: 'Buy',
-            handler: async () => {
-              try {
-                const result = await this.habitBusinessService.purchaseStockShares(business.stockId!, shares);
-                
-                const toast = await this.toastController.create({
-                  message: `✅ Purchased ${result.shares_purchased} shares for $${result.total_cost.toFixed(2)}!`,
-                  duration: 3000,
-                  color: 'success'
-                });
-                await toast.present();
-                
-                // Reload data and user profile
-                await this.loadData();
-                await this.loadCurrentUser();
-              } catch (error: any) {
-                const toast = await this.toastController.create({
-                  message: `❌ ${error.message}`,
-                  duration: 3000,
-                  color: 'danger'
-                });
-                await toast.present();
-              }
-            }
-          }
-        ]
-      });
-      
-      await alert.present();
-    } catch (error) {
-      console.error('Error buying shares:', error);
-    }
-  }
-
   async sendHabitPoke(friendId: string, businessName: string) {
     if (!this.currentUser?.id) {
       console.log('No current user for sending poke');
@@ -647,11 +589,11 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Open the "Buy More" modal for a stock already held in the portfolio
+   * Open the buy-quantity modal for a stock, whether reached from the
+   * Available Stocks list or the "Buy More" button on an existing holding
    */
-  openBuyModal(holding: Portfolio) {
-    const business = this.getBusinessForHolding(holding);
-    if (!business) {
+  openBuyModal(business: FriendBusiness | undefined) {
+    if (!business || !business.stockId) {
       return;
     }
     this.selectedBuyBusiness = business;
