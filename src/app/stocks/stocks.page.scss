@@ -447,6 +447,34 @@ ion-content {
   }
 }
 
+@media (max-width: 480px) {
+  .user-info {
+    .welcome-section {
+      flex-direction: column;
+      align-items: stretch;
+
+      .cash-display {
+        width: 100%;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+
+        .networth-display,
+        .cash-section {
+          flex: 1;
+          align-items: center;
+          padding: 8px;
+        }
+
+        .networth-amount,
+        .cash-amount {
+          font-size: 1.1rem !important;
+        }
+      }
+    }
+  }
+}
+
 // Scrollable container for stocks lists
 .stocks-list-scroll-container {
   max-height: calc(100vh - 450px); // Adjust based on header and other elements
