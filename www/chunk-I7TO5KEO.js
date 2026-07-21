@@ -1,4 +1,4 @@
-import{q as m,s as b,ub as y}from"./chunk-MCSM2JSU.js";import{a as p,b as g,j as n}from"./chunk-VI73JOY6.js";var q=(()=>{let _=class _{constructor(r){this.supabase=r.client}getSocialFeed(r){return n(this,null,function*(){try{let{data:e,error:s}=yield this.supabase.from("social_posts").select(`
+import{Qa as y,b as m,c as b}from"./chunk-HUTHBCD5.js";import{a as p,b as g,j as n}from"./chunk-VI73JOY6.js";var q=(()=>{let _=class _{constructor(r){this.supabase=r.client}getSocialFeed(r){return n(this,null,function*(){try{let{data:e,error:s}=yield this.supabase.from("social_posts").select(`
           *,
           user_profile:user_profiles(id, name, avatar_url),
           likes:social_likes(user_id),
