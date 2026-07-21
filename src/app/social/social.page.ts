@@ -48,9 +48,11 @@ export class SocialPage implements OnInit, OnDestroy {
 
   // Leaderboard view state
   leaderboardView: 'networth' | 'cashearned' = 'networth';
-  cashPeriodFilter: 'weekly' | 'monthly' = 'weekly';
+  cashMetricFilter: 'cash' | 'completed' = 'cash';
   cashLeaderboard: any[] = [];
+  completedLeaderboard: any[] = [];
   isLoadingCash = false;
+  isLoadingCompleted = false;
   
   // UI state
   isLoading = false;
@@ -270,9 +272,13 @@ export class SocialPage implements OnInit, OnDestroy {
     }
   }
 
-  async onCashPeriodChange(event: any) {
-    this.cashPeriodFilter = event.detail.value;
-    await this.loadCashLeaderboard();
+  async onCashMetricChange(event: any) {
+    this.cashMetricFilter = event.detail.value;
+    if (this.cashMetricFilter === 'completed') {
+      await this.loadCompletedLeaderboard();
+    } else {
+      await this.loadCashLeaderboard();
+    }
   }
 
   async loadCashLeaderboard() {
@@ -280,14 +286,28 @@ export class SocialPage implements OnInit, OnDestroy {
     this.isLoadingCash = true;
     try {
       this.cashLeaderboard = await this.socialService.getFriendsCashLeaderboard(
-        this.currentUser.id,
-        this.cashPeriodFilter
+        this.currentUser.id
       );
     } catch (error) {
       console.error('Error loading cash leaderboard:', error);
       this.cashLeaderboard = [{ id: this.currentUser.id, name: 'You', cash_earned: 0, rank: 1 }];
     } finally {
       this.isLoadingCash = false;
+    }
+  }
+
+  async loadCompletedLeaderboard() {
+    if (!this.currentUser) return;
+    this.isLoadingCompleted = true;
+    try {
+      this.completedLeaderboard = await this.socialService.getFriendsHabitsCompletedLeaderboard(
+        this.currentUser.id
+      );
+    } catch (error) {
+      console.error('Error loading habits completed leaderboard:', error);
+      this.completedLeaderboard = [{ id: this.currentUser.id, name: 'You', habits_completed: 0, rank: 1 }];
+    } finally {
+      this.isLoadingCompleted = false;
     }
   }
 

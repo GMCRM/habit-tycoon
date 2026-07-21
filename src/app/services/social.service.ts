@@ -765,8 +765,8 @@ export class SocialService {
     }
   }
 
-  // Habit Cash Earned Leaderboard (weekly or monthly)
-  async getFriendsCashLeaderboard(userId: string, period: 'weekly' | 'monthly'): Promise<any[]> {
+  // Weekly Habit Cash Earned Leaderboard
+  async getFriendsCashLeaderboard(userId: string): Promise<any[]> {
     try {
       // Get current user profile
       const { data: userProfile, error: userError } = await this.supabase
@@ -787,7 +787,7 @@ export class SocialService {
 
       // Query aggregated earnings via SECURITY DEFINER function
       const { data: earningsData, error: earningsError } = await this.supabase
-        .rpc('get_users_cash_earned', { user_ids: allIds, period });
+        .rpc('get_users_cash_earned', { user_ids: allIds, period: 'weekly' });
 
       if (earningsError) {
         console.error('Error loading cash earned leaderboard:', earningsError);
@@ -832,6 +832,67 @@ export class SocialService {
         id: userId,
         name: 'You',
         cash_earned: 0,
+        rank: 1
+      }];
+    }
+  }
+
+  // Weekly Habits Completed Leaderboard
+  async getFriendsHabitsCompletedLeaderboard(userId: string): Promise<any[]> {
+    try {
+      // Get friends
+      const friends = await this.getFriends(userId);
+
+      // Build list of all user IDs (self + friends)
+      const allIds: string[] = [userId, ...friends.map(f => f.friend_profile.id)];
+
+      // Query aggregated completion counts via SECURITY DEFINER function
+      const { data: completionsData, error: completionsError } = await this.supabase
+        .rpc('get_users_habits_completed', { user_ids: allIds });
+
+      if (completionsError) {
+        console.error('Error loading habits completed leaderboard:', completionsError);
+      }
+
+      // Build a lookup map from the results
+      const completionsMap: Record<string, number> = {};
+      if (completionsData) {
+        for (const row of completionsData) {
+          completionsMap[row.user_id] = Number(row.total_completed) || 0;
+        }
+      }
+
+      // Assemble leaderboard entries
+      const leaderboard: any[] = [
+        {
+          id: userId,
+          name: 'You',
+          habits_completed: completionsMap[userId] ?? 0,
+          rank: 1
+        }
+      ];
+
+      if (friends.length > 0) {
+        const friendEntries = friends.map(f => ({
+          id: f.friend_profile.id,
+          name: f.friend_profile.name,
+          habits_completed: completionsMap[f.friend_profile.id] ?? 0,
+          rank: 0
+        }));
+        leaderboard.push(...friendEntries);
+
+        // Sort descending by habits_completed and assign ranks
+        leaderboard.sort((a, b) => b.habits_completed - a.habits_completed);
+        leaderboard.forEach((entry, i) => { entry.rank = i + 1; });
+      }
+
+      return leaderboard;
+    } catch (error) {
+      console.error('Error loading friends habits completed leaderboard:', error);
+      return [{
+        id: userId,
+        name: 'You',
+        habits_completed: 0,
         rank: 1
       }];
     }

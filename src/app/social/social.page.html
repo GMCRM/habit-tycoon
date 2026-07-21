@@ -349,69 +349,125 @@
 
           <!-- Habit Cash Earned View -->
           <ng-container *ngIf="leaderboardView === 'cashearned'">
-            <!-- Period Filter -->
+            <!-- Metric Filter -->
             <ion-segment
               class="cash-period-segment"
-              [value]="cashPeriodFilter"
-              (ionChange)="onCashPeriodChange($event)"
+              [value]="cashMetricFilter"
+              (ionChange)="onCashMetricChange($event)"
             >
-              <ion-segment-button value="weekly">
-                <ion-label>Weekly</ion-label>
+              <ion-segment-button value="cash">
+                <ion-label>Weekly Cash</ion-label>
               </ion-segment-button>
-              <ion-segment-button value="monthly">
-                <ion-label>Monthly</ion-label>
+              <ion-segment-button value="completed">
+                <ion-label>Habits Completed</ion-label>
               </ion-segment-button>
             </ion-segment>
 
-            <!-- Loading spinner -->
-            <div *ngIf="isLoadingCash" class="cash-loading">
-              <ion-spinner name="crescent"></ion-spinner>
-            </div>
-
-            <ion-card
-              *ngIf="!isLoadingCash && cashLeaderboard.length > 0; else noCashLeaderboard"
-              class="leaderboard-list-card"
-            >
-              <ion-card-content>
-                <div
-                  *ngFor="let user of cashLeaderboard; let last = last"
-                  class="leaderboard-row"
-                  [class.current-user]="user.name === 'You'"
-                >
-                  <div class="rank-badge" [class.top-three]="user.rank <= 3">
-                    <span *ngIf="user.rank === 1">🥇</span>
-                    <span *ngIf="user.rank === 2">🥈</span>
-                    <span *ngIf="user.rank === 3">🥉</span>
-                    <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
-                  </div>
-
-                  <div class="user-info">
-                    <h3>{{ user.name }}</h3>
-                    <p class="net-worth">
-                      Earned: ${{ user.cash_earned | number:'1.2-2' }}
-                    </p>
-                  </div>
-
-                  <div *ngIf="!last" class="leaderboard-divider"></div>
-                </div>
-              </ion-card-content>
-            </ion-card>
-
-            <ng-template #noCashLeaderboard>
-              <div class="empty-state" *ngIf="!isLoadingCash">
-                <ion-icon name="medal-outline"></ion-icon>
-                <h3>Add friends to see leaderboard</h3>
-                <p>Connect with friends to compare habit cash earned!</p>
-                <ion-button
-                  fill="solid"
-                  color="primary"
-                  (click)="selectedSegment = 'friends'"
-                >
-                  <ion-icon name="person-add" slot="start"></ion-icon>
-                  Add Friends
-                </ion-button>
+            <!-- Weekly Cash Earned -->
+            <ng-container *ngIf="cashMetricFilter === 'cash'">
+              <!-- Loading spinner -->
+              <div *ngIf="isLoadingCash" class="cash-loading">
+                <ion-spinner name="crescent"></ion-spinner>
               </div>
-            </ng-template>
+
+              <ion-card
+                *ngIf="!isLoadingCash && cashLeaderboard.length > 0; else noCashLeaderboard"
+                class="leaderboard-list-card"
+              >
+                <ion-card-content>
+                  <div
+                    *ngFor="let user of cashLeaderboard; let last = last"
+                    class="leaderboard-row"
+                    [class.current-user]="user.name === 'You'"
+                  >
+                    <div class="rank-badge" [class.top-three]="user.rank <= 3">
+                      <span *ngIf="user.rank === 1">🥇</span>
+                      <span *ngIf="user.rank === 2">🥈</span>
+                      <span *ngIf="user.rank === 3">🥉</span>
+                      <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
+                    </div>
+
+                    <div class="user-info">
+                      <h3>{{ user.name }}</h3>
+                      <p class="net-worth">
+                        Earned: ${{ user.cash_earned | number:'1.2-2' }}
+                      </p>
+                    </div>
+
+                    <div *ngIf="!last" class="leaderboard-divider"></div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+
+              <ng-template #noCashLeaderboard>
+                <div class="empty-state" *ngIf="!isLoadingCash">
+                  <ion-icon name="medal-outline"></ion-icon>
+                  <h3>Add friends to see leaderboard</h3>
+                  <p>Connect with friends to compare habit cash earned!</p>
+                  <ion-button
+                    fill="solid"
+                    color="primary"
+                    (click)="selectedSegment = 'friends'"
+                  >
+                    <ion-icon name="person-add" slot="start"></ion-icon>
+                    Add Friends
+                  </ion-button>
+                </div>
+              </ng-template>
+            </ng-container>
+
+            <!-- Weekly Habits Completed -->
+            <ng-container *ngIf="cashMetricFilter === 'completed'">
+              <!-- Loading spinner -->
+              <div *ngIf="isLoadingCompleted" class="cash-loading">
+                <ion-spinner name="crescent"></ion-spinner>
+              </div>
+
+              <ion-card
+                *ngIf="!isLoadingCompleted && completedLeaderboard.length > 0; else noCompletedLeaderboard"
+                class="leaderboard-list-card"
+              >
+                <ion-card-content>
+                  <div
+                    *ngFor="let user of completedLeaderboard; let last = last"
+                    class="leaderboard-row"
+                    [class.current-user]="user.name === 'You'"
+                  >
+                    <div class="rank-badge" [class.top-three]="user.rank <= 3">
+                      <span *ngIf="user.rank === 1">🥇</span>
+                      <span *ngIf="user.rank === 2">🥈</span>
+                      <span *ngIf="user.rank === 3">🥉</span>
+                      <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
+                    </div>
+
+                    <div class="user-info">
+                      <h3>{{ user.name }}</h3>
+                      <p class="net-worth">
+                        Completed: {{ user.habits_completed }}
+                      </p>
+                    </div>
+
+                    <div *ngIf="!last" class="leaderboard-divider"></div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+
+              <ng-template #noCompletedLeaderboard>
+                <div class="empty-state" *ngIf="!isLoadingCompleted">
+                  <ion-icon name="medal-outline"></ion-icon>
+                  <h3>Add friends to see leaderboard</h3>
+                  <p>Connect with friends to compare habits completed!</p>
+                  <ion-button
+                    fill="solid"
+                    color="primary"
+                    (click)="selectedSegment = 'friends'"
+                  >
+                    <ion-icon name="person-add" slot="start"></ion-icon>
+                    Add Friends
+                  </ion-button>
+                </div>
+              </ng-template>
+            </ng-container>
           </ng-container>
 
           <ng-template #noLeaderboard>
