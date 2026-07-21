@@ -1,5 +1,5 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar class="home-toolbar">
     <ion-title>💰 Habit Tycoon</ion-title>
     <ion-button
       *ngIf="isAdmin"
@@ -7,22 +7,24 @@
       fill="clear"
       routerLink="/admin"
       color="warning"
+      class="header-action-btn"
     >
       <ion-icon name="shield" slot="start"></ion-icon>
-      Admin
+      <span class="btn-label">Admin</span>
     </ion-button>
     <ion-button
       *ngIf="currentUser"
       slot="end"
       fill="clear"
       routerLink="/settings"
+      class="header-action-btn"
     >
       <ion-icon name="settings" slot="start"></ion-icon>
-      Settings
+      <span class="btn-label">Settings</span>
     </ion-button>
-    <ion-button *ngIf="currentUser" slot="end" fill="clear" (click)="logout()">
+    <ion-button *ngIf="currentUser" slot="end" fill="clear" (click)="logout()" class="header-action-btn">
       <ion-icon name="log-out" slot="start"></ion-icon>
-      Logout
+      <span class="btn-label">Logout</span>
     </ion-button>
   </ion-toolbar>
 </ion-header>
@@ -318,15 +320,9 @@
               <div class="item-content">
                 <div class="business-icon">{{ hb.business_icon }}</div>
                 <div class="business-info">
-                  <div
-                    style="
-                      display: flex;
-                      align-items: center;
-                      justify-content: space-between;
-                    "
-                  >
+                  <div class="card-header-row">
                     <h3 class="business-name">{{ hb.business_name }}</h3>
-                    <div style="display: flex; gap: 8px; align-items: center">
+                    <div class="card-actions">
                       <!-- Sell/Delete button -->
                       <ion-button
                         fill="clear"

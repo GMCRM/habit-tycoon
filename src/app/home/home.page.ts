@@ -8,7 +8,7 @@ import {
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon, 
   IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
-import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
@@ -26,7 +26,7 @@ import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, bu
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, CdkDropList, CdkDrag],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, CdkDropList, CdkDrag, CdkDragHandle],
 })
 export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;

@@ -33,6 +33,41 @@ button, span, div, ion-button {
   background: var(--ion-background-color);
   min-height: 100vh;
   padding-bottom: 90px; /* Space for bottom navigation */
+  overflow-x: hidden;
+}
+
+// Header toolbar - keep title + action buttons on one row on narrow phones
+.home-toolbar {
+  ion-title {
+    padding-inline-start: 12px;
+  }
+
+  .header-action-btn {
+    --padding-start: 8px;
+    --padding-end: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-toolbar {
+    ion-title {
+      font-size: 1rem;
+      padding-inline-start: 8px;
+    }
+
+    .header-action-btn {
+      --padding-start: 6px;
+      --padding-end: 6px;
+
+      .btn-label {
+        display: none;
+      }
+
+      ion-icon {
+        margin: 0;
+      }
+    }
+  }
 }
 
 // Stats grid styling - Rule of thirds layout
@@ -234,6 +269,34 @@ button, span, div, ion-button {
   }
 }
 
+@media (max-width: 480px) {
+  .user-info {
+    .welcome-section {
+      flex-direction: column;
+      align-items: stretch;
+
+      .cash-display {
+        width: 100%;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+
+        .networth-display,
+        .cash-section {
+          flex: 1;
+          align-items: center;
+          padding: 8px;
+        }
+
+        .networth-amount,
+        .cash-amount {
+          font-size: 1.1rem !important;
+        }
+      }
+    }
+  }
+}
+
 // Quick actions styling
 .quick-actions {
   ion-card {
@@ -319,7 +382,24 @@ button, span, div, ion-button {
       
       .business-info {
         flex: 1;
-        
+        min-width: 0; // allow flex child to shrink below content width instead of overflowing
+
+        .card-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .card-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+          justify-content: flex-end;
+          row-gap: 8px;
+        }
+
         .business-name {
           margin: 0 0 8px 0;
           font-size: 1.2rem;
@@ -327,7 +407,7 @@ button, span, div, ion-button {
           color: var(--ion-color-primary);
           text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
         }
-        
+
         .habit-description {
           margin: 0 0 12px 0;
           color: rgba(255, 255, 255, 0.9);
@@ -1023,12 +1103,38 @@ button, span, div, ion-button {
   .earnings-toggle-button {
     width: 32px !important;
     height: 32px !important;
-    
+
     .dollar-icon {
       font-size: 1rem !important;
     }
   }
-  
+
+  // Card header/actions - stack the name above the action row so the
+  // controls never compete with it for horizontal space, and shrink the
+  // remaining icon-only buttons (upgrade, edit) to match the others above.
+  .habit-business-item .item-content .business-info {
+    .card-header-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+
+    .card-actions {
+      justify-content: flex-start;
+    }
+
+    ion-button[color="warning"],
+    ion-button[color="danger"] {
+      --padding-start: 8px !important;
+      --padding-end: 8px !important;
+    }
+
+    ion-button[color="tertiary"],
+    ion-button ion-icon[name="create"] {
+      font-size: 1.1rem;
+    }
+  }
+
   .habit-progress-section {
     .primary-habit-grid,
     .secondary-habit-grid {
