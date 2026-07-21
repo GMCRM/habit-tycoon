@@ -300,21 +300,34 @@
         <div
           *ngIf="habitBusinesses && habitBusinesses.length > 0; else noHabitBusinesses"
         >
-          <!-- Drag and Drop Container -->
-          <div
-            cdkDropList
-            (cdkDropListDropped)="onHabitBusinessDrop($event)"
-            class="habit-businesses-container"
+          <!-- Shared card markup, rendered once per habit-business in either group below -->
+          <ng-template
+            #habitBusinessCard
+            let-hb
+            let-isFirst="isFirst"
+            let-isLast="isLast"
           >
-            <div
-              *ngFor="let hb of habitBusinesses"
-              class="habit-business-item"
-              cdkDrag
-              [cdkDragData]="hb"
-            >
-              <!-- Drag Handle -->
-              <div class="drag-handle" cdkDragHandle>
-                <ion-icon name="reorder-four"></ion-icon>
+            <div class="habit-business-item">
+              <!-- Reorder Controls -->
+              <div class="reorder-controls">
+                <button
+                  type="button"
+                  class="reorder-btn"
+                  [disabled]="isFirst"
+                  (click)="moveHabitBusiness(hb, 'up')"
+                  aria-label="Move up"
+                >
+                  <ion-icon name="chevron-up"></ion-icon>
+                </button>
+                <button
+                  type="button"
+                  class="reorder-btn"
+                  [disabled]="isLast"
+                  (click)="moveHabitBusiness(hb, 'down')"
+                  aria-label="Move down"
+                >
+                  <ion-icon name="chevron-down"></ion-icon>
+                </button>
               </div>
 
               <div class="item-content">
@@ -628,6 +641,34 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </ng-template>
+
+          <!-- To-Do Group -->
+          <div *ngIf="todoHabitBusinesses.length > 0" class="habit-group-section">
+            <h4 class="habit-group-title">To-Do</h4>
+            <div class="habit-businesses-container">
+              <ng-container
+                *ngFor="let hb of todoHabitBusinesses; let i = index; let last = last"
+              >
+                <ng-container
+                  *ngTemplateOutlet="habitBusinessCard; context: { $implicit: hb, isFirst: i === 0, isLast: last }"
+                ></ng-container>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Done Group -->
+          <div *ngIf="doneHabitBusinesses.length > 0" class="habit-group-section">
+            <h4 class="habit-group-title">Done</h4>
+            <div class="habit-businesses-container">
+              <ng-container
+                *ngFor="let hb of doneHabitBusinesses; let i = index; let last = last"
+              >
+                <ng-container
+                  *ngTemplateOutlet="habitBusinessCard; context: { $implicit: hb, isFirst: i === 0, isLast: last }"
+                ></ng-container>
+              </ng-container>
             </div>
           </div>
         </div>

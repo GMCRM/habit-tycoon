@@ -8,7 +8,6 @@ import {
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon, 
   IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
-import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
@@ -20,13 +19,13 @@ import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.com
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour, shield } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, CdkDropList, CdkDrag, CdkDragHandle],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent],
 })
 export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;
@@ -85,7 +84,7 @@ export class HomePage implements OnInit, OnDestroy {
     private habitIntervalService: HabitIntervalService,
     private countdownTickService: CountdownTickService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, reorderFour, shield });
+    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield });
     this.setRandomTagline();
     this.checkScreenSize();
     this.setupStatsCards();
@@ -360,10 +359,7 @@ export class HomePage implements OnInit, OnDestroy {
       
       // Reload dashboard data to get updated stats and completion status
       await this.loadDashboardData();
-      
-      // ✨ NEW: Automatically move completed habits to bottom
-      await this.moveCompletedHabitsToBottom();
-      
+
     } catch (error) {
       console.error('Error completing habit:', error);
       
@@ -414,6 +410,16 @@ export class HomePage implements OnInit, OnDestroy {
    */
   isGoalCompleted(habitBusiness: HabitBusiness): boolean {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
+  }
+
+  /** Habit-businesses not yet completed for the current period, in display order. */
+  get todoHabitBusinesses(): HabitBusiness[] {
+    return this.habitBusinesses.filter(hb => !this.isGoalCompleted(hb));
+  }
+
+  /** Habit-businesses completed for the current period, in display order. */
+  get doneHabitBusinesses(): HabitBusiness[] {
+    return this.habitBusinesses.filter(hb => this.isGoalCompleted(hb));
   }
 
   /** True when today is one of the habit's active days (or it's a daily habit). */
@@ -1052,7 +1058,6 @@ export class HomePage implements OnInit, OnDestroy {
                 this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
                 await this.loadCurrentUser();
                 await this.loadDashboardData();
-                await this.moveCompletedHabitsToBottom();
               } catch (error) {
                 const errorMessage = (error as any)?.message || 'Unknown error occurred';
                 const errorToast = await this.toastController.create({
@@ -1310,38 +1315,34 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle drag and drop reordering of habit business cards
+   * Move a habit-business up or down within its own group (to-do or done).
    */
-  async onHabitBusinessDrop(event: CdkDragDrop<HabitBusiness[]>) {
-    if (event.previousIndex === event.currentIndex) {
-      return; // No change in position
+  async moveHabitBusiness(habitBusiness: HabitBusiness, direction: 'up' | 'down') {
+    const group = this.isGoalCompleted(habitBusiness) ? this.doneHabitBusinesses : this.todoHabitBusinesses;
+    const groupIndex = group.findIndex(hb => hb.id === habitBusiness.id);
+    const targetGroupIndex = direction === 'up' ? groupIndex - 1 : groupIndex + 1;
+
+    if (groupIndex === -1 || targetGroupIndex < 0 || targetGroupIndex >= group.length) {
+      return; // Already at the top/bottom of its group
     }
 
+    const swapWith = group[targetGroupIndex];
+    const indexA = this.habitBusinesses.findIndex(hb => hb.id === habitBusiness.id);
+    const indexB = this.habitBusinesses.findIndex(hb => hb.id === swapWith.id);
+
+    // Update the local array immediately for responsive UI
+    [this.habitBusinesses[indexA], this.habitBusinesses[indexB]] =
+      [this.habitBusinesses[indexB], this.habitBusinesses[indexA]];
+
     try {
-      // Update the local array immediately for responsive UI
-      moveItemInArray(this.habitBusinesses, event.previousIndex, event.currentIndex);
-      
-      // Create ordered list of business IDs
       const orderedBusinessIds = this.habitBusinesses.map(hb => hb.id);
-      
-      // Update the database
       await this.habitBusinessService.updateHabitBusinessOrder(this.currentUser.id, orderedBusinessIds);
-      
-      // Show success toast
-      const toast = await this.toastController.create({
-        message: '✅ Habit order updated!',
-        duration: 1500,
-        position: 'top',
-        color: 'success'
-      });
-      await toast.present();
-      
     } catch (error) {
       console.error('Error updating habit order:', error);
-      
+
       // Revert the local change
       await this.loadDashboardData();
-      
+
       const errorToast = await this.toastController.create({
         message: '❌ Failed to update order. Please try again.',
         duration: 3000,
@@ -1349,20 +1350,6 @@ export class HomePage implements OnInit, OnDestroy {
         color: 'danger'
       });
       await errorToast.present();
-    }
-  }
-
-  /**
-   * Automatically move completed habits to bottom when they're completed
-   */
-  async moveCompletedHabitsToBottom() {
-    try {
-      await this.habitBusinessService.moveCompletedHabitsToBottom(this.currentUser.id);
-      // Reload data to reflect the new order
-      await this.loadDashboardData();
-    } catch (error) {
-      console.error('Error moving completed habits to bottom:', error);
-      // Don't show error toast as this is automatic - just log it
     }
   }
 
