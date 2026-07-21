@@ -111,7 +111,12 @@ export class StocksPage implements OnInit, OnDestroy {
   showSellModal = false;
   selectedHolding: any = null;
   sellQuantity = 0;
-  
+
+  // Buy More modal properties
+  showBuyModal = false;
+  selectedBuyBusiness: FriendBusiness | null = null;
+  buyQuantity = 0;
+
   // Reminder tracking properties
   dailyReminders: { [businessId: string]: string } = {}; // businessId -> date sent
   habitCompletionStatus: { [businessId: string]: boolean } = {}; // businessId -> completed status
@@ -642,14 +647,72 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Buy one more share of a stock already held in the portfolio
+   * Open the "Buy More" modal for a stock already held in the portfolio
    */
-  async buyMoreShares(holding: Portfolio) {
+  openBuyModal(holding: Portfolio) {
     const business = this.getBusinessForHolding(holding);
     if (!business) {
       return;
     }
-    await this.buyShares(business, 1);
+    this.selectedBuyBusiness = business;
+    this.buyQuantity = 1;
+    this.showBuyModal = true;
+  }
+
+  /**
+   * Close the "Buy More" modal
+   */
+  closeBuyModal() {
+    this.showBuyModal = false;
+    this.selectedBuyBusiness = null;
+    this.buyQuantity = 0;
+  }
+
+  /**
+   * Generate array of buy options from 1 to shares available
+   */
+  getBuyOptions(): number[] {
+    if (!this.selectedBuyBusiness) return [];
+    const maxShares = this.selectedBuyBusiness.sharesAvailable;
+    return Array.from({ length: maxShares }, (_, i) => i + 1);
+  }
+
+  /**
+   * Confirm and execute the purchase of additional shares from the "Buy More" modal
+   */
+  async confirmBuy() {
+    if (!this.selectedBuyBusiness || !this.buyQuantity || this.buyQuantity <= 0) {
+      return;
+    }
+
+    const business = this.selectedBuyBusiness;
+    const shares = this.buyQuantity;
+
+    try {
+      this.isLoading = true;
+      const result = await this.habitBusinessService.purchaseStockShares(business.stockId!, shares);
+
+      this.closeBuyModal();
+
+      const toast = await this.toastController.create({
+        message: `✅ Purchased ${result.shares_purchased} shares for $${result.total_cost.toFixed(2)}!`,
+        duration: 3000,
+        color: 'success'
+      });
+      await toast.present();
+
+      await this.loadData();
+      await this.loadCurrentUser();
+    } catch (error: any) {
+      const toast = await this.toastController.create({
+        message: `❌ ${error?.message || 'Failed to purchase shares'}`,
+        duration: 3000,
+        color: 'danger'
+      });
+      await toast.present();
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   /**
