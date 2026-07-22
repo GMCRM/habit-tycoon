@@ -110,7 +110,7 @@ export class WeeklyReceiptPage implements OnInit {
   }
 
   formatMoney(amount: number): string {
-    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (amount === 0 ? 0 : amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   goHome() {
