@@ -26,7 +26,7 @@ import { SettingsService } from '../services/settings.service';
 import { Router } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning, fingerPrint } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, fingerPrint, logOut } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -92,7 +92,7 @@ export class SettingsPage implements OnInit, OnDestroy {
     private settingsService: SettingsService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning,fingerPrint});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,fingerPrint,logOut});
   }
 
   async ngOnInit() {
@@ -286,5 +286,15 @@ export class SettingsPage implements OnInit, OnDestroy {
 
   goBack() {
     this.router.navigate(['/home']);
+  }
+
+  async logout() {
+    try {
+      await this.authService.signOut();
+      this.router.navigate(['/login'], { replaceUrl: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      this.showToastMessage('Failed to logout. Please try again.', 'danger');
+    }
   }
 }

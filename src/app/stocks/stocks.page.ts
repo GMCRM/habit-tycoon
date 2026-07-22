@@ -16,12 +16,12 @@ import { HabitBusinessService } from '../services/habit-business.service';
 import { SocialService } from '../services/social.service';
 import { AuthService } from '../services/auth.service';
 import { addIcons } from 'ionicons';
-import { 
-  arrowBack, trendingUp, trendingDown, star, business, 
-  cash, checkmarkCircle, alertCircle, funnel, closeCircle, 
-  settings, logOut, trendingUpOutline, pieChartOutline, 
-  swapHorizontal, helpCircle, close, addCircle, pieChart, 
-  wallet, removeCircle, add, remove, chevronBack, 
+import {
+  arrowBack, trendingUp, trendingDown, star, business,
+  cash, checkmarkCircle, alertCircle, funnel, closeCircle,
+  settings, trendingUpOutline, pieChartOutline,
+  swapHorizontal, helpCircle, close, addCircle, pieChart,
+  wallet, removeCircle, add, remove, chevronBack,
   chevronForward, helpCircleOutline
 } from 'ionicons/icons';
 
@@ -133,7 +133,7 @@ export class StocksPage implements OnInit, OnDestroy {
     private alertController: AlertController
   ) {
     // Register icons
-    addIcons({funnel,closeCircle,settings,logOut,trendingUpOutline,pieChartOutline,swapHorizontal,helpCircle,trendingUp,close,addCircle,pieChart,wallet,trendingDown,removeCircle,helpCircleOutline,chevronBack,chevronForward,remove,add,arrowBack,star,business,cash,checkmarkCircle,alertCircle});
+    addIcons({funnel,closeCircle,settings,trendingUpOutline,pieChartOutline,swapHorizontal,helpCircle,trendingUp,close,addCircle,pieChart,wallet,trendingDown,removeCircle,helpCircleOutline,chevronBack,chevronForward,remove,add,arrowBack,star,business,cash,checkmarkCircle,alertCircle});
   }
 
   async ngOnInit() {
@@ -725,24 +725,6 @@ export class StocksPage implements OnInit, OnDestroy {
     const current = this.selectedQuantities[stockId] || 1;
     if (current > 1) {
       this.selectedQuantities[stockId] = current - 1;
-    }
-  }
-
-  /**
-   * Logout user and redirect to login page
-   */
-  async logout() {
-    try {
-      await this.authService.signOut();
-      this.router.navigate(['/login'], { replaceUrl: true });
-    } catch (error) {
-      console.error('Logout error:', error);
-      const toast = await this.toastController.create({
-        message: 'Failed to logout. Please try again.',
-        duration: 3000,
-        color: 'danger'
-      });
-      await toast.present();
     }
   }
 

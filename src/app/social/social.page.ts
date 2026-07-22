@@ -13,9 +13,9 @@ import { SocialService, Friend } from '../services/social.service';
 import { HabitBusinessService } from '../services/habit-business.service';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { 
+import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
-  notifications, checkmark, close, notificationsOutline, logOut, settings, trashOutline } from 'ionicons/icons';
+  notifications, checkmark, close, notificationsOutline, settings, trashOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-social',
@@ -65,7 +65,7 @@ export class SocialPage implements OnInit, OnDestroy {
     private toastController: ToastController,
     private alertController: AlertController
   ) {
-    addIcons({settings,logOut,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business});
+    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business});
     
     // Restore the previously selected tab from localStorage (only if the user has explicitly chosen one)
     const savedTab = localStorage.getItem('social-selected-tab');
@@ -842,24 +842,6 @@ export class SocialPage implements OnInit, OnDestroy {
         buttons: ['OK']
       });
       await errorAlert.present();
-    }
-  }
-
-  /**
-   * Logout user and redirect to login page
-   */
-  async logout() {
-    try {
-      await this.authService.signOut();
-      this.router.navigate(['/login'], { replaceUrl: true });
-    } catch (error) {
-      console.error('Logout error:', error);
-      const toast = await this.toastController.create({
-        message: 'Failed to logout. Please try again.',
-        duration: 3000,
-        color: 'danger'
-      });
-      await toast.present();
     }
   }
 

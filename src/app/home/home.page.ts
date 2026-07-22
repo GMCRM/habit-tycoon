@@ -20,7 +20,7 @@ import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.com
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -86,7 +86,7 @@ export class HomePage implements OnInit, OnDestroy {
     private habitIntervalService: HabitIntervalService,
     private countdownTickService: CountdownTickService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield });
+    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield });
     this.setRandomTagline();
     this.checkScreenSize();
     this.setupStatsCards();
@@ -295,42 +295,6 @@ export class HomePage implements OnInit, OnDestroy {
       this.pendingHabitsCount = this.pendingHabitsCount || 0;
     } finally {
       this.isLoading = false;
-    }
-  }
-
-  async logout() {
-    try {
-      await this.authService.signOut();
-
-      // Clear cached page state immediately so stale user data cannot reappear.
-      this.currentUser = null;
-      this.userProfile = null;
-      this.hasCheckedAuth = false;
-      this.habitBusinesses = [];
-      this.todaysHabits = [];
-      this.todaysEarnings = 0;
-      this.todaysStockEarnings = 0;
-      this.pendingHabitsCount = 0;
-      
-      // Show success toast instead of blocking alert
-      const toast = await this.toastController.create({
-        message: '👋 Successfully logged out!',
-        duration: 2000,
-        position: 'top',
-        color: 'success'
-      });
-      await toast.present();
-      
-      this.router.navigate(['/login'], { replaceUrl: true });
-    } catch (error) {
-      // Show error toast instead of blocking alert
-      const errorToast = await this.toastController.create({
-        message: '❌ Logout failed: ' + (error as Error).message,
-        duration: 3000,
-        position: 'top',
-        color: 'danger'
-      });
-      await errorToast.present();
     }
   }
 

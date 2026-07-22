@@ -77,6 +77,22 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Account Card -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="log-out"></ion-icon>
+            Account
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-button expand="block" (click)="logout()" color="medium" fill="outline">
+            <ion-icon name="log-out" slot="start"></ion-icon>
+            Logout
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Password Settings Card - Only show for email/password users -->
       <ion-card *ngIf="!isGoogleUser">
         <ion-card-header>
