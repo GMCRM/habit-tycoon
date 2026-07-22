@@ -519,8 +519,8 @@
                       </div>
 
                       <!-- Show completed status if goal is fully completed but no undo available
-                           (either zero progress left to undo, or it's a rest-day carry-over from
-                           the habit's last active day) -->
+                           (either zero progress left to undo, or it's a rest day — rest days show
+                           in Done regardless of whether the habit was actually completed) -->
                       <ion-button
                         *ngIf="isGoalCompleted(hb) && ((hb.current_progress || 0) === 0 || !isTodayActiveDay(hb))"
                         fill="outline"
@@ -532,18 +532,27 @@
                           name="checkmark-circle"
                           slot="start"
                         ></ion-icon>
-                        <!-- Show progress for multi-completion habits -->
-                        <span *ngIf="hb.goal_value && hb.goal_value > 1">
+                        <!-- Multi-completion habit, goal actually reached -->
+                        <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) >= hb.goal_value">
                           Goal Complete ({{ hb.current_progress }}/{{
+                          hb.goal_value }})
+                        </span>
+                        <!-- Multi-completion habit, rest day but goal not reached -->
+                        <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) < hb.goal_value">
+                          Resting ({{ hb.current_progress || 0 }}/{{
                           hb.goal_value }})
                         </span>
                         <!-- Simple text for single completion habits, active day -->
                         <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && isTodayActiveDay(hb)">
                           Completed Today
                         </span>
-                        <!-- Simple text for single completion habits, rest-day carry-over -->
-                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb)">
+                        <!-- Simple text for single completion habits, rest day, actually completed -->
+                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) > 0">
                           Completed
+                        </span>
+                        <!-- Simple text for single completion habits, rest day, not completed -->
+                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) === 0">
+                          Resting
                         </span>
                       </ion-button>
                     </div>

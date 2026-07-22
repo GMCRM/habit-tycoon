@@ -130,12 +130,13 @@ export class HabitIntervalService {
 
   /**
    * Returns true if the habit has met its goal within the current active period.
-   * For 'specific_days' on a rest day, this stays true if the habit was completed
-   * on its most recent active day, so it remains in "Done" through rest days
-   * until the next active day resets it.
+   * For 'specific_days' on a rest day, there's nothing to do today, so the habit
+   * counts as "done" regardless of whether it was completed on its last active day.
    */
   isHabitCompleteForCurrentPeriod(habit: HabitBusiness, now: Date = new Date()): boolean {
     const interval = this.resolveInterval(habit);
+
+    if (interval === 'specific_days' && !this.isTodayActiveDay(habit, now)) return true;
 
     const goalValue = habit.goal_value || 1;
     const currentProgress = habit.current_progress || 0;
@@ -143,13 +144,7 @@ export class HabitIntervalService {
     if (currentProgress < goalValue) return false;
     if (!habit.last_completed_at) return false;
 
-    let periodStart: Date;
-    if (interval === 'specific_days' && !this.isTodayActiveDay(habit, now)) {
-      periodStart = this.getPreviousActiveDayStart(habit.active_days || [], now);
-    } else {
-      periodStart = this.getCurrentPeriodStart(interval, now);
-    }
-
+    const periodStart = this.getCurrentPeriodStart(interval, now);
     const lastCompleted = new Date(habit.last_completed_at);
 
     return lastCompleted >= periodStart;
