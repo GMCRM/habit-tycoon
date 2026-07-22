@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy, inject, HostListener } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy, inject, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { 
   IonHeader, IonToolbar, IonTitle, IonButton, IonIcon
@@ -34,20 +34,20 @@ export interface HabitGridDay {
     <!-- Content wrapper -->
     <div class="content-wrapper" [class.modal-content]="isModal">
       <div class="habit-grid-container">
-        <!-- Standard Grid View -->
-        <div>
+        <!-- Horizontally scrollable year strip (grid can be wider than the viewport on mobile) -->
+        <div class="grid-scroll-area" #scrollArea>
           <!-- Header with month labels -->
           <div class="grid-header">
-            <div class="month-labels" [style.grid-template-columns]="'repeat(' + weeks + ', 12px)'">
-              <span 
-                *ngFor="let month of monthLabels" 
+            <div class="month-labels" [style.grid-template-columns]="'repeat(' + weeks + ', var(--grid-size))'">
+              <span
+                *ngFor="let month of monthLabels"
                 class="month-label"
                 [style.grid-column]="month.column + ' / span ' + month.span">
                 {{ month.name }}
               </span>
             </div>
           </div>
-          
+
           <!-- Main grid -->
           <div class="habit-grid" [style.grid-template-columns]="getGridTemplateColumns()">
             <div
@@ -66,25 +66,25 @@ export interface HabitGridDay {
               (click)="onDayClick(day)">
             </div>
           </div>
+        </div>
 
-          <!-- Stats summary -->
-          <div class="grid-stats" *ngIf="showStats">
-            <div class="stat">
-              <span class="stat-value">{{ completedDays }}</span>
-              <span class="stat-label">Completed</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ (completionRate * 100).toFixed(0) }}%</span>
-              <span class="stat-label">Success Rate</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ currentStreak }}</span>
-              <span class="stat-label">Current Streak</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ longestStreak }}</span>
-              <span class="stat-label">Longest Streak</span>
-            </div>
+        <!-- Stats summary (kept outside the scroll area so it's always fully visible) -->
+        <div class="grid-stats" *ngIf="showStats">
+          <div class="stat">
+            <span class="stat-value">{{ completedDays }}</span>
+            <span class="stat-label">Completed</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ (completionRate * 100).toFixed(0) }}%</span>
+            <span class="stat-label">Success Rate</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ currentStreak }}</span>
+            <span class="stat-label">Current Streak</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ longestStreak }}</span>
+            <span class="stat-label">Longest Streak</span>
           </div>
         </div>
 
@@ -99,9 +99,9 @@ export interface HabitGridDay {
 
         <!-- Close Button at Bottom (like upgrade modal) -->
         <div class="modal-footer" *ngIf="isModal">
-          <ion-button 
-            expand="block" 
-            fill="clear" 
+          <ion-button
+            expand="block"
+            fill="clear"
             color="medium"
             (click)="closeModal()"
             class="close-button">
@@ -112,39 +112,50 @@ export interface HabitGridDay {
     </div>
   `,
   styles: [`
-    /* Hide calendar completely on screens smaller than 1300px */
-    @media (max-width: 1299px) {
+    /* Cell size/gap drive both the day squares and the grid-template-columns
+       computed in the TS below, so they can never drift out of sync. Page-level
+       CSS may also override these custom properties on app-habit-grid if a
+       host page wants a different density at its own breakpoints. */
+    :host {
+      display: block;
+      width: 100%;
+      --grid-size: 12px;
+      --grid-gap: 2px;
+    }
+
+    @media (max-width: 768px) {
       :host {
-        display: none !important;
+        --grid-size: 8px;
+        --grid-gap: 1px;
       }
     }
 
-    /* Show calendar only on screens 1300px and larger */
-    @media (min-width: 1300px) {
+    @media (max-width: 380px) {
       :host {
-        display: block;
+        --grid-size: 7px;
       }
-      
-      .habit-grid-container {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 215, 0, 0.2);
-        border-radius: 12px;
-        padding: 8px;
-        margin: 0;
-        width: fit-content;
-        max-width: none;
-        overflow: visible;
-        display: inline-block;
-      }
-      
-      .month-labels {
-        font-size: 11px;
-      }
-      
-      .grid-day {
-        width: 12px;
-        height: 12px;
-      }
+    }
+
+    .habit-grid-container {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      border-radius: 12px;
+      padding: 8px;
+      margin: 0;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* The year strip can be wider than its container (especially on mobile) -
+       let it scroll horizontally inside its own box instead of overflowing
+       the page or getting clipped. */
+    .grid-scroll-area {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+      scrollbar-width: thin;
     }
 
     /* Modal header styles */
@@ -201,16 +212,22 @@ export interface HabitGridDay {
     
     .month-labels {
       display: grid;
-      gap: 2px;
+      gap: var(--grid-gap);
       font-size: 10px;
       color: rgba(255, 255, 255, 0.6);
       margin-bottom: 8px;
       overflow: visible;
-      width: fit-content;
+      width: max-content;
       align-items: baseline; /* Align all labels to the same baseline */
       height: 14px; /* Fixed height to ensure consistent alignment */
     }
-    
+
+    @media (max-width: 768px) {
+      .month-labels {
+        font-size: 8px;
+      }
+    }
+
     .month-label {
       text-align: center;
       font-weight: 500;
@@ -220,20 +237,20 @@ export interface HabitGridDay {
       justify-content: center;
       height: 100%; /* Take full height of container */
     }
-    
+
     .habit-grid {
       display: grid;
-      grid-template-rows: repeat(7, 12px);
+      grid-template-rows: repeat(7, var(--grid-size));
       grid-auto-flow: column;
-      gap: 2px;
+      gap: var(--grid-gap);
       margin-bottom: 12px;
       overflow: visible;
-      width: fit-content;
+      width: max-content;
     }
-    
+
     .grid-day {
-      width: 12px;
-      height: 12px;
+      width: var(--grid-size);
+      height: var(--grid-size);
       border-radius: 2px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -290,6 +307,7 @@ export interface HabitGridDay {
     
     .grid-stats {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-around;
       padding-top: 12px;
       border-top: 1px solid rgba(255, 215, 0, 0.2);
@@ -298,7 +316,18 @@ export interface HabitGridDay {
       margin-top: 8px;
       padding: 16px;
     }
-    
+
+    @media (max-width: 480px) {
+      .grid-stats {
+        padding: 10px;
+        gap: 8px 4px;
+      }
+
+      .stat-value {
+        font-size: 14px;
+      }
+    }
+
     .stat {
       display: flex;
       flex-direction: column;
@@ -322,6 +351,8 @@ export interface HabitGridDay {
   `]
 })
 export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
+  @ViewChild('scrollArea') scrollAreaRef?: ElementRef<HTMLDivElement>;
+
   @Input() data: any[] = [];
   @Input() businessId: string = '';
   @Input() businessName: string = '';
@@ -553,41 +584,15 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   isFutureYear(dateStr: string): boolean {
-    if (this.isMobileScreen) {
-      // Mobile: Hide dates outside 3-month range
-      const dayDate = new Date(dateStr + 'T12:00:00');
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      
-      // Calculate 3-month range (1 month before, current, 1 month after)
-      let startMonth = currentMonth - 1;
-      let startYear = currentYear;
-      if (startMonth < 0) {
-        startMonth += 12;
-        startYear -= 1;
-      }
-      
-      let endMonth = currentMonth + 1;
-      let endYear = currentYear;
-      if (endMonth > 11) {
-        endMonth -= 12;
-        endYear += 1;
-      }
-      
-      const startDate = new Date(startYear, startMonth, 1);
-      const endDate = new Date(endYear, endMonth + 1, 0); // Last day of end month
-      
-      return dayDate < startDate || dayDate > endDate;
-    } else {
-      // Desktop: Hide dates outside calendar year range
-      const currentYear = new Date().getFullYear();
-      const startDate = new Date(currentYear, 0, 1); // January 1 of current year
-      const endDate = new Date(currentYear, 11, 31); // December 31 of current year
-      const dayDate = new Date(dateStr + 'T12:00:00'); // Add time to avoid timezone issues
-      
-      return dayDate < startDate || dayDate > endDate;
-    }
+    // Hide dates outside the calendar year range. The full year is always
+    // generated (mobile included) - on narrow screens the grid scrolls
+    // horizontally inside its own container rather than being truncated.
+    const currentYear = new Date().getFullYear();
+    const startDate = new Date(currentYear, 0, 1); // January 1 of current year
+    const endDate = new Date(currentYear, 11, 31); // December 31 of current year
+    const dayDate = new Date(dateStr + 'T12:00:00'); // Add time to avoid timezone issues
+
+    return dayDate < startDate || dayDate > endDate;
   }
 
   isFutureDate(dateStr: string): boolean {
@@ -742,8 +747,9 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   getGridTemplateColumns(): string {
-    // Always use standard desktop grid
-    return 'repeat(' + this.weeks + ', 12px)'; // Default year view
+    // Cell width comes from the --grid-size custom property so columns
+    // always stay in sync with the day cells' actual rendered size.
+    return 'repeat(' + this.weeks + ', var(--grid-size))';
   }
 
   getDayNumber(dateStr: string): number {
@@ -1074,6 +1080,27 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
     this.weeks = weeksNeeded;
     console.log('✅ Generated grid with', this.gridDays.length, 'days');
     console.log('📅 Grid covers:', startDate.toDateString(), 'to', endDate.toDateString());
+
+    if (this.isMobileScreen) {
+      this.scrollToToday();
+    }
+  }
+
+  /**
+   * On mobile the year strip is wider than the screen and scrolls
+   * horizontally - land on today instead of leaving the user at January.
+   */
+  private scrollToToday(): void {
+    setTimeout(() => {
+      const container = this.scrollAreaRef?.nativeElement;
+      if (!container) return;
+      const todayEl = container.querySelector('.grid-day.is-today') as HTMLElement | null;
+      if (todayEl) {
+        container.scrollLeft = Math.max(0, todayEl.offsetLeft - container.clientWidth / 2 + todayEl.clientWidth / 2);
+      } else {
+        container.scrollLeft = container.scrollWidth;
+      }
+    });
   }
 
   /**

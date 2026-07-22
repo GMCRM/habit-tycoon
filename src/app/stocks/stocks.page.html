@@ -297,8 +297,8 @@
                   </div>
                 </div>
 
-                <!-- Habit Grid showing habit completion pattern (desktop only) -->
-                <div class="habit-grid-wrapper desktop-only">
+                <!-- Habit Grid showing habit completion pattern -->
+                <div class="habit-grid-wrapper">
                   <app-habit-grid
                     [businessId]="business.id"
                     [businessName]="business.businessName"
@@ -620,8 +620,11 @@
                       {{ holding.businessStreak }} days
                     </div>
                   </div>
-                  <div class="stat-item">
-                    <div style="display: flex; gap: 8px; align-items: center">
+                  <div class="stat-item holding-actions-stat">
+                    <div
+                      class="holding-actions-buttons"
+                      style="display: flex; gap: 8px; align-items: center"
+                    >
                       <ion-button
                         *ngIf="canBuyMoreShares(holding)"
                         fill="outline"
@@ -669,9 +672,9 @@
                   </div>
                 </div>
 
-                <!-- Habit Grid showing habit completion pattern (desktop only) -->
+                <!-- Habit Grid showing habit completion pattern -->
                 <!-- DEBUG: stockId={{holding.stockId}} -->
-                <div class="habit-grid-wrapper desktop-only">
+                <div class="habit-grid-wrapper">
                   <app-habit-grid
                     [businessId]="holding.stockId"
                     [businessName]="holding.businessName"

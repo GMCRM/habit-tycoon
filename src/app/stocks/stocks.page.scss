@@ -1124,34 +1124,18 @@ ion-content {
           
           // Habit grid optimization for 6 months (better readability)
           app-habit-grid {
+            --grid-size: 16px; // Good size for 6 months
+
             ::ng-deep .habit-grid-container {
               max-width: 100% !important;
-              overflow-x: hidden !important;
               padding: 14px !important;
               margin: 0 auto !important;
               width: fit-content !important;
             }
-            
+
             ::ng-deep .month-labels {
               font-size: 0.8rem !important;
-              width: fit-content !important;
               margin-left: 20px !important;
-            }
-            
-            ::ng-deep .grid-wrapper {
-              width: fit-content !important;
-              margin: 0 auto !important;
-              overflow-x: hidden !important;
-            }
-            
-            ::ng-deep .habit-grid {
-              width: fit-content !important;
-              margin: 0 auto !important;
-              
-              .grid-day {
-                width: 16px !important; // Good size for 6 months
-                height: 16px !important;
-              }
             }
           }
         }
@@ -1193,34 +1177,18 @@ ion-content {
           
           // Habit grid optimization for 4 months (better readability)
           app-habit-grid {
+            --grid-size: 14px; // Good size for 4 months
+
             ::ng-deep .habit-grid-container {
               max-width: 100% !important;
-              overflow-x: hidden !important;
               padding: 12px !important;
               margin: 0 auto !important;
               width: fit-content !important;
             }
-            
+
             ::ng-deep .month-labels {
               font-size: 0.75rem !important;
-              width: fit-content !important;
               margin-left: 18px !important;
-            }
-            
-            ::ng-deep .grid-wrapper {
-              width: fit-content !important;
-              margin: 0 auto !important;
-              overflow-x: hidden !important;
-            }
-            
-            ::ng-deep .habit-grid {
-              width: fit-content !important;
-              margin: 0 auto !important;
-              
-              .grid-day {
-                width: 14px !important; // Good size for 4 months
-                height: 14px !important;
-              }
             }
           }
         }
@@ -1292,13 +1260,14 @@ ion-content {
             max-width: 100%;
             margin-left: auto;
             margin-right: auto;
-            flex-wrap: nowrap;
-            
+            flex-wrap: wrap;
+            row-gap: 10px;
+
             .stat-item {
               text-align: center;
               flex: 1;
               min-width: 60px;
-              
+
               .stat-label {
                 font-size: 0.6rem;
                 white-space: nowrap;
@@ -1306,200 +1275,62 @@ ion-content {
                 text-overflow: ellipsis;
                 letter-spacing: 0.2px;
               }
-              
+
               .stat-value {
                 font-size: 0.75rem;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
               }
-              
-              // Ensure adequate space for button container on mobile
-              &:last-child {
-                min-width: 130px;
-                flex: 1.8;
+
+              // Portfolio's action-buttons row: always its own full-width row
+              // instead of squeezing 3 buttons into a stat-column
+              &.holding-actions-stat {
+                flex: 1 1 100%;
+                min-width: 100%;
               }
+            }
+
+            .holding-actions-buttons {
+              flex-wrap: wrap;
+              justify-content: center;
+              row-gap: 8px;
             }
           }
           
-          // Make habit grid more compact on mobile with monthly view
+          // Make habit grid more compact on mobile - sizing/scrolling is
+          // handled by the component itself (--grid-size + internal
+          // horizontal scroll); we just keep the wrapper full-width so it
+          // doesn't force a shrink-to-fit overflow.
           app-habit-grid {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
             display: block !important;
-            
+
             ::ng-deep .content-wrapper {
               width: 100% !important;
               padding: 0 !important;
               margin: 0 !important;
               display: block !important;
             }
-            
+
             ::ng-deep .habit-grid-container {
               padding: 12px 8px !important;
               margin: 0 !important;
               width: 100% !important;
-              overflow-x: hidden !important;
+              max-width: 100% !important;
               background: rgba(0, 0, 0, 0.3) !important;
               border-radius: 8px !important;
               border: 1px solid rgba(255, 215, 0, 0.2) !important;
               min-height: auto !important;
               display: block !important;
             }
-            
-            ::ng-deep .grid-header {
-              display: none !important;
-            }
-            
-            ::ng-deep .month-labels {
-              display: none !important;
-            }
-            
-            ::ng-deep .grid-wrapper {
-              width: 100% !important;
-              margin: 0 !important;
-              overflow-x: hidden !important;
-              padding: 0 !important;
-            }
-            
-            ::ng-deep .habit-grid {
-              width: 100% !important;
-              margin: 0 !important;
-              padding: 4px !important;
-              gap: 6px !important;
-              display: grid !important;
-              grid-template-columns: repeat(7, 1fr) !important;
-              max-width: 100% !important;
-              overflow: hidden !important;
-              background: rgba(255, 255, 255, 0.05) !important;
-              border-radius: 8px !important;
-              
-              &.mobile-month-grid {
-                padding: 0 20px 20px !important;
-                gap: 12px !important;
-                background: transparent !important;
-                border-radius: 0 !important;
-                border: none !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-              }
-              
-              &.mobile-year-grid {
-                grid-template-columns: repeat(53, 1fr) !important;
-                gap: 1px !important;
-                padding: 4px !important;
-              }
-            }
-            
-            ::ng-deep .grid-day {
-              width: 100% !important;
-              height: 36px !important;
-              min-width: 0 !important;
-              border-radius: 8px !important;
-              display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
-              position: relative !important;
-              font-size: 0.75rem !important;
-              font-weight: 600 !important;
-              cursor: pointer !important;
-              transition: all 0.2s ease !important;
-              aspect-ratio: 1 !important;
-              margin: 2px !important;
-              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-              
-              &.mobile-monthly-day {
-                width: 40px !important;
-                height: 40px !important;
-                margin: 0 auto !important;
-                border-radius: 50% !important;
-                background: transparent !important;
-                border: 2px solid rgba(255, 255, 255, 0.1) !important;
-                font-size: 0.9rem !important;
-                font-weight: 500 !important;
-                color: rgba(255, 255, 255, 0.8) !important;
-                cursor: default !important;
-                aspect-ratio: auto !important;
-                box-shadow: none !important;
-              }
-              
-              &.mobile-monthly-day.today {
-                border-color: white !important;
-                color: white !important;
-                font-weight: 600 !important;
-              }
-              
-              &.mobile-monthly-day.today::after {
-                content: '' !important;
-                position: absolute !important;
-                bottom: -8px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-                width: 4px !important;
-                height: 4px !important;
-                background: white !important;
-                border-radius: 50% !important;
-              }
-              
-              &.mobile-monthly-day.has-data {
-                background: rgba(76, 175, 80, 0.3) !important;
-                border-color: rgba(76, 175, 80, 0.6) !important;
-                color: #4CAF50 !important;
-              }
-              
-              &.mobile-monthly-day.other-month {
-                opacity: 0.3 !important;
-                pointer-events: none !important;
-              }
-              
-              &.mobile-yearly-day {
-                width: 100% !important;
-                height: 12px !important;
-                min-height: 12px !important;
-                border-radius: 2px !important;
-                margin: 0 !important;
-                aspect-ratio: auto !important;
-              }
-              
-              .day-number {
-                font-size: 9px !important;
-                color: #ffffff !important;
-                font-weight: 500 !important;
-                position: absolute !important;
-                top: 2px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-                z-index: 1 !important;
-                
-                &.mobile-monthly-day {
-                  font-size: 14px !important;
-                  font-weight: 600 !important;
-                  top: 4px !important;
-                  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-                }
-              }
-              
-              &.outside-month .day-number {
-                color: rgba(255, 255, 255, 0.3) !important;
-              }
-            }
-            
-            ::ng-deep .grid-day:hover {
-              transform: scale(1.1) !important;
-              z-index: 10 !important;
-            }
-            
-            ::ng-deep .grid-day.is-today {
-              border: 2px solid var(--ion-color-primary, #ffd700) !important;
-              box-shadow: 0 0 8px rgba(255, 215, 0, 0.5) !important;
-            }
           }
           
           .price-badge {
-            align-items: flex-start;
-            margin-left: 48px; // Make room for top-left emoji
-            
+            align-items: flex-end;
+
             .current-price {
               font-size: 1.1rem;
             }
@@ -1602,25 +1433,12 @@ ion-content {
           ::ng-deep .habit-grid-container {
             padding: 10px !important;
             margin: 0 auto !important;
-            width: fit-content !important;
-            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
-          
+
           ::ng-deep .month-labels {
             font-size: 9px !important;
-            width: fit-content !important;
-            margin: 0 auto !important;
-          }
-          
-          ::ng-deep .grid-wrapper {
-            width: fit-content !important;
-            margin: 0 auto !important;
-            overflow-x: hidden !important;
-          }
-          
-          ::ng-deep .habit-grid {
-            width: fit-content !important;
-            margin: 0 auto !important;
           }
         }
       }
@@ -1686,33 +1504,18 @@ ion-content {
         
         // Large desktop grid styling (for 6-month display)
         app-habit-grid {
+          --grid-size: 16px;
+
           ::ng-deep .habit-grid-container {
             padding: 14px !important;
             margin: 0 auto !important;
             width: fit-content !important;
             overflow: visible !important;
           }
-          
+
           ::ng-deep .month-labels {
             font-size: 0.8rem !important;
-            width: fit-content !important;
             margin-left: 20px !important;
-          }
-          
-          ::ng-deep .grid-wrapper {
-            width: fit-content !important;
-            margin: 0 auto !important;
-            overflow: visible !important;
-          }
-          
-          ::ng-deep .habit-grid {
-            width: fit-content !important;
-            margin: 0 auto !important;
-            
-            .grid-day {
-              width: 16px !important;
-              height: 16px !important;
-            }
           }
         }
       }
@@ -1849,64 +1652,29 @@ ion-content {
           }
         }
         
-        // Make habit grid more compact on mobile
+        // Make habit grid more compact on mobile - the component owns cell
+        // sizing/scrolling internally; just keep the wrapper full-width.
         app-habit-grid {
           margin: 0 !important;
           padding: 0 !important;
           width: 100% !important;
           display: block !important;
-          
+
           ::ng-deep .content-wrapper {
             width: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
             display: block !important;
           }
-          
+
           ::ng-deep .habit-grid-container {
             padding: 8px 4px !important;
             margin: 0 !important;
             width: 100% !important;
-            overflow-x: hidden !important;
+            max-width: 100% !important;
             background: rgba(0, 0, 0, 0.3) !important;
             border-radius: 8px !important;
             border: 1px solid rgba(255, 215, 0, 0.2) !important;
-          }
-          
-          ::ng-deep .grid-header {
-            display: none !important;
-          }
-          
-          ::ng-deep .month-labels {
-            display: none !important;
-          }
-          
-          ::ng-deep .grid-wrapper {
-            width: 100% !important;
-            margin: 0 !important;
-            overflow-x: hidden !important;
-            padding: 0 !important;
-          }
-          
-          ::ng-deep .habit-grid {
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            gap: 1px !important;
-            display: grid !important;
-            grid-template-columns: repeat(auto-fit, minmax(8px, 1fr)) !important;
-          }
-          
-          ::ng-deep .grid-day {
-            width: 100% !important;
-            height: 8px !important;
-            min-width: 8px !important;
-            border-radius: 2px !important;
-            position: relative !important;
-            
-            .day-number {
-              display: none !important; // Too small for day numbers
-            }
           }
         }
       }
@@ -1970,29 +1738,17 @@ ion-content {
         
         // Even more compact habit grid for very small screens
         app-habit-grid {
+          --grid-size: 7px;
+
           ::ng-deep .habit-grid-container {
             padding: 6px !important;
             margin: 0 auto !important;
-            width: fit-content !important;
-            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
-          
+
           ::ng-deep .month-labels {
             font-size: 8px !important;
-            width: fit-content !important;
-            margin: 0 auto !important;
-          }
-          
-          ::ng-deep .grid-wrapper {
-            width: fit-content !important;
-            margin: 0 auto !important;
-            overflow-x: hidden !important;
-          }
-          
-          ::ng-deep .habit-grid {
-            width: fit-content !important;
-            margin: 0 auto !important;
-            transform: scale(0.9);
           }
         }
       }
