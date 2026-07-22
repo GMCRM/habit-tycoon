@@ -1,7 +1,18 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar class="page-toolbar">
     <!-- Back button removed, navigation handled by bottom nav -->
     <ion-title>👥 Social</ion-title>
+    <ion-button
+      *ngIf="currentUser"
+      slot="end"
+      fill="clear"
+      (click)="openWeeklyReceipt()"
+      class="header-action-btn receipt-btn"
+      aria-label="Weekly Receipt"
+    >
+      <span class="receipt-coin" slot="start">$</span>
+      <span class="btn-label">Receipt</span>
+    </ion-button>
     <ion-button
       *ngIf="currentUser"
       slot="end"

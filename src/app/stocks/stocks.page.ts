@@ -746,6 +746,10 @@ export class StocksPage implements OnInit, OnDestroy {
     }
   }
 
+  openWeeklyReceipt() {
+    this.router.navigate(['/weekly-receipt']);
+  }
+
   goHome() {
     this.router.navigate(['/home']);
   }

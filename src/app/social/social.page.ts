@@ -863,6 +863,10 @@ export class SocialPage implements OnInit, OnDestroy {
     }
   }
 
+  openWeeklyReceipt() {
+    this.router.navigate(['/weekly-receipt']);
+  }
+
   ionViewWillLeave() {
     if (this.timeRefreshInterval) {
       clearInterval(this.timeRefreshInterval);
