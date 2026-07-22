@@ -10,28 +10,60 @@ import {
   IonIcon,
   IonSpinner,
   IonModal,
+  IonSegment,
+  IonSegmentButton,
+  IonLabel,
 } from '@ionic/angular/standalone';
 import { WeeklyReceiptService, WeeklyReceipt, ReceiptDay } from '../services/weekly-receipt.service';
+import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
+import { AchievementsService, MILESTONE_DEFINITIONS, MilestoneDefinition } from '../services/achievements.service';
+import { AuthService } from '../services/auth.service';
 import { addIcons } from 'ionicons';
 import {
   arrowBack,
   chevronBack,
   chevronForward,
   receiptOutline,
+  trophyOutline,
   trendingUpOutline,
   trendingDownOutline,
   walletOutline,
   alertCircleOutline,
   documentTextOutline,
   close,
+  lockClosedOutline,
 } from 'ionicons/icons';
+
+interface HabitMilestoneState extends MilestoneDefinition {
+  earned: boolean;
+  progressCurrent: number;
+}
+
+interface HabitAchievements {
+  habit: HabitBusiness;
+  milestones: HabitMilestoneState[];
+  earnedCount: number;
+}
 
 @Component({
   selector: 'app-weekly-receipt',
   templateUrl: './weekly-receipt.page.html',
   styleUrls: ['./weekly-receipt.page.scss'],
   standalone: true,
-  imports: [CommonModule, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonIcon, IonSpinner, IonModal],
+  imports: [
+    CommonModule,
+    IonContent,
+    IonHeader,
+    IonTitle,
+    IonToolbar,
+    IonButton,
+    IonIcon,
+    IonSpinner,
+    IonModal,
+    IonSegment,
+    IonSegmentButton,
+    IonLabel,
+  ],
 })
 export class WeeklyReceiptPage implements OnInit {
   loading = true;
@@ -41,24 +73,107 @@ export class WeeklyReceiptPage implements OnInit {
   isCurrentWeek = false;
   showSummaryModal = false;
 
-  constructor(private receiptService: WeeklyReceiptService, private router: Router) {
+  activeTab: 'receipt' | 'achievements' = 'receipt';
+
+  milestoneDefinitions = MILESTONE_DEFINITIONS;
+  achievementsLoading = true;
+  achievementsError: string | null = null;
+  habitAchievements: HabitAchievements[] = [];
+  totalEarnedMilestones = 0;
+  totalPossibleMilestones = 0;
+
+  constructor(
+    private receiptService: WeeklyReceiptService,
+    private habitBusinessService: HabitBusinessService,
+    private achievementsService: AchievementsService,
+    private authService: AuthService,
+    private router: Router
+  ) {
     addIcons({
       arrowBack,
       chevronBack,
       chevronForward,
       receiptOutline,
+      trophyOutline,
       trendingUpOutline,
       trendingDownOutline,
       walletOutline,
       alertCircleOutline,
       documentTextOutline,
       close,
+      lockClosedOutline,
     });
   }
 
   async ngOnInit() {
     this.weekStart = this.receiptService.getWeekStart();
     await this.loadWeek();
+  }
+
+  onTabChange(event: any) {
+    this.activeTab = event.detail.value;
+    if (this.activeTab === 'achievements' && this.habitAchievements.length === 0 && !this.achievementsError) {
+      this.loadAchievements();
+    }
+  }
+
+  async loadAchievements() {
+    this.achievementsLoading = true;
+    this.achievementsError = null;
+    try {
+      const {
+        data: { user },
+      } = await this.authService.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const [habits, earned] = await Promise.all([
+        this.habitBusinessService.getUserHabitBusinesses(user.id),
+        this.achievementsService.getEarnedMilestones(user.id),
+      ]);
+
+      const earnedKeysByHabit = new Map<string, Set<string>>();
+      for (const e of earned) {
+        if (!earnedKeysByHabit.has(e.habit_business_id)) {
+          earnedKeysByHabit.set(e.habit_business_id, new Set());
+        }
+        earnedKeysByHabit.get(e.habit_business_id)!.add(e.milestone_key);
+      }
+
+      this.habitAchievements = habits.map((habit) => {
+        const earnedKeys = earnedKeysByHabit.get(habit.id) || new Set<string>();
+        const milestones: HabitMilestoneState[] = this.milestoneDefinitions.map((def) => ({
+          ...def,
+          earned: earnedKeys.has(def.key),
+          progressCurrent: def.type === 'streak' ? habit.streak : habit.total_completions,
+        }));
+        return {
+          habit,
+          milestones,
+          earnedCount: milestones.filter((m) => m.earned).length,
+        };
+      });
+
+      this.totalEarnedMilestones = this.habitAchievements.reduce((sum, h) => sum + h.earnedCount, 0);
+      this.totalPossibleMilestones = this.habitAchievements.length * this.milestoneDefinitions.length;
+    } catch (e) {
+      console.error('Failed to load achievements', e);
+      this.achievementsError = 'Could not load your achievements. Please try again.';
+    } finally {
+      this.achievementsLoading = false;
+    }
+  }
+
+  milestoneProgressLabel(milestone: HabitMilestoneState): string {
+    const current = Math.min(milestone.progressCurrent, milestone.threshold);
+    const unit = milestone.type === 'streak' ? 'days' : 'done';
+    return `${current}/${milestone.threshold} ${unit}`;
+  }
+
+  milestoneProgressPercent(milestone: HabitMilestoneState): number {
+    if (milestone.earned) return 100;
+    return Math.max(0, Math.min(100, (milestone.progressCurrent / milestone.threshold) * 100));
   }
 
   async loadWeek() {
