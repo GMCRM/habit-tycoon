@@ -32,6 +32,8 @@ import {
   documentTextOutline,
   close,
   lockClosedOutline,
+  chevronDown,
+  chevronUp,
 } from 'ionicons/icons';
 
 interface HabitMilestoneState extends MilestoneDefinition {
@@ -81,6 +83,7 @@ export class WeeklyReceiptPage implements OnInit {
   habitAchievements: HabitAchievements[] = [];
   totalEarnedMilestones = 0;
   totalPossibleMilestones = 0;
+  legendExpanded = false;
 
   constructor(
     private receiptService: WeeklyReceiptService,
@@ -102,6 +105,8 @@ export class WeeklyReceiptPage implements OnInit {
       documentTextOutline,
       close,
       lockClosedOutline,
+      chevronDown,
+      chevronUp,
     });
   }
 
@@ -174,6 +179,10 @@ export class WeeklyReceiptPage implements OnInit {
   milestoneProgressPercent(milestone: HabitMilestoneState): number {
     if (milestone.earned) return 100;
     return Math.max(0, Math.min(100, (milestone.progressCurrent / milestone.threshold) * 100));
+  }
+
+  toggleLegend() {
+    this.legendExpanded = !this.legendExpanded;
   }
 
   async loadWeek() {

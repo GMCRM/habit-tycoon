@@ -158,18 +158,29 @@
 
           <!-- Milestone legend / explainer -->
           <div class="legend-card">
-            <h2 class="legend-title">How milestones work</h2>
-            <p class="legend-intro">
-              Every habit earns its own set of badges as you build consistency. Streak badges reward
-              showing up day after day; completion badges reward total effort over time — and unlike
-              a streak, total completions never reset. Once a badge is earned, it's yours for good.
-            </p>
-            <div class="legend-grid">
-              <div class="legend-item" *ngFor="let def of milestoneDefinitions">
-                <span class="legend-emoji">{{ def.emoji }}</span>
-                <div class="legend-info">
-                  <div class="legend-label">{{ def.label }}</div>
-                  <div class="legend-description">{{ def.description }}</div>
+            <h2
+              class="legend-title"
+              tabindex="0"
+              (click)="toggleLegend()"
+              (keydown.enter)="toggleLegend()"
+              (keydown.space)="toggleLegend()"
+            >
+              <span>How milestones work</span>
+              <ion-icon [name]="legendExpanded ? 'chevron-up' : 'chevron-down'"></ion-icon>
+            </h2>
+            <div class="legend-body" *ngIf="legendExpanded">
+              <p class="legend-intro">
+                Every habit earns its own set of badges as you build consistency. Streak badges reward
+                showing up day after day; completion badges reward total effort over time — and unlike
+                a streak, total completions never reset. Once a badge is earned, it's yours for good.
+              </p>
+              <div class="legend-grid">
+                <div class="legend-item" *ngFor="let def of milestoneDefinitions">
+                  <span class="legend-emoji">{{ def.emoji }}</span>
+                  <div class="legend-info">
+                    <div class="legend-label">{{ def.label }}</div>
+                    <div class="legend-description">{{ def.description }}</div>
+                  </div>
                 </div>
               </div>
             </div>
