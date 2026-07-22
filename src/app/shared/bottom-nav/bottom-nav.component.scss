@@ -16,13 +16,16 @@
   padding: 0 20px;
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-between;
 }
 
 .add-button {
   --color: white;
   --color-selected: white;
-  flex: 0 0 auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 // Green circle for both add and home icons
