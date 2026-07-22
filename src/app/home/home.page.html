@@ -308,32 +308,31 @@
             let-isLast="isLast"
           >
             <div class="habit-business-item">
-              <!-- Reorder Controls -->
-              <div class="reorder-controls">
-                <button
-                  type="button"
-                  class="reorder-btn"
-                  [disabled]="isFirst"
-                  (click)="moveHabitBusiness(hb, 'up')"
-                  aria-label="Move up"
-                >
-                  <ion-icon name="chevron-up"></ion-icon>
-                </button>
-                <button
-                  type="button"
-                  class="reorder-btn"
-                  [disabled]="isLast"
-                  (click)="moveHabitBusiness(hb, 'down')"
-                  aria-label="Move down"
-                >
-                  <ion-icon name="chevron-down"></ion-icon>
-                </button>
-              </div>
-
               <div class="item-content">
                 <div class="business-info">
                   <div class="card-header-row">
                     <div class="business-title-row">
+                      <!-- Reorder Controls -->
+                      <div class="reorder-controls">
+                        <button
+                          type="button"
+                          class="reorder-btn"
+                          [disabled]="isFirst"
+                          (click)="moveHabitBusiness(hb, 'up')"
+                          aria-label="Move up"
+                        >
+                          <ion-icon name="chevron-up"></ion-icon>
+                        </button>
+                        <button
+                          type="button"
+                          class="reorder-btn"
+                          [disabled]="isLast"
+                          (click)="moveHabitBusiness(hb, 'down')"
+                          aria-label="Move down"
+                        >
+                          <ion-icon name="chevron-down"></ion-icon>
+                        </button>
+                      </div>
                       <span class="business-icon">{{ hb.business_icon }}</span>
                       <h3 class="business-name">{{ hb.business_name }}</h3>
                     </div>
