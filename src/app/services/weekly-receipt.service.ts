@@ -108,8 +108,8 @@ export class WeeklyReceiptService {
         break;
       case 'dividend':
         // primary = friend's name, secondary = business type (never the friend's custom business name)
-        title = `Dividend from ${row.primary_label}`;
-        subtitle = row.secondary_label;
+        title = 'Dividend';
+        subtitle = `${row.primary_label}'s ${row.secondary_label}`;
         icon = '📈';
         break;
       case 'stock_purchase':

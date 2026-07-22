@@ -190,6 +190,67 @@
   }
 }
 
+// Weekly summary toggle button (mobile / narrow screens)
+.summary-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--ion-card-background);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.9);
+
+  &:active {
+    background: rgba(255, 215, 0, 0.08);
+  }
+
+  ion-icon:first-child {
+    font-size: 20px;
+    color: var(--ion-color-primary);
+    flex-shrink: 0;
+  }
+
+  .summary-toggle-label {
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .summary-toggle-net {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--cash-color);
+
+    &.negative {
+      color: var(--ion-color-danger);
+    }
+  }
+
+  .summary-toggle-chevron {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.35);
+    flex-shrink: 0;
+  }
+}
+
+// Show the summary row on wide screens, the toggle button on narrow ones
+@media (min-width: 768px) {
+  .summary-toggle-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .summary-card {
+    display: none;
+  }
+}
+
 // Empty state (whole week)
 .empty-week {
   display: flex;
@@ -352,6 +413,130 @@
       color: rgba(255, 255, 255, 0.4);
       font-size: 0.7rem;
       margin-top: 2px;
+    }
+  }
+}
+
+// Weekly summary popup
+ion-modal.summary-modal {
+  --width: min(320px, 88vw);
+  --height: auto;
+  --border-radius: 18px;
+  --box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --background: var(--ion-card-background);
+
+  &::part(backdrop) {
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 1;
+  }
+}
+
+.summary-modal-content {
+  padding: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 18px;
+}
+
+.summary-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ion-color-primary);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+  }
+
+  .summary-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    flex-shrink: 0;
+
+    ion-icon {
+      font-size: 16px;
+    }
+
+    &:active {
+      background: rgba(255, 255, 255, 0.16);
+    }
+  }
+}
+
+.summary-modal-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .summary-modal-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+
+  &.in .summary-modal-icon ion-icon {
+    color: var(--ion-color-success);
+  }
+
+  &.out .summary-modal-icon ion-icon {
+    color: var(--ion-color-danger);
+  }
+
+  &.net .summary-modal-icon ion-icon {
+    color: var(--ion-color-primary);
+  }
+
+  .summary-modal-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .summary-modal-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+
+  &.in .summary-modal-value {
+    color: var(--ion-color-success);
+  }
+
+  &.out .summary-modal-value {
+    color: var(--ion-color-danger);
+  }
+
+  &.net .summary-modal-value {
+    color: var(--cash-color);
+
+    &.negative {
+      color: var(--ion-color-danger);
     }
   }
 }

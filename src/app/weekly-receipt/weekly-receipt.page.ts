@@ -9,6 +9,7 @@ import {
   IonButton,
   IonIcon,
   IonSpinner,
+  IonModal,
 } from '@ionic/angular/standalone';
 import { WeeklyReceiptService, WeeklyReceipt, ReceiptDay } from '../services/weekly-receipt.service';
 import { addIcons } from 'ionicons';
@@ -22,6 +23,7 @@ import {
   walletOutline,
   alertCircleOutline,
   documentTextOutline,
+  close,
 } from 'ionicons/icons';
 
 @Component({
@@ -29,7 +31,7 @@ import {
   templateUrl: './weekly-receipt.page.html',
   styleUrls: ['./weekly-receipt.page.scss'],
   standalone: true,
-  imports: [CommonModule, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonIcon, IonSpinner],
+  imports: [CommonModule, IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonIcon, IonSpinner, IonModal],
 })
 export class WeeklyReceiptPage implements OnInit {
   loading = true;
@@ -37,6 +39,7 @@ export class WeeklyReceiptPage implements OnInit {
   receipt: WeeklyReceipt | null = null;
   weekStart!: Date;
   isCurrentWeek = false;
+  showSummaryModal = false;
 
   constructor(private receiptService: WeeklyReceiptService, private router: Router) {
     addIcons({
@@ -49,6 +52,7 @@ export class WeeklyReceiptPage implements OnInit {
       walletOutline,
       alertCircleOutline,
       documentTextOutline,
+      close,
     });
   }
 

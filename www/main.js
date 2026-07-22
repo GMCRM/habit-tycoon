@@ -131,7 +131,7 @@ var routes = [
   },
   {
     path: "weekly-receipt",
-    loadComponent: () => import("./weekly-receipt.page-2XYP25WF.js").then((m) => m.WeeklyReceiptPage),
+    loadComponent: () => import("./weekly-receipt.page-HXHN4MIZ.js").then((m) => m.WeeklyReceiptPage),
     canActivate: [authGuard]
   },
   {

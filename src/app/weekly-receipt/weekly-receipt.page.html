@@ -39,7 +39,7 @@
 
       <ng-container *ngIf="!loading && !error && receipt">
 
-        <!-- Weekly summary -->
+        <!-- Weekly summary (desktop / wide screens) -->
         <div class="summary-card">
           <div class="summary-item in">
             <ion-icon name="trending-up-outline"></ion-icon>
@@ -65,6 +65,16 @@
             </div>
           </div>
         </div>
+
+        <!-- Weekly summary toggle (mobile / narrow screens) -->
+        <button class="summary-toggle-btn" (click)="showSummaryModal = true">
+          <ion-icon name="receipt-outline"></ion-icon>
+          <span class="summary-toggle-label">Weekly Totals</span>
+          <span class="summary-toggle-net" [class.negative]="receipt.net < 0">
+            {{ receipt.net >= 0 ? '+' : '-' }}${{ formatMoney(receipt.net < 0 ? receipt.net * -1 : receipt.net) }}
+          </span>
+          <ion-icon name="chevron-forward" class="summary-toggle-chevron"></ion-icon>
+        </button>
 
         <!-- Empty week -->
         <div class="empty-week" *ngIf="receipt.itemCount === 0">
@@ -113,3 +123,53 @@
     </div>
   </div>
 </ion-content>
+
+<!-- Weekly summary popup (mobile) -->
+<ion-modal
+  class="summary-modal"
+  [isOpen]="showSummaryModal"
+  (didDismiss)="showSummaryModal = false"
+>
+  <ng-template>
+    <div class="summary-modal-content" *ngIf="receipt">
+      <div class="summary-modal-header">
+        <h2>Weekly Totals</h2>
+        <button class="summary-modal-close" (click)="showSummaryModal = false" aria-label="Close">
+          <ion-icon name="close"></ion-icon>
+        </button>
+      </div>
+
+      <div class="summary-modal-row in">
+        <div class="summary-modal-icon">
+          <ion-icon name="trending-up-outline"></ion-icon>
+        </div>
+        <div class="summary-modal-info">
+          <div class="summary-modal-label">Total In</div>
+          <div class="summary-modal-value">+${{ formatMoney(receipt.totalIn) }}</div>
+        </div>
+      </div>
+
+      <div class="summary-modal-row out">
+        <div class="summary-modal-icon">
+          <ion-icon name="trending-down-outline"></ion-icon>
+        </div>
+        <div class="summary-modal-info">
+          <div class="summary-modal-label">Total Out</div>
+          <div class="summary-modal-value">-${{ formatMoney(receipt.totalOut * -1) }}</div>
+        </div>
+      </div>
+
+      <div class="summary-modal-row net">
+        <div class="summary-modal-icon">
+          <ion-icon name="wallet-outline"></ion-icon>
+        </div>
+        <div class="summary-modal-info">
+          <div class="summary-modal-label">Net</div>
+          <div class="summary-modal-value" [class.negative]="receipt.net < 0">
+            {{ receipt.net >= 0 ? '+' : '-' }}${{ formatMoney(receipt.net < 0 ? receipt.net * -1 : receipt.net) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>
