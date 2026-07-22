@@ -1,0 +1,115 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-button fill="clear" slot="start" (click)="goHome()">
+      <ion-icon name="arrow-back"></ion-icon>
+    </ion-button>
+    <ion-title>🧾 Weekly Receipt</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="page-container">
+
+      <!-- Week navigator -->
+      <div class="week-nav">
+        <button class="week-nav-arrow" (click)="previousWeek()" [disabled]="loading" aria-label="Previous week">
+          <ion-icon name="chevron-back"></ion-icon>
+        </button>
+        <div class="week-nav-label">
+          <span class="week-range">{{ weekRangeLabel }}</span>
+          <span class="week-current-tag" *ngIf="isCurrentWeek">This week</span>
+        </div>
+        <button class="week-nav-arrow" (click)="nextWeek()" [disabled]="loading || isCurrentWeek" aria-label="Next week">
+          <ion-icon name="chevron-forward"></ion-icon>
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-container">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Tallying up your week...</p>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="!loading && error" class="error-banner">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <span>{{ error }}</span>
+      </div>
+
+      <ng-container *ngIf="!loading && !error && receipt">
+
+        <!-- Weekly summary -->
+        <div class="summary-card">
+          <div class="summary-item in">
+            <ion-icon name="trending-up-outline"></ion-icon>
+            <div class="summary-info">
+              <div class="summary-value">+${{ receipt.totalIn.toFixed(2) }}</div>
+              <div class="summary-label">Total In</div>
+            </div>
+          </div>
+          <div class="summary-item out">
+            <ion-icon name="trending-down-outline"></ion-icon>
+            <div class="summary-info">
+              <div class="summary-value">-${{ (receipt.totalOut * -1).toFixed(2) }}</div>
+              <div class="summary-label">Total Out</div>
+            </div>
+          </div>
+          <div class="summary-item net">
+            <ion-icon name="wallet-outline"></ion-icon>
+            <div class="summary-info">
+              <div class="summary-value" [class.negative]="receipt.net < 0">
+                {{ receipt.net >= 0 ? '+' : '-' }}${{ (receipt.net < 0 ? receipt.net * -1 : receipt.net).toFixed(2) }}
+              </div>
+              <div class="summary-label">Net</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty week -->
+        <div class="empty-week" *ngIf="receipt.itemCount === 0">
+          <ion-icon name="document-text-outline"></ion-icon>
+          <h3>No transactions this week</h3>
+          <p>Complete habits, trade stocks, or sell a business to see it itemized here.</p>
+        </div>
+
+        <!-- Days -->
+        <div class="day-section" *ngFor="let day of receipt.days">
+          <div class="day-header">
+            <div class="day-header-left">
+              <span class="day-name">{{ day.dayName }}</span>
+              <span class="day-date">{{ day.dateLabel }}</span>
+              <span class="day-today-tag" *ngIf="day.isToday">Today</span>
+            </div>
+            <span
+              class="day-total"
+              *ngIf="hasAnyItems(day)"
+              [class.positive]="day.total > 0"
+              [class.negative]="day.total < 0"
+            >{{ amountLabel(day.total) }}</span>
+          </div>
+
+          <div class="receipt-list" *ngIf="hasAnyItems(day); else noItems">
+            <div class="receipt-row" *ngFor="let item of day.items">
+              <div class="item-icon">{{ item.icon }}</div>
+              <div class="item-info">
+                <div class="item-title">{{ item.title }}</div>
+                <div class="item-subtitle">{{ item.subtitle }}</div>
+              </div>
+              <div class="item-right">
+                <div class="item-amount" [class.positive]="item.amount > 0" [class.negative]="item.amount < 0">
+                  {{ amountLabel(item.amount) }}
+                </div>
+                <div class="item-time">{{ timeLabel(item.timestamp) }}</div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noItems>
+            <div class="no-items">No transactions</div>
+          </ng-template>
+        </div>
+
+      </ng-container>
+    </div>
+  </div>
+</ion-content>

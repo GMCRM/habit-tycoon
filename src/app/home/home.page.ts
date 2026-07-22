@@ -1327,6 +1327,13 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
+   * Navigate to the itemized Weekly Receipt page
+   */
+  openWeeklyReceipt() {
+    this.router.navigate(['/weekly-receipt']);
+  }
+
+  /**
    * Toggle habit progress help section
    */
   toggleHabitProgressHelpSection() {

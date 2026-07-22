@@ -51,6 +51,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'weekly-receipt',
+    loadComponent: () => import('./weekly-receipt/weekly-receipt.page').then( m => m.WeeklyReceiptPage),
+    canActivate: [authGuard],
+  },
+  {
     path: '**',
     redirectTo: 'login',
     pathMatch: 'full',

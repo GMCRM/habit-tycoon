@@ -536,6 +536,7 @@ export class HabitBusinessService {
         .select(`
           *,
           business_types (
+            name,
             base_cost
           )
         `)
@@ -614,6 +615,23 @@ export class HabitBusinessService {
 
       // Business is now inactive, so its value has dropped out of net worth too — recalc from scratch
       await this.recalculateNetWorth(user.id);
+
+      // Record the sale for the Weekly Receipt page. Best-effort: the sale itself
+      // already completed above, so a logging failure here shouldn't surface as an error.
+      const { error: saleRecordError } = await this.supabase
+        .from('business_sales')
+        .insert({
+          user_id: user.id,
+          habit_business_id: habitBusinessId,
+          business_name: habitBusiness.business_name,
+          business_type_name: habitBusiness.business_types?.name || 'Business',
+          sell_value: sellValue,
+          streak_at_sale: habitBusiness.streak || 0
+        });
+
+      if (saleRecordError) {
+        console.error('Error recording business sale for receipt history:', saleRecordError);
+      }
 
       return sellValue;
     } catch (error) {

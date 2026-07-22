@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/dev-tools/dev-tools.page.scss"],
+  "sourcesContent": [".test-container {\n  max-width: 800px;\n  margin: 0 auto;\n}\n\n.welcome-message {\n  text-align: center;\n}\n\n.profile-debug {\n  margin-bottom: 2rem;\n}\n\n.profile-info p {\n  margin: 0.5rem 0;\n  font-family: 'Courier New', monospace;\n  font-size: 0.9rem;\n}\n\n.profile-actions {\n  display: flex;\n  gap: 0.5rem;\n  flex-wrap: wrap;\n}\n\n.test-result {\n  margin-top: 1rem;\n}\n\n.instructions {\n  h4 {\n    color: var(--ion-color-primary);\n    margin-top: 1rem;\n    margin-bottom: 0.5rem;\n  }\n  \n  ul {\n    margin-left: 1rem;\n    \n    li {\n      margin-bottom: 0.25rem;\n    }\n  }\n}\n"],
+  "mappings": ";AAAA,CAAA;AACE,aAAA;AACA,UAAA,EAAA;;AAGF,CAAA;AACE,cAAA;;AAGF,CAAA;AACE,iBAAA;;AAGF,CAAA,aAAA;AACE,UAAA,OAAA;AACA,eAAA,aAAA,EAAA;AACA,aAAA;;AAGF,CAAA;AACE,WAAA;AACA,OAAA;AACA,aAAA;;AAGF,CAAA;AACE,cAAA;;AAIA,CAAA,aAAA;AACE,SAAA,IAAA;AACA,cAAA;AACA,iBAAA;;AAGF,CANA,aAMA;AACE,eAAA;;AAEA,CATF,aASE,GAAA;AACE,iBAAA;;",
+  "names": []
+}
