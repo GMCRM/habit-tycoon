@@ -28,6 +28,7 @@ export interface HabitBusiness {
   current_progress: number; // Current completions for this interval period
   earnings_per_completion: number;
   streak: number;
+  longest_streak: number;
   total_completions: number;
   total_earnings: number;
   last_completed_at?: string;
@@ -810,11 +811,12 @@ export class HabitBusinessService {
       // This prevents habits from being marked as completed "tomorrow" due to server timezone differences
       const currentTime = new Date();
       const localDateString = this.getLocalDateString(currentTime); // Get today as YYYY-MM-DD in USER's timezone
-      
-      // Create a completion timestamp that represents the user's local date at a consistent time
-      // Use 6 PM local time to avoid any timezone edge cases while preserving the actual date
-      const completionTime = new Date(`${localDateString}T18:00:00`);
-      
+
+      // Use the real completion moment. Date-bucketing elsewhere is done via
+      // getLocalDateString(new Date(completed_at)), which is timezone-safe regardless
+      // of what time of day this is, so there's no need to fake the time.
+      const completionTime = currentTime;
+
       console.log('🕐 Recording completion for USER LOCAL DATE:', {
         userLocalDate: localDateString,
         userLocalTime: currentTime.toString(),
@@ -2554,7 +2556,7 @@ export class HabitBusinessService {
       const duplicatesToDelete: string[] = [];
 
       for (const completion of allCompletions) {
-        const dateKey = completion.completed_at.split('T')[0]; // Get YYYY-MM-DD
+        const dateKey = this.getLocalDateString(new Date(completion.completed_at)); // Get YYYY-MM-DD in user's local timezone
         
         if (completionsByDate.has(dateKey)) {
           // This is a duplicate - mark for deletion
@@ -3073,9 +3075,10 @@ export class HabitBusinessService {
         const currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
         const dateStr = this.getLocalDateString(currentDate);
         
-        // Check if there was a completion on this date
-        const completion = completions?.find(c => 
-          c.completed_at && c.completed_at.startsWith(dateStr)
+        // Check if there was a completion on this date (compare local calendar dates,
+        // not raw UTC string prefixes, since completed_at now stores the real completion time)
+        const completion = completions?.find(c =>
+          c.completed_at && this.getLocalDateString(new Date(c.completed_at)) === dateStr
         );
         
         // Debug for current date or specific dates

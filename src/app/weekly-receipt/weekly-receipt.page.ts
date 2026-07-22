@@ -146,7 +146,7 @@ export class WeeklyReceiptPage implements OnInit {
         const milestones: HabitMilestoneState[] = this.milestoneDefinitions.map((def) => ({
           ...def,
           earned: earnedKeys.has(def.key),
-          progressCurrent: def.type === 'streak' ? habit.streak : habit.total_completions,
+          progressCurrent: def.type === 'streak' ? habit.longest_streak ?? habit.streak : habit.total_completions,
         }));
         return {
           habit,
