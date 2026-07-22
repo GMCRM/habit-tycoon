@@ -9,6 +9,7 @@ import {
   IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
+import { SettingsService } from '../services/settings.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { HabitUpdateService } from '../services/habit-update.service';
@@ -75,6 +76,7 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private authService: AuthService,
+    private settingsService: SettingsService,
     private adminService: AdminService,
     private habitBusinessService: HabitBusinessService,
     private habitUpdateService: HabitUpdateService,
@@ -139,6 +141,7 @@ export class HomePage implements OnInit, OnDestroy {
       console.log('🔄 Refreshing user profile for ID:', this.currentUser.id);
       this.userProfile = await this.authService.getUserProfile(this.currentUser.id);
       console.log('✅ Refreshed user profile:', this.userProfile);
+      this.settingsService.syncFromProfile(this.userProfile);
     } catch (error) {
       console.error('❌ Error refreshing user profile:', error);
     }
@@ -179,6 +182,7 @@ export class HomePage implements OnInit, OnDestroy {
         console.log('Attempting to ensure profile exists for user ID:', user.id);
         this.userProfile = await this.authService.ensureUserProfileExists(user);
         console.log('User profile ensured:', this.userProfile);
+        this.settingsService.syncFromProfile(this.userProfile);
       } catch (error) {
         console.error('Profile creation/loading failed:', error);
         // Initialize default profile if everything fails
@@ -817,6 +821,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   // Whether the complete/undo button responds to a single tap instead of a hold
   tapToComplete = false;
+  private tapToCompleteSub?: Subscription;
 
   // Carousel methods for mobile stats
   @HostListener('window:resize', ['$event'])
@@ -894,7 +899,9 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.tapToComplete = localStorage.getItem('tap-to-complete') === 'true';
+    this.tapToCompleteSub = this.settingsService.tapToComplete$.subscribe(
+      value => (this.tapToComplete = value)
+    );
     this.countdownTickService.register();
     this.tickSub = this.countdownTickService.tick$.subscribe(() => {
       this.habitBusinesses.forEach(hb => {
@@ -907,6 +914,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.tickSub?.unsubscribe();
+    this.tapToCompleteSub?.unsubscribe();
     this.countdownTickService.unregister();
     this.stopAutoCarousel();
     // Clean up any ongoing hold timers

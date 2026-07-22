@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { 
   IonContent, 
   IonHeader, 
@@ -21,6 +22,7 @@ import {
   IonToggle
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
+import { SettingsService } from '../services/settings.service';
 import { Router } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
@@ -54,7 +56,7 @@ import { save, person, lockClosed, logoGoogle, trash, warning, fingerPrint } fro
     BottomNavComponent
   ]
 })
-export class SettingsPage implements OnInit {
+export class SettingsPage implements OnInit, OnDestroy {
   // User profile data
   username: string = '';
   currentPassword: string = '';
@@ -83,22 +85,29 @@ export class SettingsPage implements OnInit {
 
   // Whether the habit complete/undo button responds to a single tap instead of a hold
   tapToComplete = false;
+  private tapToCompleteSub?: Subscription;
 
   constructor(
     private authService: AuthService,
+    private settingsService: SettingsService,
     private router: Router
   ) {
     addIcons({person,save,lockClosed,logoGoogle,trash,warning,fingerPrint});
   }
 
   async ngOnInit() {
-    this.tapToComplete = localStorage.getItem('tap-to-complete') === 'true';
+    this.tapToCompleteSub = this.settingsService.tapToComplete$.subscribe(
+      value => (this.tapToComplete = value)
+    );
     await this.loadUserData();
   }
 
+  ngOnDestroy() {
+    this.tapToCompleteSub?.unsubscribe();
+  }
+
   onTapToCompleteChange(event: CustomEvent) {
-    this.tapToComplete = event.detail.checked;
-    localStorage.setItem('tap-to-complete', String(this.tapToComplete));
+    this.settingsService.setTapToComplete(event.detail.checked);
   }
 
   async loadUserData() {
@@ -117,6 +126,7 @@ export class SettingsPage implements OnInit {
         const profile = await this.authService.getUserProfile(user.user.id);
         if (profile) {
           this.username = profile.name || '';
+          this.settingsService.syncFromProfile(profile);
         }
       }
     } catch (error) {
