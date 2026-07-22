@@ -125,7 +125,7 @@
       text-align: left !important;
       padding-left: 16px !important;
       justify-content: flex-start !important;
-      
+
       /* Specifically target the title element */
       .toolbar-title {
         text-align: left !important;
@@ -133,19 +133,30 @@
         padding-left: 0 !important;
       }
     }
+
+    /* When a back button precedes the title, give it enough room to clear it */
+    ion-buttons[slot="start"] + ion-title,
+    ion-button[slot="start"] + ion-title {
+      padding-left: 52px !important;
+    }
   }
-  
+
   /* Additional specificity for iPad */
   @media (min-width: 768px) and (max-width: 1024px) {
     ion-header ion-toolbar ion-title {
       text-align: left !important;
       justify-content: flex-start !important;
       padding-left: 16px !important;
-      
+
       .toolbar-title {
         text-align: left !important;
         justify-content: flex-start !important;
       }
+    }
+
+    ion-header ion-toolbar ion-buttons[slot="start"] + ion-title,
+    ion-header ion-toolbar ion-button[slot="start"] + ion-title {
+      padding-left: 52px !important;
     }
   }
 }
