@@ -1014,58 +1014,15 @@ button, span, div, ion-button {
     overflow-x: auto; // Allow horizontal scroll if needed
   }
 
-  app-habit-grid {
-    --grid-size: 12px; // Smaller grid squares for inline display
-    --grid-gap: 2px;
-    
-    .content-wrapper {
-      width: fit-content; // Make wrapper fit content
-      max-width: none; // Remove any max-width constraints
-    }
-    
-    .habit-grid-container {
-      width: fit-content; // Make container fit the grid width
-      max-width: none; // Remove max-width constraints
-      
-      .grid-header {
-        margin-bottom: 8px;
-        
-        .month-labels {
-          font-size: 0.7rem;
-        }
-      }
-      
-      .grid-wrapper {
-        width: fit-content; // Fit content width
-        
-        .habit-grid {
-          width: fit-content; // Grid should be its natural width
-          min-width: fit-content;
-        }
-      }
-      
-      .stats-summary {
-        margin-top: 12px;
-        padding: 12px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 6px;
-        
-        .stats-grid {
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 8px;
-        }
-        
-        .stat-item {
-          .stat-value {
-            font-size: 1.1rem;
-          }
-          
-          .stat-label {
-            font-size: 0.75rem;
-          }
-        }
-      }
-    }
+}
+
+// Match the stocks page's cell density at small phone widths so the two
+// year-calendars look and behave the same (--grid-size cascades into
+// HabitGridComponent as a custom property; unset here just means it falls
+// back to the component's own default per breakpoint).
+@media (max-width: 480px) {
+  .inline-habit-grid app-habit-grid {
+    --grid-size: 7px;
   }
 }
 
