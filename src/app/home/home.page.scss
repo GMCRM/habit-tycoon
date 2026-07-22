@@ -372,7 +372,8 @@ button, span, div, ion-button {
       display: flex;
       align-items: center;
       gap: 16px;
-      
+      min-width: 0; // flex item must be allowed to shrink below its content's natural width, or the whole card (buttons, calendar) drags off-screen on mobile
+
       .business-icon {
         font-size: 2.5rem;
         min-width: 60px;

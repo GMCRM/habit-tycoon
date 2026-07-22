@@ -575,7 +575,8 @@ ion-content {
       align-items: center;
       gap: 20px;
       position: relative;
-      
+      min-width: 0; // flex item must be allowed to shrink below its content's natural width, or the whole card (buttons, calendar) drags off-screen on mobile
+
       .business-icon {
         font-size: 2.5rem;
         min-width: 50px;
@@ -584,10 +585,11 @@ ion-content {
         filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
         padding-right: 12px;
       }
-      
+
       .business-info {
         flex: 1;
-        
+        min-width: 0;
+
         .business-name {
           margin: 0 0 8px 0;
           font-size: 1.2rem;
