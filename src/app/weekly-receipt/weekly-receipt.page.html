@@ -142,96 +142,191 @@
       <!-- ========================== ACHIEVEMENTS TAB ========================== -->
       <ng-container *ngIf="activeTab === 'achievements'">
 
-        <!-- Loading -->
-        <div *ngIf="achievementsLoading" class="loading-container">
-          <ion-spinner name="crescent"></ion-spinner>
-          <p>Gathering your achievements...</p>
-        </div>
+        <!-- Habit / General sub-tab toggle -->
+        <ion-segment [value]="achievementsSubTab" (ionChange)="onAchievementsSubTabChange($event)" class="receipt-tabs">
+          <ion-segment-button value="habits">
+            <ion-label>Habit Achievements</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="general">
+            <ion-label>General Achievements</ion-label>
+          </ion-segment-button>
+        </ion-segment>
 
-        <!-- Error -->
-        <div *ngIf="!achievementsLoading && achievementsError" class="error-banner">
-          <ion-icon name="alert-circle-outline"></ion-icon>
-          <span>{{ achievementsError }}</span>
-        </div>
+        <!-- ==================== HABIT ACHIEVEMENTS SUB-TAB ==================== -->
+        <ng-container *ngIf="achievementsSubTab === 'habits'">
 
-        <ng-container *ngIf="!achievementsLoading && !achievementsError">
+          <!-- Loading -->
+          <div *ngIf="achievementsLoading" class="loading-container">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Gathering your achievements...</p>
+          </div>
 
-          <!-- Milestone legend / explainer -->
-          <div class="legend-card">
-            <h2
-              class="legend-title"
-              tabindex="0"
-              (click)="toggleLegend()"
-              (keydown.enter)="toggleLegend()"
-              (keydown.space)="toggleLegend()"
-            >
-              <span>How milestones work</span>
-              <ion-icon [name]="legendExpanded ? 'chevron-up' : 'chevron-down'"></ion-icon>
-            </h2>
-            <div class="legend-body" *ngIf="legendExpanded">
-              <p class="legend-intro">
-                Every habit earns its own set of badges as you build consistency. Streak badges reward
-                showing up day after day; completion badges reward total effort over time — and unlike
-                a streak, total completions never reset. Once a badge is earned, it's yours for good.
-              </p>
-              <div class="legend-grid">
-                <div class="legend-item" *ngFor="let def of milestoneDefinitions">
-                  <span class="legend-emoji">{{ def.emoji }}</span>
-                  <div class="legend-info">
-                    <div class="legend-label">{{ def.label }}</div>
-                    <div class="legend-description">{{ def.description }}</div>
+          <!-- Error -->
+          <div *ngIf="!achievementsLoading && achievementsError" class="error-banner">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ achievementsError }}</span>
+          </div>
+
+          <ng-container *ngIf="!achievementsLoading && !achievementsError">
+
+            <!-- Milestone legend / explainer -->
+            <div class="legend-card">
+              <h2
+                class="legend-title"
+                tabindex="0"
+                (click)="toggleLegend()"
+                (keydown.enter)="toggleLegend()"
+                (keydown.space)="toggleLegend()"
+              >
+                <span>How milestones work</span>
+                <ion-icon [name]="legendExpanded ? 'chevron-up' : 'chevron-down'"></ion-icon>
+              </h2>
+              <div class="legend-body" *ngIf="legendExpanded">
+                <p class="legend-intro">
+                  Every habit earns its own set of badges as you build consistency. Streak badges reward
+                  showing up day after day; completion badges reward total effort over time — and unlike
+                  a streak, total completions never reset. Once a badge is earned, it's yours for good.
+                </p>
+                <div class="legend-grid">
+                  <div class="legend-item" *ngFor="let def of milestoneDefinitions">
+                    <span class="legend-emoji">{{ def.emoji }}</span>
+                    <div class="legend-info">
+                      <div class="legend-label">{{ def.label }}</div>
+                      <div class="legend-description">{{ def.description }}</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Overall progress -->
-          <div class="overall-progress" *ngIf="habitAchievements.length > 0">
-            <ion-icon name="trophy-outline"></ion-icon>
-            <span><strong>{{ totalEarnedMilestones }}</strong> of {{ totalPossibleMilestones }} badges earned</span>
-          </div>
-
-          <!-- Empty state -->
-          <div class="empty-week" *ngIf="habitAchievements.length === 0">
-            <ion-icon name="trophy-outline"></ion-icon>
-            <h3>No habits yet</h3>
-            <p>Start a habit-business to begin earning milestone badges.</p>
-          </div>
-
-          <!-- Per-habit achievement cards -->
-          <div class="habit-achievement-card" *ngFor="let ha of habitAchievements">
-            <div class="habit-achievement-header">
-              <span class="habit-achievement-icon">{{ ha.habit.business_icon }}</span>
-              <div class="habit-achievement-info">
-                <div class="habit-achievement-name">{{ ha.habit.business_name }}</div>
-                <div class="habit-achievement-type">{{ ha.habit.business_types?.name || 'Business' }}</div>
-              </div>
-              <div class="habit-achievement-count">{{ ha.earnedCount }}/{{ milestoneDefinitions.length }}</div>
+            <!-- Overall progress -->
+            <div class="overall-progress" *ngIf="habitAchievements.length > 0">
+              <ion-icon name="trophy-outline"></ion-icon>
+              <span><strong>{{ totalEarnedMilestones }}</strong> of {{ totalPossibleMilestones }} badges earned</span>
             </div>
 
-            <div class="badge-grid">
-              <div
-                class="badge"
-                *ngFor="let m of ha.milestones"
-                [class.earned]="m.earned"
-              >
-                <div class="badge-emoji-wrap">
-                  <span class="badge-emoji">{{ m.emoji }}</span>
-                  <ion-icon *ngIf="!m.earned" name="lock-closed-outline" class="badge-lock"></ion-icon>
+            <!-- Empty state -->
+            <div class="empty-week" *ngIf="habitAchievements.length === 0">
+              <ion-icon name="trophy-outline"></ion-icon>
+              <h3>No habits yet</h3>
+              <p>Start a habit-business to begin earning milestone badges.</p>
+            </div>
+
+            <!-- Per-habit achievement cards -->
+            <div class="habit-achievement-card" *ngFor="let ha of habitAchievements">
+              <div class="habit-achievement-header">
+                <span class="habit-achievement-icon">{{ ha.habit.business_icon }}</span>
+                <div class="habit-achievement-info">
+                  <div class="habit-achievement-name">{{ ha.habit.business_name }}</div>
+                  <div class="habit-achievement-type">{{ ha.habit.business_types?.name || 'Business' }}</div>
                 </div>
-                <div class="badge-label">{{ m.label }}</div>
-                <div class="badge-progress-track" *ngIf="!m.earned">
-                  <div class="badge-progress-fill" [style.width.%]="milestoneProgressPercent(m)"></div>
-                </div>
-                <div class="badge-progress-text">
-                  {{ m.earned ? 'Earned' : milestoneProgressLabel(m) }}
+                <div class="habit-achievement-count">{{ ha.earnedCount }}/{{ milestoneDefinitions.length }}</div>
+              </div>
+
+              <div class="badge-grid">
+                <div
+                  class="badge"
+                  *ngFor="let m of ha.milestones"
+                  [class.earned]="m.earned"
+                >
+                  <div class="badge-emoji-wrap">
+                    <span class="badge-emoji">{{ m.emoji }}</span>
+                    <ion-icon *ngIf="!m.earned" name="lock-closed-outline" class="badge-lock"></ion-icon>
+                  </div>
+                  <div class="badge-label">{{ m.label }}</div>
+                  <div class="badge-progress-track" *ngIf="!m.earned">
+                    <div class="badge-progress-fill" [style.width.%]="milestoneProgressPercent(m)"></div>
+                  </div>
+                  <div class="badge-progress-text">
+                    {{ m.earned ? 'Earned' : milestoneProgressLabel(m) }}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
+          </ng-container>
         </ng-container>
+        <!-- ================== END HABIT ACHIEVEMENTS SUB-TAB ================== -->
+
+        <!-- ==================== GENERAL ACHIEVEMENTS SUB-TAB ==================== -->
+        <ng-container *ngIf="achievementsSubTab === 'general'">
+
+          <!-- Loading -->
+          <div *ngIf="generalAchievementsLoading" class="loading-container">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Gathering your achievements...</p>
+          </div>
+
+          <!-- Error -->
+          <div *ngIf="!generalAchievementsLoading && generalAchievementsError" class="error-banner">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ generalAchievementsError }}</span>
+          </div>
+
+          <ng-container *ngIf="!generalAchievementsLoading && !generalAchievementsError">
+
+            <!-- Legend / explainer -->
+            <div class="legend-card">
+              <h2
+                class="legend-title"
+                tabindex="0"
+                (click)="toggleGeneralLegend()"
+                (keydown.enter)="toggleGeneralLegend()"
+                (keydown.space)="toggleGeneralLegend()"
+              >
+                <span>How general achievements work</span>
+                <ion-icon [name]="generalLegendExpanded ? 'chevron-up' : 'chevron-down'"></ion-icon>
+              </h2>
+              <div class="legend-body" *ngIf="generalLegendExpanded">
+                <p class="legend-intro">
+                  These badges track your whole account instead of a single habit — net worth, the
+                  businesses you own, stocks and dividends, friends, and total habit completions across
+                  everything you do. Once a badge is earned, it's yours for good.
+                </p>
+              </div>
+            </div>
+
+            <!-- Overall progress -->
+            <div class="overall-progress">
+              <ion-icon name="trophy-outline"></ion-icon>
+              <span><strong>{{ totalEarnedGeneral }}</strong> of {{ totalPossibleGeneral }} badges earned</span>
+            </div>
+
+            <!-- Category cards -->
+            <div class="habit-achievement-card" *ngFor="let cat of generalAchievementCategories">
+              <div class="habit-achievement-header">
+                <span class="habit-achievement-icon">{{ cat.icon }}</span>
+                <div class="habit-achievement-info">
+                  <div class="habit-achievement-name">{{ cat.label }}</div>
+                </div>
+                <div class="habit-achievement-count">{{ cat.earnedCount }}/{{ cat.achievements.length }}</div>
+              </div>
+
+              <div class="badge-grid">
+                <div
+                  class="badge"
+                  *ngFor="let a of cat.achievements"
+                  [class.earned]="a.earned"
+                >
+                  <div class="badge-emoji-wrap">
+                    <span class="badge-emoji">{{ a.emoji }}</span>
+                    <ion-icon *ngIf="!a.earned" name="lock-closed-outline" class="badge-lock"></ion-icon>
+                  </div>
+                  <div class="badge-label">{{ a.label }}</div>
+                  <div class="badge-progress-track" *ngIf="!a.earned && a.metric">
+                    <div class="badge-progress-fill" [style.width.%]="generalProgressPercent(a)"></div>
+                  </div>
+                  <div class="badge-progress-text">
+                    {{ a.earned ? 'Earned' : (a.metric ? generalProgressLabel(a) : a.description) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </ng-container>
+        </ng-container>
+        <!-- ================== END GENERAL ACHIEVEMENTS SUB-TAB ================== -->
+
       </ng-container>
       <!-- ======================== END ACHIEVEMENTS TAB ======================== -->
 

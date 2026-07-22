@@ -16,7 +16,14 @@ import {
 } from '@ionic/angular/standalone';
 import { WeeklyReceiptService, WeeklyReceipt, ReceiptDay } from '../services/weekly-receipt.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
-import { AchievementsService, MILESTONE_DEFINITIONS, MilestoneDefinition } from '../services/achievements.service';
+import {
+  AchievementsService,
+  MILESTONE_DEFINITIONS,
+  MilestoneDefinition,
+  GENERAL_ACHIEVEMENT_DEFINITIONS,
+  GeneralAchievementDefinition,
+  GeneralAchievementCategory,
+} from '../services/achievements.service';
 import { AuthService } from '../services/auth.service';
 import { addIcons } from 'ionicons';
 import {
@@ -46,6 +53,29 @@ interface HabitAchievements {
   milestones: HabitMilestoneState[];
   earnedCount: number;
 }
+
+interface GeneralAchievementState extends GeneralAchievementDefinition {
+  earned: boolean;
+  progressCurrent?: number;
+}
+
+interface GeneralAchievementCategoryGroup {
+  category: GeneralAchievementCategory;
+  label: string;
+  icon: string;
+  achievements: GeneralAchievementState[];
+  earnedCount: number;
+}
+
+const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string; icon: string }> = {
+  net_worth: { label: 'Net Worth', icon: '💵' },
+  business: { label: 'Business Empire', icon: '🏢' },
+  stocks: { label: 'Stocks & Dividends', icon: '📈' },
+  social: { label: 'Social', icon: '🤝' },
+  completions: { label: 'Habit Completions', icon: '✅' },
+  perfect: { label: 'Perfect Streaks', icon: '🗓️' },
+  meta: { label: 'Meta', icon: '🏅' },
+};
 
 @Component({
   selector: 'app-weekly-receipt',
@@ -84,6 +114,14 @@ export class WeeklyReceiptPage implements OnInit {
   totalEarnedMilestones = 0;
   totalPossibleMilestones = 0;
   legendExpanded = false;
+
+  achievementsSubTab: 'habits' | 'general' = 'habits';
+  generalAchievementsLoading = true;
+  generalAchievementsError: string | null = null;
+  generalAchievementCategories: GeneralAchievementCategoryGroup[] = [];
+  totalEarnedGeneral = 0;
+  totalPossibleGeneral = 0;
+  generalLegendExpanded = false;
 
   constructor(
     private receiptService: WeeklyReceiptService,
@@ -183,6 +221,129 @@ export class WeeklyReceiptPage implements OnInit {
 
   toggleLegend() {
     this.legendExpanded = !this.legendExpanded;
+  }
+
+  onAchievementsSubTabChange(event: any) {
+    this.achievementsSubTab = event.detail.value;
+    if (this.achievementsSubTab === 'general' && this.generalAchievementCategories.length === 0 && !this.generalAchievementsError) {
+      this.loadGeneralAchievements();
+    }
+  }
+
+  async loadGeneralAchievements() {
+    this.generalAchievementsLoading = true;
+    this.generalAchievementsError = null;
+    try {
+      const {
+        data: { user },
+      } = await this.authService.getUser();
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const [earned, stats] = await Promise.all([
+        this.achievementsService.getEarnedGeneralAchievements(user.id),
+        this.achievementsService.getGeneralAchievementStats(user.id),
+      ]);
+
+      const earnedKeys = new Set(earned.map((e) => e.achievement_key));
+      let runningEarnedCount = 0;
+
+      const states: GeneralAchievementState[] = GENERAL_ACHIEVEMENT_DEFINITIONS.map((def) => {
+        const isEarned = earnedKeys.has(def.key);
+        if (isEarned && def.key !== 'meta_legend') {
+          runningEarnedCount++;
+        }
+
+        let progressCurrent: number | undefined;
+        switch (def.metric) {
+          case 'net_worth':
+            progressCurrent = stats.netWorth;
+            break;
+          case 'dividends_earned':
+            progressCurrent = stats.dividendsEarned;
+            break;
+          case 'friend_count':
+            progressCurrent = stats.friendCount;
+            break;
+          case 'stocks_diversified':
+            progressCurrent = stats.diversifiedStockCount;
+            break;
+          case 'global_completions':
+            progressCurrent = stats.globalCompletions;
+            break;
+          case 'legend_count':
+            progressCurrent = runningEarnedCount;
+            break;
+        }
+
+        return { ...def, earned: isEarned, progressCurrent };
+      });
+
+      const grouped = new Map<GeneralAchievementCategory, GeneralAchievementState[]>();
+      for (const state of states) {
+        if (!grouped.has(state.category)) {
+          grouped.set(state.category, []);
+        }
+        grouped.get(state.category)!.push(state);
+      }
+
+      this.generalAchievementCategories = Array.from(grouped.entries()).map(([category, achievements]) => ({
+        category,
+        label: GENERAL_CATEGORY_META[category].label,
+        icon: GENERAL_CATEGORY_META[category].icon,
+        achievements,
+        earnedCount: achievements.filter((a) => a.earned).length,
+      }));
+
+      this.totalEarnedGeneral = states.filter((s) => s.earned).length;
+      this.totalPossibleGeneral = states.length;
+    } catch (e) {
+      console.error('Failed to load general achievements', e);
+      this.generalAchievementsError = 'Could not load your achievements. Please try again.';
+    } finally {
+      this.generalAchievementsLoading = false;
+    }
+  }
+
+  generalProgressPercent(a: GeneralAchievementState): number {
+    if (a.earned) return 100;
+    if (a.threshold === undefined || a.progressCurrent === undefined) return 0;
+    return Math.max(0, Math.min(100, (a.progressCurrent / a.threshold) * 100));
+  }
+
+  generalProgressLabel(a: GeneralAchievementState): string {
+    if (a.metric === 'legend_count') {
+      const total = GENERAL_ACHIEVEMENT_DEFINITIONS.length - 1;
+      return `${Math.min(a.progressCurrent ?? 0, total)}/${total}`;
+    }
+    if (a.threshold === undefined || a.progressCurrent === undefined) return '';
+    const current = Math.min(a.progressCurrent, a.threshold);
+    if (a.unit === '$') {
+      return `${this.formatCompactNumber(current)}/${this.formatCompactNumber(a.threshold)}`;
+    }
+    return `${this.formatCompactNumber(current)}/${this.formatCompactNumber(a.threshold)}${a.unit ? ' ' + a.unit : ''}`;
+  }
+
+  formatCompactNumber(amount: number): string {
+    if (amount >= 1000000000000) {
+      const trillions = amount / 1000000000000;
+      return `${trillions >= 10 ? Math.floor(trillions) : trillions.toFixed(1)}T`;
+    } else if (amount >= 1000000000) {
+      const billions = amount / 1000000000;
+      return `${billions >= 10 ? Math.floor(billions) : billions.toFixed(1)}B`;
+    } else if (amount >= 1000000) {
+      const millions = amount / 1000000;
+      return `${millions >= 10 ? Math.floor(millions) : millions.toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      const thousands = amount / 1000;
+      return `${thousands >= 10 ? Math.floor(thousands) : thousands.toFixed(1)}K`;
+    }
+    return `${Math.floor(amount)}`;
+  }
+
+  toggleGeneralLegend() {
+    this.generalLegendExpanded = !this.generalLegendExpanded;
   }
 
   async loadWeek() {
