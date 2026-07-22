@@ -1,7 +1,7 @@
 import {
   HabitGridComponent,
   HabitUpdateService
-} from "./chunk-W6L7XY7U.js";
+} from "./chunk-42SKT4UA.js";
 import {
   SettingsService
 } from "./chunk-JHEGQNPZ.js";
@@ -11,7 +11,7 @@ import {
 import {
   HabitBusinessService,
   HabitIntervalService
-} from "./chunk-GSSZ5PLU.js";
+} from "./chunk-257QJYN5.js";
 import {
   add,
   addCircle,
@@ -1267,19 +1267,29 @@ function HomePage_div_54_ng_template_1_ion_button_28_span_3_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
+function HomePage_div_54_ng_template_1_ion_button_28_span_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "span");
+    \u0275\u0275text(1, " Completed ");
+    \u0275\u0275elementEnd();
+  }
+}
 function HomePage_div_54_ng_template_1_ion_button_28_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "ion-button", 122);
     \u0275\u0275element(1, "ion-icon", 123);
-    \u0275\u0275template(2, HomePage_div_54_ng_template_1_ion_button_28_span_2_Template, 2, 2, "span", 124)(3, HomePage_div_54_ng_template_1_ion_button_28_span_3_Template, 2, 0, "span", 124);
+    \u0275\u0275template(2, HomePage_div_54_ng_template_1_ion_button_28_span_2_Template, 2, 2, "span", 124)(3, HomePage_div_54_ng_template_1_ion_button_28_span_3_Template, 2, 0, "span", 124)(4, HomePage_div_54_ng_template_1_ion_button_28_span_4_Template, 2, 0, "span", 124);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const hb_r15 = \u0275\u0275nextContext().$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
     \u0275\u0275advance(2);
     \u0275\u0275property("ngIf", hb_r15.goal_value && hb_r15.goal_value > 1);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", !hb_r15.goal_value || hb_r15.goal_value <= 1);
+    \u0275\u0275property("ngIf", (!hb_r15.goal_value || hb_r15.goal_value <= 1) && ctx_r2.isTodayActiveDay(hb_r15));
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", (!hb_r15.goal_value || hb_r15.goal_value <= 1) && !ctx_r2.isTodayActiveDay(hb_r15));
   }
 }
 function HomePage_div_54_ng_template_1_div_42_span_1_Template(rf, ctx) {
@@ -1519,7 +1529,7 @@ function HomePage_div_54_ng_template_1_Template(rf, ctx) {
     });
     \u0275\u0275element(24, "ion-icon", 92);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(25, HomePage_div_54_ng_template_1_div_25_Template, 7, 14, "div", 93)(26, HomePage_div_54_ng_template_1_div_26_Template, 5, 10, "div", 94)(27, HomePage_div_54_ng_template_1_div_27_Template, 2, 0, "div", 95)(28, HomePage_div_54_ng_template_1_ion_button_28_Template, 4, 2, "ion-button", 96);
+    \u0275\u0275template(25, HomePage_div_54_ng_template_1_div_25_Template, 7, 14, "div", 93)(26, HomePage_div_54_ng_template_1_div_26_Template, 5, 10, "div", 94)(27, HomePage_div_54_ng_template_1_div_27_Template, 2, 0, "div", 95)(28, HomePage_div_54_ng_template_1_ion_button_28_Template, 5, 3, "ion-button", 96);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(29, "p", 97);
     \u0275\u0275text(30);
@@ -1560,13 +1570,13 @@ function HomePage_div_54_ng_template_1_Template(rf, ctx) {
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(hb_r15.business_name);
     \u0275\u0275advance(12);
-    \u0275\u0275property("ngIf", !ctx_r2.tapToComplete && (!ctx_r2.isGoalCompleted(hb_r15) || (hb_r15.current_progress || 0) > 0));
+    \u0275\u0275property("ngIf", !ctx_r2.tapToComplete && (!ctx_r2.isGoalCompleted(hb_r15) || ctx_r2.isTodayActiveDay(hb_r15) && (hb_r15.current_progress || 0) > 0));
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r2.tapToComplete && (!ctx_r2.isGoalCompleted(hb_r15) || (hb_r15.current_progress || 0) > 0));
+    \u0275\u0275property("ngIf", ctx_r2.tapToComplete && (!ctx_r2.isGoalCompleted(hb_r15) || ctx_r2.isTodayActiveDay(hb_r15) && (hb_r15.current_progress || 0) > 0));
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", hb_r15.goal_value && hb_r15.goal_value > 1 && (hb_r15.current_progress || 0) > 0);
+    \u0275\u0275property("ngIf", ctx_r2.isTodayActiveDay(hb_r15) && (hb_r15.goal_value && hb_r15.goal_value > 1) && (hb_r15.current_progress || 0) > 0);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r2.isGoalCompleted(hb_r15) && (hb_r15.current_progress || 0) === 0);
+    \u0275\u0275property("ngIf", ctx_r2.isGoalCompleted(hb_r15) && ((hb_r15.current_progress || 0) === 0 || !ctx_r2.isTodayActiveDay(hb_r15)));
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(hb_r15.habit_description);
     \u0275\u0275advance(6);
@@ -3353,7 +3363,7 @@ var HomePage = _HomePage;
                       <!-- Complete/Undo buttons moved to far right -->
                       <!-- Single transforming button: Complete -> Undo -->
                       <div
-                        *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (hb.current_progress || 0) > 0)"
+                        *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
                         class="hold-complete-button"
                         [class.is-holding]="holdingStates[hb.id]?.isHolding"
                         [class.is-completing]="holdingStates[hb.id]?.isCompleting"
@@ -3409,7 +3419,7 @@ var HomePage = _HomePage;
 
                       <!-- Tap-to-complete variant: single tap instead of holding -->
                       <div
-                        *ngIf="tapToComplete && (!isGoalCompleted(hb) || (hb.current_progress || 0) > 0)"
+                        *ngIf="tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
                         class="hold-complete-button"
                         [class.is-completing]="holdingStates[hb.id]?.isCompleting"
                         [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
@@ -3443,7 +3453,7 @@ var HomePage = _HomePage;
 
                       <!-- Simple back button for multi-completion habits with progress -->
                       <div
-                        *ngIf="(hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
+                        *ngIf="isTodayActiveDay(hb) && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
                         class="back-button"
                         (click)="undoLastCompletion(hb)"
                       >
@@ -3453,9 +3463,11 @@ var HomePage = _HomePage;
                         ></ion-icon>
                       </div>
 
-                      <!-- Show completed status if goal is fully completed but no undo available -->
+                      <!-- Show completed status if goal is fully completed but no undo available
+                           (either zero progress left to undo, or it's a rest-day carry-over from
+                           the habit's last active day) -->
                       <ion-button
-                        *ngIf="isGoalCompleted(hb) && (hb.current_progress || 0) === 0"
+                        *ngIf="isGoalCompleted(hb) && ((hb.current_progress || 0) === 0 || !isTodayActiveDay(hb))"
                         fill="outline"
                         color="medium"
                         size="small"
@@ -3470,9 +3482,13 @@ var HomePage = _HomePage;
                           Goal Complete ({{ hb.current_progress }}/{{
                           hb.goal_value }})
                         </span>
-                        <!-- Simple text for single completion habits -->
-                        <span *ngIf="!hb.goal_value || hb.goal_value <= 1">
+                        <!-- Simple text for single completion habits, active day -->
+                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && isTodayActiveDay(hb)">
                           Completed Today
+                        </span>
+                        <!-- Simple text for single completion habits, rest-day carry-over -->
+                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb)">
+                          Completed
                         </span>
                       </ion-button>
                     </div>
@@ -3688,4 +3704,4 @@ var HomePage = _HomePage;
 export {
   HomePage
 };
-//# sourceMappingURL=home.page-SV7G45DL.js.map
+//# sourceMappingURL=home.page-HNPBQZCE.js.map

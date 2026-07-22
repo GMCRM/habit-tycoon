@@ -6,7 +6,7 @@ import {
 } from "./chunk-R6NCSAED.js";
 import {
   HabitBusinessService
-} from "./chunk-GSSZ5PLU.js";
+} from "./chunk-257QJYN5.js";
 import {
   addIcons,
   arrowBack,
@@ -2422,4 +2422,4 @@ var SocialPage = _SocialPage;
 export {
   SocialPage
 };
-//# sourceMappingURL=social.page-ULJQWGZ2.js.map
+//# sourceMappingURL=social.page-NR4PZUAF.js.map

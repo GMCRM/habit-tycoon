@@ -128,19 +128,24 @@ var _HabitIntervalService = class _HabitIntervalService {
   }
   /**
    * Returns true if the habit has met its goal within the current active period.
-   * For 'specific_days': returns false when today is not an active day.
+   * For 'specific_days' on a rest day, this stays true if the habit was completed
+   * on its most recent active day, so it remains in "Done" through rest days
+   * until the next active day resets it.
    */
-  isHabitCompleteForCurrentPeriod(habit) {
+  isHabitCompleteForCurrentPeriod(habit, now = /* @__PURE__ */ new Date()) {
     const interval = this.resolveInterval(habit);
-    if (interval === "specific_days" && !this.isTodayActiveDay(habit))
-      return false;
     const goalValue = habit.goal_value || 1;
     const currentProgress = habit.current_progress || 0;
     if (currentProgress < goalValue)
       return false;
     if (!habit.last_completed_at)
       return false;
-    const periodStart = this.getCurrentPeriodStart(interval);
+    let periodStart;
+    if (interval === "specific_days" && !this.isTodayActiveDay(habit, now)) {
+      periodStart = this.getPreviousActiveDayStart(habit.active_days || [], now);
+    } else {
+      periodStart = this.getCurrentPeriodStart(interval, now);
+    }
     const lastCompleted = new Date(habit.last_completed_at);
     return lastCompleted >= periodStart;
   }
@@ -2532,4 +2537,4 @@ export {
   HabitIntervalService,
   HabitBusinessService
 };
-//# sourceMappingURL=chunk-GSSZ5PLU.js.map
+//# sourceMappingURL=chunk-257QJYN5.js.map

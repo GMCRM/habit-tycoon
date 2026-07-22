@@ -89,7 +89,7 @@ var routes = [
   },
   {
     path: "home",
-    loadComponent: () => import("./home.page-SV7G45DL.js").then((m) => m.HomePage),
+    loadComponent: () => import("./home.page-HNPBQZCE.js").then((m) => m.HomePage),
     canActivate: [authGuard]
   },
   {
@@ -102,22 +102,22 @@ var routes = [
   },
   {
     path: "admin",
-    loadComponent: () => import("./dev-tools.page-QPRESKMR.js").then((m) => m.DevToolsPage),
+    loadComponent: () => import("./dev-tools.page-YST3K5TZ.js").then((m) => m.DevToolsPage),
     canActivate: [authGuard, adminGuard]
   },
   {
     path: "create-habit-business",
-    loadComponent: () => import("./create-habit-business.page-7O255EDG.js").then((m) => m.CreateHabitBusinessPage),
+    loadComponent: () => import("./create-habit-business.page-WJJ7NASU.js").then((m) => m.CreateHabitBusinessPage),
     canActivate: [authGuard]
   },
   {
     path: "social",
-    loadComponent: () => import("./social.page-ULJQWGZ2.js").then((m) => m.SocialPage),
+    loadComponent: () => import("./social.page-NR4PZUAF.js").then((m) => m.SocialPage),
     canActivate: [authGuard]
   },
   {
     path: "stocks",
-    loadComponent: () => import("./stocks.page-MS5BRXNB.js").then((m) => m.StocksPage),
+    loadComponent: () => import("./stocks.page-Z3WBZVB5.js").then((m) => m.StocksPage),
     canActivate: [authGuard]
   },
   {
