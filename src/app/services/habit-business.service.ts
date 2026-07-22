@@ -1268,7 +1268,10 @@ export class HabitBusinessService {
         throw new Error('Could not load user profile');
       }
 
-      const newCash = Math.max(0, profile.cash - todaysCompletion.earnings);
+      // Do not clamp to 0: if the earnings were already spent, undo must still
+      // remove the full amount (even negative) so purchases made with them
+      // aren't left unpaid for — see habit completion/undo exploit.
+      const newCash = profile.cash - todaysCompletion.earnings;
 
       const { error: updateCashError } = await this.supabase
         .from('user_profiles')
