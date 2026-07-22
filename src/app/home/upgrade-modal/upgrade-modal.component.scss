@@ -42,11 +42,12 @@
 }
 
 .current-business-info {
-  background: white;
+  background: var(--business-item-background);
+  border: 1px solid rgba(255, 215, 0, 0.2);
   margin: 16px;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .business-header {
@@ -63,21 +64,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid rgba(255, 215, 0, 0.3);
 }
 
 .business-details h2 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #ffffff;
 }
 
 .habit-description {
   margin: 4px 0 0 0;
-  color: #666666;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
 }
 
@@ -90,13 +91,13 @@
 .info-card {
   flex: 1;
   min-width: 120px;
-  background: #f8f9fa;
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .info-content {
@@ -105,7 +106,7 @@
 
 .info-label {
   font-size: 12px;
-  color: #666666;
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   font-weight: 500;
   margin: 0;
@@ -114,7 +115,7 @@
 .info-value {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #ffffff;
   margin: 2px 0 0 0;
 }
 
@@ -142,10 +143,10 @@
 }
 
 .upgrade-option {
-  background: white;
+  background: var(--business-item-background);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: all 0.2s ease;
   border: 2px solid transparent;
@@ -180,15 +181,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ion-color-light);
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
-  border: 1px solid var(--ion-color-medium-tint);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .business-type-name {
   font-size: 18px;
   font-weight: 600;
-  color: var(--ion-color-dark);
+  color: #ffffff;
 }
 
 .pricing-info {
@@ -213,7 +214,7 @@
 }
 
 .cost-label {
-  color: var(--ion-color-medium);
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
 }
 
