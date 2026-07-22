@@ -422,7 +422,7 @@
                       <!-- Complete/Undo buttons moved to far right -->
                       <!-- Single transforming button: Complete -> Undo -->
                       <div
-                        *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (hb.current_progress || 0) > 0)"
+                        *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
                         class="hold-complete-button"
                         [class.is-holding]="holdingStates[hb.id]?.isHolding"
                         [class.is-completing]="holdingStates[hb.id]?.isCompleting"
@@ -478,7 +478,7 @@
 
                       <!-- Tap-to-complete variant: single tap instead of holding -->
                       <div
-                        *ngIf="tapToComplete && (!isGoalCompleted(hb) || (hb.current_progress || 0) > 0)"
+                        *ngIf="tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
                         class="hold-complete-button"
                         [class.is-completing]="holdingStates[hb.id]?.isCompleting"
                         [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
@@ -512,7 +512,7 @@
 
                       <!-- Simple back button for multi-completion habits with progress -->
                       <div
-                        *ngIf="(hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
+                        *ngIf="isTodayActiveDay(hb) && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
                         class="back-button"
                         (click)="undoLastCompletion(hb)"
                       >
@@ -522,9 +522,11 @@
                         ></ion-icon>
                       </div>
 
-                      <!-- Show completed status if goal is fully completed but no undo available -->
+                      <!-- Show completed status if goal is fully completed but no undo available
+                           (either zero progress left to undo, or it's a rest-day carry-over from
+                           the habit's last active day) -->
                       <ion-button
-                        *ngIf="isGoalCompleted(hb) && (hb.current_progress || 0) === 0"
+                        *ngIf="isGoalCompleted(hb) && ((hb.current_progress || 0) === 0 || !isTodayActiveDay(hb))"
                         fill="outline"
                         color="medium"
                         size="small"
@@ -539,9 +541,13 @@
                           Goal Complete ({{ hb.current_progress }}/{{
                           hb.goal_value }})
                         </span>
-                        <!-- Simple text for single completion habits -->
-                        <span *ngIf="!hb.goal_value || hb.goal_value <= 1">
+                        <!-- Simple text for single completion habits, active day -->
+                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && isTodayActiveDay(hb)">
                           Completed Today
+                        </span>
+                        <!-- Simple text for single completion habits, rest-day carry-over -->
+                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb)">
+                          Completed
                         </span>
                       </ion-button>
                     </div>
