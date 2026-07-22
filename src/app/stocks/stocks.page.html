@@ -829,6 +829,9 @@
           <p>
             <strong>Shares Available:</strong> {{ selectedBuyBusiness.sharesAvailable }}
           </p>
+          <p>
+            <strong>Cash Available:</strong> ${{ (userProfile?.cash || 0).toFixed(2) }}
+          </p>
         </div>
 
         <div class="sell-controls">
@@ -848,6 +851,10 @@
             </ion-select>
           </ion-item>
 
+          <p *ngIf="getBuyOptions().length === 0" class="sell-preview">
+            You can't afford any shares of this stock right now.
+          </p>
+
           <div *ngIf="buyQuantity > 0" class="sell-preview">
             <p>
               <strong>Total Cost:</strong> ${{ (buyQuantity *
@@ -858,7 +865,7 @@
           <ion-button
             expand="block"
             color="success"
-            [disabled]="!buyQuantity || buyQuantity <= 0 || buyQuantity > selectedBuyBusiness.sharesAvailable || isLoading"
+            [disabled]="!buyQuantity || buyQuantity <= 0 || buyQuantity > selectedBuyBusiness.sharesAvailable || (buyQuantity * selectedBuyBusiness.stockPrice) > (userProfile?.cash || 0) || isLoading"
             (click)="confirmBuy()"
           >
             Buy {{ buyQuantity || 0 }} Shares

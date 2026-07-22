@@ -611,12 +611,18 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Generate array of buy options from 1 to shares available
+   * Generate array of buy options from 1 to shares available, capped by
+   * how many shares the user can actually afford with their current cash
    */
   getBuyOptions(): number[] {
     if (!this.selectedBuyBusiness) return [];
     const maxShares = this.selectedBuyBusiness.sharesAvailable;
-    return Array.from({ length: maxShares }, (_, i) => i + 1);
+    const cash = this.userProfile?.cash || 0;
+    const affordableShares = this.selectedBuyBusiness.stockPrice > 0
+      ? Math.floor(cash / this.selectedBuyBusiness.stockPrice)
+      : maxShares;
+    const limit = Math.min(maxShares, affordableShares);
+    return Array.from({ length: limit }, (_, i) => i + 1);
   }
 
   /**
