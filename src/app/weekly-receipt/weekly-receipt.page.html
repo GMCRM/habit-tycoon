@@ -44,14 +44,14 @@
           <div class="summary-item in">
             <ion-icon name="trending-up-outline"></ion-icon>
             <div class="summary-info">
-              <div class="summary-value">+${{ receipt.totalIn.toFixed(2) }}</div>
+              <div class="summary-value">+${{ formatMoney(receipt.totalIn) }}</div>
               <div class="summary-label">Total In</div>
             </div>
           </div>
           <div class="summary-item out">
             <ion-icon name="trending-down-outline"></ion-icon>
             <div class="summary-info">
-              <div class="summary-value">-${{ (receipt.totalOut * -1).toFixed(2) }}</div>
+              <div class="summary-value">-${{ formatMoney(receipt.totalOut * -1) }}</div>
               <div class="summary-label">Total Out</div>
             </div>
           </div>
@@ -59,7 +59,7 @@
             <ion-icon name="wallet-outline"></ion-icon>
             <div class="summary-info">
               <div class="summary-value" [class.negative]="receipt.net < 0">
-                {{ receipt.net >= 0 ? '+' : '-' }}${{ (receipt.net < 0 ? receipt.net * -1 : receipt.net).toFixed(2) }}
+                {{ receipt.net >= 0 ? '+' : '-' }}${{ formatMoney(receipt.net < 0 ? receipt.net * -1 : receipt.net) }}
               </div>
               <div class="summary-label">Net</div>
             </div>

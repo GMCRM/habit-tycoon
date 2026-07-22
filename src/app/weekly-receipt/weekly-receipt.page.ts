@@ -102,7 +102,11 @@ export class WeeklyReceiptPage implements OnInit {
 
   amountLabel(amount: number): string {
     const sign = amount >= 0 ? '+' : '-';
-    return `${sign}$${Math.abs(amount).toFixed(2)}`;
+    return `${sign}$${this.formatMoney(Math.abs(amount))}`;
+  }
+
+  formatMoney(amount: number): string {
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   goHome() {

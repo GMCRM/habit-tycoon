@@ -107,12 +107,13 @@ export class WeeklyReceiptService {
         icon = row.icon || '✅';
         break;
       case 'dividend':
-        // primary = friend's name, secondary = business name
+        // primary = friend's name, secondary = business type (never the friend's custom business name)
         title = `Dividend from ${row.primary_label}`;
         subtitle = row.secondary_label;
         icon = '📈';
         break;
       case 'stock_purchase':
+        // primary = business type (never the owner's custom business name), secondary = owner's name
         title = `Bought shares — ${row.primary_label}`;
         subtitle = `Owned by ${row.secondary_label}`;
         icon = '📊';
