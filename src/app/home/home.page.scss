@@ -440,12 +440,14 @@ button, span, div, ion-button {
         .habit-stats {
           display: flex;
           flex-wrap: wrap;
+          justify-content: center;
           gap: 16px;
-          
+
           .stat-item {
             display: flex;
             flex-direction: column;
-            
+            align-items: center;
+
             .stat-label {
               font-size: 0.75rem;
               color: rgba(255, 255, 255, 0.6);
@@ -457,11 +459,7 @@ button, span, div, ion-button {
             .stat-value {
               font-weight: bold;
               font-size: 0.9rem;
-              
-              &.frequency {
-                color: rgba(255, 255, 255, 0.8);
-              }
-              
+
               &.streak {
                 color: var(--streak-color);
               }

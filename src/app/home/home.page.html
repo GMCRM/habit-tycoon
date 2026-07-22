@@ -538,12 +538,6 @@
                   <p class="habit-description">{{ hb.habit_description }}</p>
                   <div class="habit-stats">
                     <div class="stat-item">
-                      <div class="stat-label">Schedule</div>
-                      <div class="stat-value frequency">
-                        {{ hb.recurrence_interval === 'specific_days' ? 'Specific Days' : '1 Day' }}
-                      </div>
-                    </div>
-                    <div class="stat-item">
                       <div class="stat-label">Streak</div>
                       <div class="stat-value streak">
                         {{ hb.streak }} days
