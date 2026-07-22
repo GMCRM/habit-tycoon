@@ -563,9 +563,13 @@ export class HabitBusinessService {
         throw new Error('Cannot delete your only habit business! You must have at least one active business.');
       }
 
-      // Calculate sell value (70% of original cost to prevent exploitation)
+      // Calculate sell value: 70% of original cost (to prevent exploitation)
+      // plus the habit's current per-completion pay (base pay + streak bonus)
       const originalCost = habitBusiness.cost || habitBusiness.business_types?.base_cost || 1;
-      const sellValue = Math.floor(originalCost * 0.7);
+      const streakMultiplier = habitBusiness.streak > 1 ? (habitBusiness.streak - 1) * 0.1 : 0;
+      const baseEarnings = habitBusiness.earnings_per_completion || 0;
+      const perCompletionPay = baseEarnings + baseEarnings * streakMultiplier;
+      const sellValue = Math.floor(originalCost * 0.7) + Math.floor(perCompletionPay);
 
       // Deactivate the habit-business (soft delete to preserve history)
       // Note: Database trigger will automatically refund all stockholders at current stock price
