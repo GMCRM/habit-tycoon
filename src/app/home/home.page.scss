@@ -401,8 +401,9 @@ button, span, div, ion-button {
           flex-wrap: wrap;
           gap: 8px;
           align-items: center;
-          justify-content: flex-end;
+          justify-content: center;
           row-gap: 8px;
+          width: 100%;
         }
 
         .business-name {
@@ -425,6 +426,7 @@ button, span, div, ion-button {
           display: flex;
           gap: 6px;
           align-items: center;
+          justify-content: center;
           margin-top: 8px;
           font-size: 0.78rem;
           color: rgba(255, 255, 255, 0.55);
@@ -1039,14 +1041,14 @@ button, span, div, ion-button {
   
   // Enhanced mobile styling for hold-complete button
   .hold-complete-button {
-    min-width: 90px !important; // Slightly smaller for mobile but consistent
-    width: 90px !important; // Fixed width for mobile consistency
-    height: 32px !important;
-    padding: 6px 12px !important;
-    font-size: 0.7rem !important;
-    
+    min-width: 100px !important;
+    width: 100px !important; // Fixed width for mobile consistency
+    height: 34px !important;
+    padding: 7px 14px !important;
+    font-size: 0.75rem !important;
+
     .button-icon {
-      font-size: 0.9rem !important;
+      font-size: 0.95rem !important;
     }
     
     // Better touch target for mobile
@@ -1082,7 +1084,7 @@ button, span, div, ion-button {
     }
 
     .card-actions {
-      justify-content: flex-start;
+      justify-content: center;
     }
 
     ion-button[color="warning"],
