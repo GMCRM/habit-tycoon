@@ -369,20 +369,10 @@ button, span, div, ion-button {
     }
     
     .item-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      display: block;
       min-width: 0; // flex item must be allowed to shrink below its content's natural width, or the whole card (buttons, calendar) drags off-screen on mobile
 
-      .business-icon {
-        font-size: 2.5rem;
-        min-width: 60px;
-        text-align: center;
-        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
-      }
-      
       .business-info {
-        flex: 1;
         min-width: 0; // allow flex child to shrink below content width instead of overflowing
 
         .card-header-row {
@@ -390,6 +380,20 @@ button, span, div, ion-button {
           align-items: center;
           justify-content: space-between;
           gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .business-title-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .business-icon {
+          font-size: 2.2rem;
+          flex-shrink: 0;
+          filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
         }
 
         .card-actions {
@@ -402,11 +406,12 @@ button, span, div, ion-button {
         }
 
         .business-name {
-          margin: 0 0 8px 0;
+          margin: 0;
           font-size: 1.2rem;
           font-weight: bold;
           color: var(--ion-color-primary);
           text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+          min-width: 0;
         }
 
         .habit-description {
@@ -895,14 +900,13 @@ button, span, div, ion-button {
     .item-content {
       .business-icon {
         font-size: 3rem;
-        min-width: 80px;
       }
-      
+
       .business-info {
         .business-name {
           font-size: 1.4rem;
         }
-        
+
         .habit-stats {
           gap: 24px;
         }

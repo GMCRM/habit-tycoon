@@ -331,10 +331,12 @@
               </div>
 
               <div class="item-content">
-                <div class="business-icon">{{ hb.business_icon }}</div>
                 <div class="business-info">
                   <div class="card-header-row">
-                    <h3 class="business-name">{{ hb.business_name }}</h3>
+                    <div class="business-title-row">
+                      <span class="business-icon">{{ hb.business_icon }}</span>
+                      <h3 class="business-name">{{ hb.business_name }}</h3>
+                    </div>
                     <div class="card-actions">
                       <!-- Sell/Delete button -->
                       <ion-button
