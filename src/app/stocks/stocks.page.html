@@ -286,7 +286,7 @@
                   <div class="stat-item">
                     <div class="stat-label">Streak</div>
                     <div class="stat-value streak">
-                      {{ business.streak }} days
+                      {{ getEffectiveStreakForFriendBusiness(business) }} days
                     </div>
                   </div>
                   <div class="stat-item">
@@ -317,6 +317,13 @@
                     [isStockView]="true"
                   >
                   </app-habit-grid>
+                  <app-stock-chart
+                    [businessId]="business.id"
+                    [isStockView]="true"
+                    [days]="30"
+                    [currentStreak]="getEffectiveStreakForFriendBusiness(business)"
+                  >
+                  </app-stock-chart>
                 </div>
               </div>
 
@@ -623,7 +630,7 @@
                   <div class="stat-item">
                     <div class="stat-label">Streak</div>
                     <div class="stat-value streak">
-                      {{ holding.businessStreak }} days
+                      {{ getEffectiveStreakForHolding(holding) }} days
                     </div>
                   </div>
                   <div class="stat-item holding-actions-stat">
@@ -693,6 +700,13 @@
                     [isStockView]="true"
                   >
                   </app-habit-grid>
+                  <app-stock-chart
+                    [businessId]="holding.stockId"
+                    [isStockView]="true"
+                    [days]="30"
+                    [currentStreak]="getEffectiveStreakForHolding(holding)"
+                  >
+                  </app-stock-chart>
                 </div>
               </div>
             </div>

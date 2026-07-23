@@ -16,11 +16,8 @@ export interface HabitCompletionPoint {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="chart-container">
-      <canvas 
-        #chartCanvas 
-        style="display: block; width: 100%; height: 200px; background-color: rgba(0,255,0,0.1); border: 2px solid #ffaa00;">
-      </canvas>
+    <div class="chart-container" [style.height.px]="height">
+      <canvas #chartCanvas></canvas>
       <div *ngIf="data.length === 0" class="chart-placeholder">
         📊 Loading habit chart...
       </div>
@@ -29,7 +26,6 @@ export interface HabitCompletionPoint {
   styles: [`
     .chart-container {
       position: relative;
-      height: 80px;
       width: 100%;
       margin: 8px 0;
       background: rgba(0, 0, 0, 0.2);
@@ -38,13 +34,13 @@ export interface HabitCompletionPoint {
       overflow: hidden;
       min-height: 80px;
     }
-    
+
     canvas {
       width: 100% !important;
       height: 100% !important;
       border-radius: 8px;
     }
-    
+
     .chart-placeholder {
       display: flex;
       align-items: center;
@@ -61,53 +57,38 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
   @Input() data: HabitCompletionPoint[] = [];
   @Input() businessId: string = '';
   @Input() currentStreak: number = 0;
-  @Input() height: number = 120;
+  @Input() height: number = 80;
+  /** When true, fetches history via the cross-user (friend/stock) RPC instead of the owner-scoped query. */
+  @Input() isStockView: boolean = false;
+  /** Rolling window size in days. Keep this modest — a long window is unreadable as a line and
+   *  (for isStockView's 365-day calendar-year mode) would pick up future-dated placeholder entries. */
+  @Input() days: number = 30;
 
   private chart: Chart | null = null;
   private habitBusinessService = inject(HabitBusinessService);
 
   async ngOnInit() {
-    console.log('🔄 StockChart ngOnInit - businessId:', this.businessId, 'existing data length:', this.data.length);
-    
-    // Only load data if we have a businessId and no existing data
     if (this.businessId && this.data.length === 0) {
-      console.log('📡 Loading real completion data for business:', this.businessId);
       await this.loadCompletionData();
     }
-    
-    console.log('✅ ngOnInit complete - data length:', this.data.length);
   }
 
   ngAfterViewInit() {
-    console.log('=== StockChartComponent - ngAfterViewInit START ===');
-    console.log('Chart canvas element:', this.chartCanvas);
-    console.log('Chart canvas nativeElement:', this.chartCanvas?.nativeElement);
-    
-    // Add a delay to ensure DOM is ready, then create the real chart
     setTimeout(() => {
-      console.log('=== AFTER TIMEOUT - Creating real habit chart ===');
       this.createChart();
     }, 200);
-    
-    console.log('=== StockChartComponent - ngAfterViewInit END ===');
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('=== StockChartComponent - ngOnChanges ===');
-    console.log('Changes:', changes);
-    
-    // If businessId changes, load new data
-    if (changes['businessId'] && this.businessId && this.chartCanvas?.nativeElement) {
-      console.log('Business ID changed to:', this.businessId);
+    if ((changes['businessId'] || changes['isStockView'] || changes['days']) && this.businessId && this.chartCanvas?.nativeElement) {
       setTimeout(async () => {
         await this.loadCompletionData();
         this.createChart();
       }, 100);
     }
-    
+
     // If data changes after component is initialized, recreate the chart
     if (changes['data'] && !changes['data'].firstChange && this.chartCanvas?.nativeElement) {
-      console.log('🔄 Data changed, recreating chart...');
       setTimeout(() => {
         this.createChart();
       }, 100);
@@ -123,116 +104,42 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
   private hexToRgba(hex: string, alpha: number): string {
     // Remove # if present
     hex = hex.replace('#', '');
-    
+
     // Parse hex values
     const r = parseInt(hex.substr(0, 2), 16);
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
-    
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
 
-  private generateMockCompletionData() {
-    console.log('🎲 Generating mock completion data');
-    
-    // For demo purposes, create data for the last 30 days but start from a random point
-    // to simulate businesses of different ages
-    const maxDays = 30;
-    const businessAge = Math.floor(Math.random() * 25) + 5; // 5-30 days old
-    const mockData: HabitCompletionPoint[] = [];
-    const today = new Date();
-    let currentStreak = 0;
-    
-    console.log(`📅 Simulating business that's ${businessAge} days old`);
-    
-    // Fill in "no data" for days before business existed
-    for (let i = maxDays - 1; i >= businessAge; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      mockData.push({
-        date: this.getLocalDateString(date),
-        completed: false,
-        streakDay: 0
-      });
-    }
-    
-    // Generate realistic data for the business's actual lifetime
-    for (let i = businessAge - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      // Simulate realistic habit completion pattern
-      // Start with lower success rate, improve over time (learning curve)
-      const daysSinceStart = businessAge - i;
-      const experienceBonus = Math.min(daysSinceStart * 0.02, 0.2); // Max 20% bonus
-      const streakBonus = Math.min(currentStreak * 0.05, 0.15); // Max 15% streak bonus
-      const baseCompletionRate = 0.6; // 60% base rate
-      const completionProbability = Math.min(
-        baseCompletionRate + experienceBonus + streakBonus, 
-        0.9
-      );
-      
-      const completed = Math.random() < completionProbability;
-      
-      if (completed) {
-        currentStreak++;
-      } else {
-        currentStreak = 0;
-      }
-      
-      mockData.push({
-        date: this.getLocalDateString(date),
-        completed,
-        streakDay: currentStreak
-      });
-    }
-    
-    this.data = mockData;
-    console.log('✅ Generated mock data with', mockData.length, 'points');
-    console.log('📊 Business created:', mockData.find(d => d.completed || d.streakDay > 0)?.date || 'unknown');
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   private async loadCompletionData() {
     try {
-      console.log('🔍 Fetching habit completion history for business:', this.businessId);
-      const history = await this.habitBusinessService.getHabitCompletionHistory(this.businessId, 30);
-      console.log('📥 Received completion history:', history.length, 'days');
-      
-      if (history && history.length > 0) {
-        this.data = history;
-        console.log('✅ Using real habit completion data with', this.data.length, 'data points');
-      } else {
-        console.warn('⚠️ No completion history returned for business:', this.businessId);
-        this.data = []; // Use empty data instead of mock data
-      }
+      const history = this.isStockView
+        ? await this.habitBusinessService.getHabitCompletionHistoryForStock(this.businessId, this.days)
+        : await this.habitBusinessService.getHabitCompletionHistory(this.businessId, this.days);
+      this.data = history && history.length > 0 ? history : [];
     } catch (error) {
-      console.error('❌ Error loading habit completion history:', error);
-      this.data = []; // Use empty data instead of mock data
+      console.error('Error loading habit completion history:', error);
+      this.data = [];
     }
   }
 
   private createChart() {
-    console.log('📊 Creating chart with data:', this.data.length, 'points');
-    
     if (!this.chartCanvas?.nativeElement) {
-      console.error('❌ Chart canvas not found');
       return;
     }
-    
+
     // If no data available, show empty chart
     if (this.data.length === 0) {
-      console.warn('⚠️ No data available for chart - showing empty state');
       return;
     }
 
     const canvas = this.chartCanvas.nativeElement;
-    console.log('Canvas context available:', !!canvas.getContext('2d'));
 
     try {
       // Destroy existing chart if it exists
       if (this.chart) {
-        console.log('Destroying existing chart');
         this.chart.destroy();
       }
 
@@ -240,30 +147,35 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
       const businessStartIndex = this.data.findIndex(d => d.completed || d.streakDay > 0);
       const hasBusinessStarted = businessStartIndex !== -1;
       const businessAge = hasBusinessStarted ? this.data.length - businessStartIndex : 0;
-      
-      console.log('📅 Business started at index:', businessStartIndex, 'Age:', businessAge, 'days');
+
+      // Today's "in progress" point: not yet completed, but the day isn't over —
+      // the streak line correctly holds flat here rather than dropping (see
+      // HabitBusinessService's getHabitCompletionHistory), so mark it distinctly
+      // rather than letting it render identically to a hard miss.
+      const todayStr = this.getLocalDateString(new Date());
+      const todayIndex = this.data.findIndex(d => d.date === todayStr && !d.completed);
 
       // Prepare chart data
       const chartLabels = this.data.map(d => {
         const date = new Date(d.date);
         return `${date.getMonth() + 1}/${date.getDate()}`;
       });
-      
+
       const streakData = this.data.map(d => d.streakDay);
       const maxStreak = Math.max(...streakData, 5);
-      
+
       // Calculate trend based on actual business performance
       const businessData = hasBusinessStarted ? this.data.slice(businessStartIndex) : this.data;
       const recentBusinessData = businessData.slice(-Math.min(7, businessData.length)); // Last 7 days or less
       const recentCompletions = recentBusinessData.filter(d => d.completed).length;
       const recentDays = recentBusinessData.length;
       const completionRate = recentDays > 0 ? recentCompletions / recentDays : 0;
-      
+
       // More nuanced color coding
       let trendColor: string;
       let trendEmoji: string;
       let trendText: string;
-      
+
       if (businessAge < 3) {
         // Very new business - neutral blue
         trendColor = '#4A90E2';
@@ -290,8 +202,6 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
         trendEmoji = '📉';
         trendText = 'Poor Performance';
       }
-      
-      console.log('📊 Business age:', businessAge, 'Completion rate:', (completionRate * 100).toFixed(1) + '%', 'Trend:', trendText);
 
       // Create chart datasets
       const datasets: any[] = [
@@ -303,16 +213,22 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
           borderWidth: 2,
           fill: true,
           tension: 0.3,
-          pointRadius: streakData.map((_, index) => index === businessStartIndex ? 4 : 1),
+          pointRadius: streakData.map((_, index) =>
+            index === businessStartIndex || index === todayIndex ? 4 : 1
+          ),
           pointHoverRadius: 6,
-          pointBackgroundColor: streakData.map((_, index) => 
-            index === businessStartIndex ? '#FFD700' : trendColor
-          ),
-          pointBorderColor: streakData.map((_, index) => 
-            index === businessStartIndex ? '#FF8C00' : '#fff'
-          ),
-          pointBorderWidth: streakData.map((_, index) => 
-            index === businessStartIndex ? 3 : 1
+          pointBackgroundColor: streakData.map((_, index) => {
+            if (index === businessStartIndex) return '#FFD700';
+            if (index === todayIndex) return 'transparent';
+            return trendColor;
+          }),
+          pointBorderColor: streakData.map((_, index) => {
+            if (index === businessStartIndex) return '#FF8C00';
+            if (index === todayIndex) return trendColor;
+            return '#fff';
+          }),
+          pointBorderWidth: streakData.map((_, index) =>
+            index === businessStartIndex || index === todayIndex ? 3 : 1
           )
         }
       ];
@@ -321,7 +237,7 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
       if (hasBusinessStarted && businessStartIndex < this.data.length - 1) {
         datasets.push({
           label: 'Business Created',
-          data: Array(this.data.length).fill(null).map((_, index) => 
+          data: Array(this.data.length).fill(null).map((_, index) =>
             index === businessStartIndex ? maxStreak * 0.8 : null
           ),
           borderColor: '#FFD700',
@@ -378,19 +294,21 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
                   const dataIndex = context.dataIndex;
                   const point = this.data[dataIndex];
                   const labels = [`Streak: ${point.streakDay} days`];
-                  
+
                   if (dataIndex === businessStartIndex) {
                     labels.unshift('🏢 Business Created');
                   }
-                  
-                  if (point.completed) {
+
+                  if (dataIndex === todayIndex) {
+                    labels.push('⏳ In progress — day not over yet');
+                  } else if (point.completed) {
                     labels.push('✅ Habit Completed');
                   } else if (dataIndex >= businessStartIndex) {
                     labels.push('❌ Habit Missed');
                   } else {
                     labels.push('⚫ Before Business');
                   }
-                  
+
                   return labels;
                 }
               }
@@ -409,10 +327,8 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
         }
       });
 
-      console.log('✅ ENHANCED HABIT CHART CREATED SUCCESSFULLY!', this.chart);
-      
     } catch (error) {
-      console.error('❌ Error creating habit chart:', error);
+      console.error('Error creating habit chart:', error);
     }
   }
 

@@ -325,103 +325,44 @@ describe('HabitBusinessService', () => {
       await expectAsync(service.sellStockShares('stock-1', 100)).toBeRejected();
     });
 
-    // Stock purchase should deduct cost from user cash (totalCost = price × shares)
-    it('should deduct correct total cost when purchasing stock (price × shares)', async () => {
-      const stockQuery = makeQuery({
-        data: { id: 'stock-1', current_stock_price: 10, shares_available: 50, business_owner_id: 'other-user' },
-        error: null
-      });
-      const profileQuery = makeQuery({ data: { cash: 200 }, error: null });
-      const holdingQuery = makeQuery({ data: null, error: { code: 'PGRST116' } }); // no existing holding
-      const insertQuery = makeQuery();
-      const transactionQuery = makeQuery();
-
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_stocks') return stockQuery;
-        if (table === 'user_profiles') return profileQuery;
-        if (table === 'stock_holdings') return holdingQuery;
-        if (table === 'stock_transactions') return transactionQuery;
-        return makeQuery();
-      });
+    // Stock purchase should call the atomic purchase_stock_shares RPC — the
+    // old implementation did a client-side read-then-write of cash and
+    // shares_available, which was vulnerable to a lost-update race under
+    // concurrent purchases (double-tap, two devices). Both purchaseStock()
+    // and purchaseStockShares() now delegate to the same RPC as
+    // sell_stock_shares, so cost/holding/availability math happens
+    // atomically in a single SQL statement instead of in JS.
+    it('should call purchase_stock_shares RPC with correct buyer, stock and share count', async () => {
+      mockSupabaseClient.rpc.and.resolveTo({ data: { success: true, shares_purchased: 5, total_cost: 50 }, error: null });
 
       await service.purchaseStock('stock-1', 5);
 
-      // Cash should be updated from 200 to 200 - (10*5) = 150
-      // Check if any update to user_profiles contained the right cash value
-      expect(profileQuery.update).toHaveBeenCalledWith(
-        jasmine.objectContaining({ cash: 150 })
-      );
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('purchase_stock_shares', {
+        buyer_id: 'user-1',
+        stock_uuid: 'stock-1',
+        shares_to_buy: 5
+      });
     });
 
     // Should reject purchase when user doesn't have enough cash
     it('should reject stock purchase when user has insufficient funds', async () => {
-      const stockQuery = makeQuery({
-        data: { id: 'stock-1', current_stock_price: 100, shares_available: 50 },
-        error: null
-      });
-      const profileQuery = makeQuery({ data: { cash: 10 }, error: null });
+      mockSupabaseClient.rpc.and.resolveTo({ data: { success: false, error: 'Insufficient funds' }, error: null });
 
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_stocks') return stockQuery;
-        if (table === 'user_profiles') return profileQuery;
-        return makeQuery();
-      });
-
-      await expectAsync(service.purchaseStock('stock-1', 5)).toBeRejected();
+      await expectAsync(service.purchaseStock('stock-1', 5)).toBeRejectedWithError('Insufficient funds');
     });
 
     // Should reject purchase when not enough shares are available
     it('should reject stock purchase when not enough shares available', async () => {
-      const stockQuery = makeQuery({
-        data: { id: 'stock-1', current_stock_price: 10, shares_available: 2 },
-        error: null
-      });
+      mockSupabaseClient.rpc.and.resolveTo({ data: { success: false, error: 'Not enough shares available' }, error: null });
 
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_stocks') return stockQuery;
-        return makeQuery();
-      });
-
-      await expectAsync(service.purchaseStock('stock-1', 5)).toBeRejected();
+      await expectAsync(service.purchaseStock('stock-1', 5)).toBeRejectedWithError('Not enough shares available');
     });
 
-    // Existing holding should get weighted average purchase price on additional purchase
-    it('should compute weighted average price when buying more of an existing holding', async () => {
-      const stockQuery = makeQuery({
-        data: { id: 'stock-1', current_stock_price: 20, shares_available: 100, business_owner_id: 'x' },
-        error: null
-      });
-      // Existing holding: 10 shares at avg $10 = $100 invested
-      const holdingQuery = makeQuery({
-        data: { id: 'holding-1', shares_owned: 10, total_invested: 100, average_purchase_price: 10 },
-        error: null
-      });
-      const profileQuery = makeQuery({ data: { cash: 1000 }, error: null });
+    // RPC-level (network/DB) errors should also propagate as rejections
+    it('should propagate RPC error when stock purchase fails', async () => {
+      mockSupabaseClient.rpc.and.resolveTo({ data: null, error: { message: 'connection error' } });
 
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_stocks') return stockQuery;
-        if (table === 'stock_holdings') return holdingQuery;
-        if (table === 'user_profiles') return profileQuery;
-        if (table === 'stock_transactions') return makeQuery();
-        return makeQuery();
-      });
-
-      await service.purchaseStock('stock-1', 5);
-
-      // New total shares = 10 + 5 = 15
-      // New total invested = 100 + (20*5) = 200
-      // New avg price = 200 / 15 = 13.33...
-      expect(holdingQuery.update).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          shares_owned: 15,
-          total_invested: 200,
-          average_purchase_price: jasmine.any(Number)
-        })
-      );
-
-      // Verify the actual average
-      const updateArg = holdingQuery.update.calls.mostRecent().args[0];
-      expect(updateArg.average_purchase_price).toBeCloseTo(200 / 15, 2);
+      await expectAsync(service.purchaseStock('stock-1', 5)).toBeRejected();
     });
   });
 

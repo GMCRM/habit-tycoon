@@ -1046,7 +1046,7 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
           level = 0;
         } else if (dataPoint) {
           if (dataPoint.completed) {
-            level = dataPoint.streak_day >= 7 ? 3 : 2;
+            level = dataPoint.streakDay >= 7 ? 3 : 2;
           } else {
             level = 1; // Missed
           }
@@ -1063,7 +1063,7 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
         this.gridDays.push({
           date: dateStr,
           completed: dataPoint?.completed || false,
-          streakDay: dataPoint?.streak_day || 0,
+          streakDay: dataPoint?.streakDay || 0,
           level,
           isInCalendarYear: isInTargetRange, // Rename for clarity
           isCreatedDate: isCreatedDate || false

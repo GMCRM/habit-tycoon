@@ -39,6 +39,11 @@
 <ion-content [fullscreen]="true" class="ion-padding" [scrollY]="false">
   <div class="scrollable-content">
     <div class="page-container">
+      <!-- Offline sync banner: actions queued while offline, waiting to replay -->
+      <div *ngIf="pendingSyncCount > 0" class="offline-sync-banner">
+        📡 {{ pendingSyncCount }} action{{ pendingSyncCount === 1 ? '' : 's' }} waiting to sync — will complete automatically when you're back online.
+      </div>
+
       <!-- User Stats Header -->
       <div *ngIf="currentUser" class="user-info">
         <div class="welcome-section">
@@ -562,7 +567,7 @@
                     <div class="stat-item">
                       <div class="stat-label">Streak</div>
                       <div class="stat-value streak">
-                        {{ hb.streak }} days
+                        {{ getEffectiveStreak(hb) }} days
                       </div>
                     </div>
                     <div class="stat-item">
@@ -684,6 +689,13 @@
                         [useCalendarYear]="true"
                       >
                       </app-habit-grid>
+                      <app-stock-chart
+                        [businessId]="hb.id"
+                        [isStockView]="false"
+                        [days]="30"
+                        [currentStreak]="getEffectiveStreak(hb)"
+                      >
+                      </app-stock-chart>
                     </div>
                   </div>
 

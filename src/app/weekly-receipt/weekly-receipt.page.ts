@@ -343,6 +343,13 @@ export class WeeklyReceiptPage implements OnInit {
 
   generalProgressPercent(a: GeneralAchievementState): number {
     if (a.earned) return 100;
+    // 'legend_count' (the Legend meta-achievement) has no fixed threshold —
+    // its target is "every other general achievement", derived the same way
+    // generalProgressLabel() below computes it, so the bar and the label agree.
+    if (a.metric === 'legend_count') {
+      const total = GENERAL_ACHIEVEMENT_DEFINITIONS.length - 1;
+      return total > 0 ? Math.max(0, Math.min(100, ((a.progressCurrent ?? 0) / total) * 100)) : 0;
+    }
     if (a.threshold === undefined || a.progressCurrent === undefined) return 0;
     return Math.max(0, Math.min(100, (a.progressCurrent / a.threshold) * 100));
   }

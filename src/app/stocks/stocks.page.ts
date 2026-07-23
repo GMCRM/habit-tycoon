@@ -12,7 +12,10 @@ import {
 } from '@ionic/angular/standalone';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
+import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
 import { HabitBusinessService } from '../services/habit-business.service';
+import { HabitIntervalService } from '../services/habit-interval.service';
+import { OfflineQueuedError } from '../services/offline-queue.service';
 import { SocialService } from '../services/social.service';
 import { AuthService } from '../services/auth.service';
 import { addIcons } from 'ionicons';
@@ -43,6 +46,9 @@ interface FriendBusiness {
   sharesAvailable: number;
   totalShares: number;
   potentialDividend: number;
+  lastCompletedAt: string | null;
+  recurrenceInterval: string;
+  activeDays: number[];
 }
 
 interface Portfolio {
@@ -62,6 +68,11 @@ interface Portfolio {
   totalDividendsEarned: number;
   dailyDividendRate: number;
   businessStreak: number;
+  goalValue: number;
+  currentProgress: number;
+  lastCompletedAt: string | null;
+  recurrenceInterval: string;
+  activeDays: number[];
 }
 
 @Component({
@@ -76,7 +87,7 @@ interface Portfolio {
     IonButton, IonIcon, IonBadge, IonSpinner,
     IonModal, IonButtons, IonItem, IonLabel, IonInput,
     IonSelect, IonSelectOption,
-    BottomNavComponent, HabitGridComponent
+    BottomNavComponent, HabitGridComponent, StockChartComponent
   ]
 })
 export class StocksPage implements OnInit, OnDestroy {
@@ -127,6 +138,7 @@ export class StocksPage implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private habitBusinessService: HabitBusinessService,
+    private habitIntervalService: HabitIntervalService,
     private socialService: SocialService,
     private authService: AuthService,
     private toastController: ToastController,
@@ -528,7 +540,24 @@ export class StocksPage implements OnInit, OnDestroy {
             text: 'Sell',
             cssClass: 'danger',
             handler: async () => {
-              await this.executeSale(holding, sharesToSell);
+              try {
+                await this.executeSale(holding, sharesToSell);
+                const successToast = await this.toastController.create({
+                  message: `✅ Successfully sold ${sharesToSell} shares!`,
+                  duration: 3000,
+                  color: 'success'
+                });
+                await successToast.present();
+              } catch (error: any) {
+                console.error('Error selling shares:', error);
+                const isOfflineQueued = error instanceof OfflineQueuedError;
+                const toast = await this.toastController.create({
+                  message: isOfflineQueued ? `📡 ${error.message}` : `❌ Failed to sell shares: ${error?.message || error}`,
+                  duration: 3000,
+                  color: isOfflineQueued ? 'warning' : 'danger'
+                });
+                await toast.present();
+              }
             }
           }
         ]
@@ -652,10 +681,11 @@ export class StocksPage implements OnInit, OnDestroy {
       await this.loadData();
       await this.loadCurrentUser();
     } catch (error: any) {
+      const isOfflineQueued = error instanceof OfflineQueuedError;
       const toast = await this.toastController.create({
-        message: `❌ ${error?.message || 'Failed to purchase shares'}`,
+        message: isOfflineQueued ? `📡 ${error.message}` : `❌ ${error?.message || 'Failed to purchase shares'}`,
         duration: 3000,
-        color: 'danger'
+        color: isOfflineQueued ? 'warning' : 'danger'
       });
       await toast.present();
     } finally {
@@ -688,6 +718,37 @@ export class StocksPage implements OnInit, OnDestroy {
     const change = this.getPriceChangePercentage(business);
     const prefix = change > 0 ? '+' : '';
     return `${prefix}${change.toFixed(1)}%`;
+  }
+
+  /**
+   * True current streak for a friend's business, correcting for a stale
+   * (not-yet-reset) streak column.
+   */
+  getEffectiveStreakForFriendBusiness(b: FriendBusiness): number {
+    return this.habitIntervalService.getEffectiveStreak({
+      streak: b.streak,
+      last_completed_at: b.lastCompletedAt || undefined,
+      recurrence_interval: (b.recurrenceInterval as any) || '24h',
+      frequency: b.frequency as any,
+      active_days: b.activeDays,
+      goal_value: b.goalValue,
+      current_progress: b.currentProgress
+    });
+  }
+
+  /**
+   * True current streak for a held stock's business, correcting for a stale
+   * (not-yet-reset) streak column.
+   */
+  getEffectiveStreakForHolding(p: Portfolio): number {
+    return this.habitIntervalService.getEffectiveStreak({
+      streak: p.businessStreak,
+      last_completed_at: p.lastCompletedAt || undefined,
+      recurrence_interval: (p.recurrenceInterval as any) || '24h',
+      active_days: p.activeDays,
+      goal_value: p.goalValue,
+      current_progress: p.currentProgress
+    });
   }
 
   /**
@@ -811,10 +872,11 @@ export class StocksPage implements OnInit, OnDestroy {
       await toast.present();
     } catch (error: any) {
       console.error('Error selling shares:', error);
+      const isOfflineQueued = error instanceof OfflineQueuedError;
       const toast = await this.toastController.create({
-        message: `❌ Failed to sell shares: ${error?.message || error}`,
+        message: isOfflineQueued ? `📡 ${error.message}` : `❌ Failed to sell shares: ${error?.message || error}`,
         duration: 3000,
-        color: 'danger'
+        color: isOfflineQueued ? 'warning' : 'danger'
       });
       await toast.present();
     }

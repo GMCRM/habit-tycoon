@@ -1,0 +1,74 @@
+name: Build and sync GitHub Pages bundle
+
+# GitHub Pages is configured to serve this repo straight from the root of
+# `main` (Settings → Pages → "Deploy from a branch"). There's no separate
+# build step on the Pages side, so historically someone had to remember to
+# run `ng build --configuration=production` and manually commit the result
+# to the repo root after every change to src/ — easy to forget, which left
+# the live site serving a stale bundle. This workflow does that step
+# automatically: build, copy the output to root (mirroring what the manual
+# "build: sync production bundle" commits did), and push if anything changed.
+#
+# The job below declares `permissions: contents: write` explicitly, which
+# grants it push access to this one workflow's GITHUB_TOKEN regardless of
+# the repo's default (read-only) Actions permission — no repo settings
+# change needed.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.sql'
+      - '**/*.md'
+      - '.github/**'
+
+concurrency:
+  group: pages-bundle-sync
+  cancel-in-progress: false
+
+jobs:
+  build-and-sync:
+    # The sync commit below is authored by github-actions[bot] and pushed
+    # with [skip ci], but this guard is a second, cheaper line of defense
+    # against the workflow ever re-triggering itself.
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npx ng build --configuration=production
+
+      - name: Sync bundle to repo root
+        run: |
+          # Only touch Angular's hashed build-output filenames — never a
+          # blanket "*.js" — so source/config files at the root
+          # (karma.conf.js, capacitor.config.ts, ...) are left untouched.
+          rm -f main-*.js polyfills-*.js styles-*.css chunk-*.js
+          cp www/index.html www/3rdpartylicenses.txt www/prerendered-routes.json .
+          cp www/main-*.js www/polyfills-*.js www/styles-*.css www/chunk-*.js .
+          cp -r www/assets/. assets/
+
+      - name: Commit and push if the bundle changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add www index.html 3rdpartylicenses.txt prerendered-routes.json assets main-*.js polyfills-*.js styles-*.css chunk-*.js
+          if git diff --cached --quiet; then
+            echo "Build output unchanged — nothing to sync."
+            exit 0
+          fi
+          git commit -m "build: sync production bundle for GitHub Pages [skip ci]"
+          git push

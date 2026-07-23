@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
+import { CapacitorPreferencesStorage } from './capacitor-preferences-storage';
 
 /**
  * Singleton service that owns the single Supabase client for the app.
@@ -25,6 +26,12 @@ export class SupabaseService {
         // instead of racing against Supabase's internal lock.
         detectSessionInUrl: false,
         flowType: 'pkce',
+        // Persist the session via @capacitor/preferences (native
+        // UserDefaults/SharedPreferences on iOS/Android, localStorage on
+        // web) instead of the default bare localStorage, which native
+        // WebViews can clear under storage pressure independently of the
+        // rest of the app's data.
+        storage: new CapacitorPreferencesStorage(),
       },
       global: {
         headers: {

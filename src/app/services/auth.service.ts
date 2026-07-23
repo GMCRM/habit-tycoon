@@ -2,6 +2,7 @@
 
 import { Injectable } from '@angular/core';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
@@ -61,9 +62,15 @@ export class AuthService {
     }
   }
 
-  // Check if running on mobile platform
+  // Check if running on mobile platform (native iOS/Android via Capacitor).
+  // NOTE: was previously `window.location.protocol === 'capacitor:'`, which
+  // only holds on iOS — Android's default androidScheme serves the WebView
+  // over https://localhost, so that check silently returned false on Android
+  // and sent users to the web OAuth redirect instead of the app's custom
+  // URL scheme. Capacitor.isNativePlatform() is correct on both platforms
+  // regardless of androidScheme configuration.
   private isMobile(): boolean {
-    return window.location.protocol === 'capacitor:';
+    return Capacitor.isNativePlatform();
   }
 
   // Google OAuth sign in (same as sign up)

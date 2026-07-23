@@ -19,6 +19,7 @@ import {
   AlertController
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, HabitBusiness, UpgradeCalculation, BusinessStock, StockHolding } from '../services/habit-business.service';
+import { OfflineQueuedError } from '../services/offline-queue.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { AuthService } from '../services/auth.service';
@@ -207,14 +208,16 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
   private addCompletionStatus(habit: HabitBusiness): HabitWithCompletion {
     const completedToday = this.habitIntervalService.isHabitCompleteForCurrentPeriod(habit);
     const completedThisWeek = completedToday && this.habitIntervalService.resolveInterval(habit) === 'specific_days';
+    const effectiveStreak = this.habitIntervalService.getEffectiveStreak(habit);
 
     // Calculate potential earnings with streak multiplier
-    const nextStreak = habit.streak + 1;
+    const nextStreak = effectiveStreak + 1;
     const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
     const potentialEarnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
-    
+
     return {
       ...habit,
+      streak: effectiveStreak, // override the possibly-stale column with the corrected value
       completedToday,
       completed_today: completedToday,  // For template compatibility
       completedThisWeek,
@@ -244,11 +247,11 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
 
   async completeHabit(habit: HabitWithCompletion) {
     if (this.completingHabitId) return; // Prevent double-clicks
-    
+
     try {
       this.completingHabitId = habit.id;
       this.completing = true;
-      
+
       // Show confirmation for high-value habits
       if (habit.potentialEarnings! > 1000) {
         const alert = await this.alertController.create({
@@ -266,10 +269,15 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
           ]
         });
         await alert.present();
+        // alert.present() resolves once the dialog is shown, not once the
+        // user answers it — wait for onDidDismiss() too, otherwise the
+        // double-tap guard clears (in `finally` below) while the dialog is
+        // still open and executeHabitCompletion() hasn't run yet.
+        await alert.onDidDismiss();
       } else {
         await this.executeHabitCompletion(habit);
       }
-      
+
     } catch (error) {
       console.error('Error in completeHabit:', error);
       await this.showToast('Failed to complete habit. Please try again.', 'danger');
@@ -298,7 +306,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
     } catch (error: any) {
       console.error('Error completing habit:', error);
       const message = error.message || 'Failed to complete habit';
-      await this.showToast(message, 'danger');
+      await this.showToast(message, error instanceof OfflineQueuedError ? 'warning' : 'danger');
     }
   }
 
@@ -490,7 +498,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
                 this.userProfile = await this.authService.getUserProfile(this.currentUser.id);
                 
               } catch (error: any) {
-                await this.showToast(error.message || 'Purchase failed', 'danger');
+                await this.showToast(error.message || 'Purchase failed', error instanceof OfflineQueuedError ? 'warning' : 'danger');
               }
               
               return true;

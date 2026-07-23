@@ -3,6 +3,12 @@ import { HabitBusiness } from './habit-business.service';
 
 export type RecurrenceInterval = '24h' | 'specific_days';
 
+/** Minimal fields getEffectiveStreak needs. HabitBusiness satisfies this
+ *  structurally; callers with only a flattened/joined shape (e.g. stock
+ *  view models) can pass a small literal instead of a full HabitBusiness. */
+export type StreakSnapshot = Pick<HabitBusiness,
+  'streak' | 'last_completed_at' | 'recurrence_interval' | 'frequency' | 'active_days' | 'goal_value' | 'current_progress'>;
+
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 @Injectable({
@@ -151,26 +157,63 @@ export class HabitIntervalService {
   }
 
   /**
-   * Returns true if the habit's last completion falls within the previous active period.
-   * For 'specific_days': "previous period" = the most recent previous active day.
+   * Returns the [start, end) window of the previous active period.
+   * For 'specific_days': the most recent previous active day. Returns null
+   * if there's no previous period to check (e.g. a 'specific_days' habit
+   * with no active days configured).
    */
-  wasCompletedInPreviousPeriod(habit: HabitBusiness, now: Date = new Date()): boolean {
-    if (!habit.last_completed_at) return false;
-
+  getPreviousPeriodWindow(habit: HabitBusiness, now: Date = new Date()): { start: Date; end: Date } | null {
     const interval = this.resolveInterval(habit);
-    const lastCompleted = new Date(habit.last_completed_at);
 
     if (interval === 'specific_days') {
       const activeDays = habit.active_days || [];
-      if (activeDays.length === 0) return false;
-      const prevActiveStart = this.getPreviousActiveDayStart(activeDays, now);
-      const prevActiveEnd = new Date(prevActiveStart.getTime() + 24 * 60 * 60 * 1000);
-      return lastCompleted >= prevActiveStart && lastCompleted < prevActiveEnd;
+      if (activeDays.length === 0) return null;
+      const start = this.getPreviousActiveDayStart(activeDays, now);
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      return { start, end };
     }
 
-    const prevStart = this.getPreviousPeriodStart(interval, now);
-    const currStart = this.getCurrentPeriodStart(interval, now);
-    return lastCompleted >= prevStart && lastCompleted < currStart;
+    return { start: this.getPreviousPeriodStart(interval, now), end: this.getCurrentPeriodStart(interval, now) };
+  }
+
+  /**
+   * Returns the true current streak, correcting for the fact that `habit.streak`
+   * is only ever zeroed out by completeHabit() (on next completion) or the
+   * reset_outdated_habits() RPC (only run when Home is opened) — so it can sit
+   * stale (non-zero) after a streak has actually broken. Pure and read-only:
+   * no DB calls, derives everything from fields already on the object plus `now`.
+   */
+  getEffectiveStreak(habit: StreakSnapshot, now: Date = new Date()): number {
+    const storedStreak = habit.streak || 0;
+    if (storedStreak === 0 || !habit.last_completed_at) return storedStreak;
+
+    const interval = this.resolveInterval(habit as HabitBusiness);
+    const lastCompleted = new Date(habit.last_completed_at);
+    const currentPeriodStart = this.getCurrentPeriodStart(interval, now);
+
+    // Already touched in the current period — nothing to correct.
+    if (lastCompleted >= currentPeriodStart) return storedStreak;
+
+    // Rest day for a specific_days habit: there's no "current period" to have
+    // missed yet, so don't second-guess the stored value.
+    if (interval === 'specific_days' && !this.isTodayActiveDay(habit as HabitBusiness, now)) {
+      return storedStreak;
+    }
+
+    const previousWindow = this.getPreviousPeriodWindow(habit as HabitBusiness, now);
+    if (!previousWindow) return storedStreak; // can't evaluate — leave as-is
+
+    // Last activity predates even the immediately-preceding period: at least
+    // one full period elapsed with zero activity. Streak is broken.
+    if (lastCompleted < previousWindow.start) return 0;
+
+    // Last activity falls inside the previous period's window. Since nothing
+    // has run reset_outdated_habits() since, current_progress still holds
+    // that period's final tally — use it to tell whether that period's goal
+    // was actually met, mirroring reset_outdated_habits() server-side.
+    const goalValue = habit.goal_value || 1;
+    const currentProgress = habit.current_progress || 0;
+    return currentProgress >= goalValue ? storedStreak : 0;
   }
 
   /**

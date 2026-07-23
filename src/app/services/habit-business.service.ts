@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToastController } from '@ionic/angular/standalone';
 import { HabitIntervalService } from './habit-interval.service';
 import { SupabaseService } from './supabase.service';
+import { OfflineQueueService, OfflineQueuedError } from './offline-queue.service';
 
 export interface BusinessType {
   id: number;
@@ -132,9 +133,20 @@ export class HabitBusinessService {
   private supabase: SupabaseClient;
   private toastController = inject(ToastController);
   private habitIntervalService = inject(HabitIntervalService);
+  private offlineQueue = inject(OfflineQueueService);
 
   constructor(supabaseService: SupabaseService) {
     this.supabase = supabaseService.client;
+
+    // Let the offline queue replay these mutations later by simply calling
+    // the same public method again — its own validation runs fresh against
+    // live server state at replay time, so a stale queued action fails the
+    // same way a manual retry would.
+    this.offlineQueue.registerHandler('completeHabit', (habitBusinessId: string) => this.completeHabit(habitBusinessId));
+    this.offlineQueue.registerHandler('completeHabitYesterday', (habitBusinessId: string) => this.completeHabitYesterday(habitBusinessId));
+    this.offlineQueue.registerHandler('undoHabitCompletion', (habitBusinessId: string) => this.undoHabitCompletion(habitBusinessId));
+    this.offlineQueue.registerHandler('purchaseStockShares', (stockId: string, shares: number) => this.purchaseStockShares(stockId, shares));
+    this.offlineQueue.registerHandler('sellStockShares', (stockId: string, shares: number) => this.sellStockShares(stockId, shares));
   }
 
   /**
@@ -684,6 +696,10 @@ export class HabitBusinessService {
   }
 
   async completeHabit(habitBusinessId: string): Promise<void> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('completeHabit', [habitBusinessId], 'Complete habit');
+      throw new OfflineQueuedError("You're offline — this completion will sync automatically once you're back online.");
+    }
     try {
       // Validate that we're not trying to complete a habit for a future date
       this.validateNotFutureDate();
@@ -759,12 +775,29 @@ export class HabitBusinessService {
       const now = new Date();
       let newStreak = habitBusiness.streak;
       const isGoalCompleted = currentProgress >= goalValue;
-      
+
       if (isGoalCompleted) {
-        if (this.habitIntervalService.wasCompletedInPreviousPeriod(habitBusiness)) {
-          newStreak += 1; // Previous period completed: streak continues
+        // Was the *previous* period's goal actually reached, not just tapped?
+        // (wasCompletedInPreviousPeriod only looks at last_completed_at, which
+        // is updated on every partial-progress tap — checking the completion
+        // count against goal_value is required for multi-completion habits.)
+        const previousWindow = this.habitIntervalService.getPreviousPeriodWindow(habitBusiness);
+        let previousPeriodGoalMet = false;
+        if (previousWindow) {
+          const { count: previousPeriodCount } = await this.supabase
+            .from('habit_completions')
+            .select('id', { count: 'exact', head: true })
+            .eq('habit_business_id', habitBusinessId)
+            .eq('user_id', user.id)
+            .gte('completed_at', previousWindow.start.toISOString())
+            .lt('completed_at', previousWindow.end.toISOString());
+          previousPeriodGoalMet = (previousPeriodCount || 0) >= goalValue;
+        }
+
+        if (previousPeriodGoalMet) {
+          newStreak += 1; // Previous period's goal was fully met: streak continues
         } else if (habitBusiness.last_completed_at) {
-          newStreak = 1; // Previous period missed: streak resets
+          newStreak = 1; // Previous period's goal was missed: streak resets
         } else {
           newStreak = 1; // First ever completion
         }
@@ -948,32 +981,16 @@ export class HabitBusinessService {
         }
       }
 
-      // Add earnings to user's cash
-      const { data: profile, error: profileError } = await this.supabase
-        .from('user_profiles')
-        .select('cash')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Could not load user profile');
-      }
-
-      const newCash = profile.cash + totalEarnings;
-
-      const { error: updateCashError } = await this.supabase
-        .from('user_profiles')
-        .update({
-          cash: newCash,
-          updated_at: now.toISOString()
-        })
-        .eq('id', user.id);
+      // Add earnings to user's cash atomically (avoids a lost-update race with
+      // concurrent completions/dividends/undos hitting the same profile row)
+      const { error: updateCashError } = await this.supabase.rpc('adjust_user_cash', {
+        p_user_id: user.id,
+        p_delta: totalEarnings
+      });
 
       if (updateCashError) {
         throw new Error('Habit completed but failed to add earnings');
       }
-
-      await this.recalculateNetWorth(user.id);
 
     } catch (error) {
       console.error('Error in completeHabit:', error);
@@ -994,6 +1011,10 @@ export class HabitBusinessService {
    * distributes dividends to stockholders — all at yesterday's rate.
    */
   async completeHabitYesterday(habitBusinessId: string): Promise<void> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('completeHabitYesterday', [habitBusinessId], "Complete yesterday's habit");
+      throw new OfflineQueuedError("You're offline — this will sync automatically once you're back online.");
+    }
     try {
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
       if (userError || !user) throw new Error('User not authenticated');
@@ -1138,26 +1159,14 @@ export class HabitBusinessService {
         console.error('⚠️ Warning: Failed to update stock price:', priceError);
       }
 
-      // Pay earnings to user
-      const { data: profile, error: profileError } = await this.supabase
-        .from('user_profiles')
-        .select('cash')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) throw new Error('Could not load user profile');
-
-      const { error: updateCashError } = await this.supabase
-        .from('user_profiles')
-        .update({
-          cash: profile.cash + totalEarnings,
-          updated_at: now.toISOString()
-        })
-        .eq('id', user.id);
+      // Pay earnings to user atomically (avoids a lost-update race with
+      // concurrent completions/dividends/undos hitting the same profile row)
+      const { error: updateCashError } = await this.supabase.rpc('adjust_user_cash', {
+        p_user_id: user.id,
+        p_delta: totalEarnings
+      });
 
       if (updateCashError) throw new Error('Habit completed but failed to add earnings');
-
-      await this.recalculateNetWorth(user.id);
 
     } catch (error) {
       console.error('Error in completeHabitYesterday:', error);
@@ -1172,6 +1181,10 @@ export class HabitBusinessService {
    * Undo a habit completion for today
    */
   async undoHabitCompletion(habitBusinessId: string): Promise<void> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('undoHabitCompletion', [habitBusinessId], 'Undo habit completion');
+      throw new OfflineQueuedError("You're offline — this undo will sync automatically once you're back online.");
+    }
     try {
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
@@ -1243,9 +1256,16 @@ export class HabitBusinessService {
         throw new Error('Could not find today\'s completion record');
       }
 
-      // Calculate what the streak should be after undoing
-      const previousStreak = Math.max(0, habitBusiness.streak - 1);
-      
+      // Only decrement the streak if today's completion was the one that
+      // actually reached goal_value (completeHabit only advances `streak` on
+      // the goal-completing tap, via current_progress reaching goal_value —
+      // see current_progress being set unconditionally there). Undoing an
+      // earlier, partial-progress tap on a multi-completion habit must leave
+      // the streak untouched.
+      const goalValue = habitBusiness.goal_value || 1;
+      const wasGoalCompletingTap = (habitBusiness.current_progress || 0) >= goalValue;
+      const previousStreak = wasGoalCompletingTap ? Math.max(0, habitBusiness.streak - 1) : habitBusiness.streak;
+
       // Find the previous completion to set as last_completed_at
       const { data: previousCompletion, error: prevError } = await this.supabase
         .from('habit_completions')
@@ -1277,35 +1297,19 @@ export class HabitBusinessService {
         throw updateError;
       }
 
-      // Remove earnings from user's cash
-      const { data: profile, error: profileError } = await this.supabase
-        .from('user_profiles')
-        .select('cash')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Could not load user profile');
-      }
-
+      // Remove earnings from user's cash atomically (avoids a lost-update race
+      // with concurrent completions/dividends/undos hitting the same profile row).
       // Do not clamp to 0: if the earnings were already spent, undo must still
       // remove the full amount (even negative) so purchases made with them
       // aren't left unpaid for — see habit completion/undo exploit.
-      const newCash = profile.cash - todaysCompletion.earnings;
-
-      const { error: updateCashError } = await this.supabase
-        .from('user_profiles')
-        .update({
-          cash: newCash,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      const { error: updateCashError } = await this.supabase.rpc('adjust_user_cash', {
+        p_user_id: user.id,
+        p_delta: -todaysCompletion.earnings
+      });
 
       if (updateCashError) {
         throw new Error('Failed to remove earnings from cash');
       }
-
-      await this.recalculateNetWorth(user.id);
 
       // Delete the completion record
       const { error: deleteError } = await this.supabase
@@ -1580,6 +1584,10 @@ export class HabitBusinessService {
    * Sell stock shares
    */
   async sellStockShares(stockId: string, sharesToSell: number): Promise<any> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('sellStockShares', [stockId, sharesToSell], `Sell ${sharesToSell} share${sharesToSell === 1 ? '' : 's'}`);
+      throw new OfflineQueuedError("You're offline — this sale will sync automatically once you're back online.");
+    }
     try {
       const { data: currentUser } = await this.supabase.auth.getUser();
       if (!currentUser.user) {
@@ -1893,155 +1901,27 @@ export class HabitBusinessService {
    */
   async purchaseStock(stockId: string, shares: number): Promise<void> {
     try {
-      // Get current user
-      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Get stock details
-      const { data: stock, error: stockError } = await this.supabase
-        .from('business_stocks')
-        .select('*')
-        .eq('id', stockId)
-        .single();
-
-      if (stockError || !stock) {
-        throw new Error('Stock not found');
-      }
-
-      if (stock.shares_available < shares) {
-        const errorMsg = `Not enough shares available. Only ${stock.shares_available} shares left.`;
-        await this.showErrorToast(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      const totalCost = stock.current_stock_price * shares;
-
-      // Check user's cash
-      const { data: profile, error: profileError } = await this.supabase
-        .from('user_profiles')
-        .select('cash')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Could not load user profile');
-      }
-
-      if (profile.cash < totalCost) {
-        const errorMsg = `Insufficient funds. Need $${totalCost.toFixed(2)}, but you only have $${profile.cash.toFixed(2)}`;
-        await this.showErrorToast(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      // Update or create stock holding
-      const { data: existingHolding, error: holdingError } = await this.supabase
-        .from('stock_holdings')
-        .select('*')
-        .eq('holder_id', user.id)
-        .eq('stock_id', stockId)
-        .single();
-
-      if (holdingError && holdingError.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error checking stock holdings:', holdingError);
-        await this.showErrorToast('Failed to check your stock holdings. Please try again.');
-        throw holdingError;
-      }
-
-      if (existingHolding) {
-        // Update existing holding
-        const newTotalShares = existingHolding.shares_owned + shares;
-        const newTotalInvested = existingHolding.total_invested + totalCost;
-        const newAveragePrice = newTotalInvested / newTotalShares;
-
-        const { error: updateHoldingError } = await this.supabase
-          .from('stock_holdings')
-          .update({
-            shares_owned: newTotalShares,
-            total_invested: newTotalInvested,
-            average_purchase_price: newAveragePrice,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingHolding.id);
-
-        if (updateHoldingError) {
-          throw updateHoldingError;
-        }
-      } else {
-        // Create new holding
-        const { error: createHoldingError } = await this.supabase
-          .from('stock_holdings')
-          .insert({
-            holder_id: user.id,
-            stock_id: stockId,
-            shares_owned: shares,
-            average_purchase_price: stock.current_stock_price,
-            total_invested: totalCost
-          });
-
-        if (createHoldingError) {
-          throw createHoldingError;
-        }
-      }
-
-      // Update stock availability
-      const { error: updateStockError } = await this.supabase
-        .from('business_stocks')
-        .update({
-          shares_available: stock.shares_available - shares,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', stockId);
-
-      if (updateStockError) {
-        throw updateStockError;
-      }
-
-      // Record transaction
-      const { error: transactionError } = await this.supabase
-        .from('stock_transactions')
-        .insert({
-          stock_id: stockId,
-          buyer_id: user.id,
-          seller_id: null, // IPO purchase
-          shares_traded: shares,
-          price_per_share: stock.current_stock_price,
-          total_cost: totalCost,
-          transaction_type: 'purchase'
-        });
-
-      if (transactionError) {
-        console.error('Error recording transaction:', transactionError);
-      }
-
-      // Deduct cost from user's cash
-      const { error: updateCashError } = await this.supabase
-        .from('user_profiles')
-        .update({ 
-          cash: profile.cash - totalCost,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateCashError) {
-        console.error('Error updating user cash after stock purchase:', updateCashError);
-        await this.showErrorToast('Stock purchased but payment deduction failed. Please contact support.');
-        throw new Error('Stock purchased but failed to deduct payment');
-      }
-
-      await this.recalculateNetWorth(user.id);
+      // Delegate to the atomic purchase_stock_shares RPC (same one
+      // purchaseStockShares() uses) instead of the old multi-step
+      // read-then-write client logic, which was vulnerable to a lost-update
+      // race on cash/shares_available under concurrent purchases.
+      await this.purchaseStockShares(stockId, shares);
 
       // Success message
       await this.showSuccessToast(`✅ Purchased ${shares} shares successfully!`);
 
     } catch (error) {
       console.error('Error in purchaseStock:', error);
+      // Queued-for-offline-replay isn't a failure — the caller shows its
+      // own message for it — so skip the generic error toast here.
+      if (error instanceof OfflineQueuedError) {
+        throw error;
+      }
       // Only show generic error if we haven't already shown a specific one
-      if (error instanceof Error && 
-          !error.message.includes('Insufficient funds') && 
+      if (error instanceof Error &&
+          !error.message.includes('Insufficient funds') &&
           !error.message.includes('Not enough shares')) {
-        await this.showErrorToast('Failed to purchase stock. Please try again.');
+        await this.showErrorToast(error instanceof Error ? error.message : 'Failed to purchase stock. Please try again.');
       }
       throw error;
     }
@@ -2663,7 +2543,10 @@ export class HabitBusinessService {
         priceMultiplier: business.price_multiplier || 1.0,
         sharesAvailable: business.shares_available || 200,
         totalShares: business.total_shares || 1000,
-        potentialDividend: business.potential_dividend || 0
+        potentialDividend: business.potential_dividend || 0,
+        lastCompletedAt: business.last_completed_at,
+        recurrenceInterval: business.recurrence_interval,
+        activeDays: business.active_days || []
       }));
 
     } catch (error) {
@@ -2739,7 +2622,12 @@ export class HabitBusinessService {
           profitLoss: holding.profit_loss,
           totalDividendsEarned: holding.total_dividends_earned,
           dailyDividendRate: holding.daily_dividend_rate,
-          businessStreak: holding.business_streak
+          businessStreak: holding.business_streak,
+          goalValue: holding.goal_value || 1,
+          currentProgress: holding.current_progress || 0,
+          lastCompletedAt: holding.last_completed_at,
+          recurrenceInterval: holding.recurrence_interval,
+          activeDays: holding.active_days || []
         };
       });
       
@@ -2757,6 +2645,10 @@ export class HabitBusinessService {
    * Purchase stock shares
    */
   async purchaseStockShares(stockId: string, shares: number): Promise<any> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('purchaseStockShares', [stockId, shares], `Buy ${shares} share${shares === 1 ? '' : 's'}`);
+      throw new OfflineQueuedError("You're offline — this purchase will sync automatically once you're back online.");
+    }
     try {
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
@@ -3066,36 +2958,40 @@ export class HabitBusinessService {
       // Create a complete date range
       const dateRange: { date: string; completed: boolean; streakDay: number }[] = [];
       let currentStreak = 0;
-      
+      const todayStr = this.getLocalDateString(new Date());
+
       // Calculate total days in the range
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       console.log('📊 Generating date range:', totalDays, 'days from', this.getLocalDateString(startDate), 'to', this.getLocalDateString(endDate));
-      
+
       for (let i = 0; i < totalDays; i++) {
         const currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
         const dateStr = this.getLocalDateString(currentDate);
-        
+
         // Check if there was a completion on this date (compare local calendar dates,
         // not raw UTC string prefixes, since completed_at now stores the real completion time)
         const completion = completions?.find(c =>
           c.completed_at && this.getLocalDateString(new Date(c.completed_at)) === dateStr
         );
-        
+
         // Debug for current date or specific dates
-        const today = this.getLocalDateString(new Date());
-        if (dateStr === today || dateStr === '2025-08-20' || i < 5 || i >= totalDays - 5) {
+        if (dateStr === todayStr || dateStr === '2025-08-20' || i < 5 || i >= totalDays - 5) {
           console.log(`🔍 Date ${i + 1}/${totalDays}: ${dateStr} = ${currentDate.toDateString()}, completion:`, completion ? 'YES' : 'NO');
         }
-        
+
         const wasCompleted = !!completion;
-        
+
         // Update streak - use the streak_count from the completion record if available
         if (wasCompleted) {
           currentStreak = completion.streak_count || currentStreak + 1;
+        } else if (dateStr === todayStr) {
+          // Today's period isn't over yet — a missing completion today doesn't mean
+          // the streak broke, it means the day is still in progress. Carry the
+          // streak forward unchanged; it will correctly reset tomorrow if still missed.
         } else {
           currentStreak = 0;
         }
-        
+
         dateRange.push({
           date: dateStr,
           completed: wasCompleted,
@@ -3184,27 +3080,31 @@ export class HabitBusinessService {
       const dateRange: { date: string; completed: boolean; streakDay: number }[] = [];
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       let currentStreak = 0;
+      const todayStr = this.getLocalDateString(new Date());
 
       for (let i = 0; i < totalDays; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         const dateStr = this.getLocalDateString(currentDate);
-        
+
         // Find completion for this date
         const completion = completions?.find((c: any) => {
           const completionDate = this.getLocalDateString(new Date(c.completed_at));
           return completionDate === dateStr;
         });
-        
+
         const wasCompleted = !!completion;
-        
+
         // Update streak
         if (wasCompleted) {
           currentStreak = completion.streak_count || currentStreak + 1;
+        } else if (dateStr === todayStr) {
+          // Today's period isn't over yet — don't treat a missing completion
+          // today as a break; carry the streak forward unchanged.
         } else {
           currentStreak = 0;
         }
-        
+
         dateRange.push({
           date: dateStr,
           completed: wasCompleted,
@@ -3278,25 +3178,29 @@ export class HabitBusinessService {
       const dateRange: { date: string; completed: boolean; streakDay: number }[] = [];
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       let currentStreak = 0;
+      const todayStr = this.getLocalDateString(new Date());
 
       for (let i = 0; i < totalDays; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         const dateStr = this.getLocalDateString(currentDate);
-        
+
         const completion = completions?.find((c: any) => {
           const completionDate = this.getLocalDateString(new Date(c.completed_at));
           return completionDate === dateStr;
         });
-        
+
         const wasCompleted = !!completion;
-        
+
         if (wasCompleted) {
           currentStreak = completion.streak_count || currentStreak + 1;
+        } else if (dateStr === todayStr) {
+          // Today's period isn't over yet — don't treat a missing completion
+          // today as a break; carry the streak forward unchanged.
         } else {
           currentStreak = 0;
         }
-        
+
         dateRange.push({
           date: dateStr,
           completed: wasCompleted,

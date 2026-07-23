@@ -12,6 +12,7 @@ import { AuthService } from '../services/auth.service';
 import { SettingsService } from '../services/settings.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
+import { OfflineQueuedError, OfflineQueueService } from '../services/offline-queue.service';
 import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
@@ -19,6 +20,7 @@ import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
+import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
 import { addIcons } from 'ionicons';
 import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
 
@@ -26,7 +28,7 @@ import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, 
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, StockChartComponent],
 })
 export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;
@@ -73,6 +75,10 @@ export class HomePage implements OnInit, OnDestroy {
   countdowns: Record<string, string> = {};
   private tickSub?: Subscription;
 
+  // Actions queued while offline, waiting to sync (see OfflineQueueService)
+  pendingSyncCount = 0;
+  private pendingSyncSub?: Subscription;
+
   constructor(
     private router: Router,
     private authService: AuthService,
@@ -84,7 +90,8 @@ export class HomePage implements OnInit, OnDestroy {
     private alertController: AlertController,
     private modalController: ModalController,
     private habitIntervalService: HabitIntervalService,
-    private countdownTickService: CountdownTickService
+    private countdownTickService: CountdownTickService,
+    private offlineQueueService: OfflineQueueService
   ) {
     addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield });
     this.setRandomTagline();
@@ -330,14 +337,14 @@ export class HomePage implements OnInit, OnDestroy {
 
     } catch (error) {
       console.error('Error completing habit:', error);
-      
-      // Show error toast instead of blocking alert
+
+      const isOfflineQueued = error instanceof OfflineQueuedError;
       const errorMessage = (error as any)?.message || 'Unknown error occurred';
       const errorToast = await this.toastController.create({
-        message: `❌ Failed to complete habit: ${errorMessage}`,
+        message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to complete habit: ${errorMessage}`,
         duration: 3000,
         position: 'top',
-        color: 'danger'
+        color: isOfflineQueued ? 'warning' : 'danger'
       });
       await errorToast.present();
     }
@@ -400,6 +407,11 @@ export class HomePage implements OnInit, OnDestroy {
     return this.habitIntervalService.getNextActiveDayLabel(habitBusiness.active_days || []);
   }
 
+  /** True current streak, correcting for a stale (not-yet-reset) streak column. */
+  getEffectiveStreak(habitBusiness: HabitBusiness): number {
+    return this.habitIntervalService.getEffectiveStreak(habitBusiness);
+  }
+
   /** Active day DOW array for chip rendering (0=Sun…6=Sat). */
   readonly allDows = [0, 1, 2, 3, 4, 5, 6];
   readonly dayChipLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -435,14 +447,14 @@ export class HomePage implements OnInit, OnDestroy {
       
     } catch (error) {
       console.error('Error undoing habit completion:', error);
-      
-      // Show error toast
+
+      const isOfflineQueued = error instanceof OfflineQueuedError;
       const errorMessage = (error as any)?.message || 'Unknown error occurred';
       const errorToast = await this.toastController.create({
-        message: `❌ Failed to undo completion: ${errorMessage}`,
+        message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to undo completion: ${errorMessage}`,
         duration: 3000,
         position: 'top',
-        color: 'danger'
+        color: isOfflineQueued ? 'warning' : 'danger'
       });
       await errorToast.present();
     }
@@ -708,7 +720,7 @@ export class HomePage implements OnInit, OnDestroy {
   } {
     // The stored earnings_per_completion is the base rate without multipliers
     const baseEarnings = habitBusiness.earnings_per_completion;
-    const currentStreak = habitBusiness.streak || 0;
+    const currentStreak = this.habitIntervalService.getEffectiveStreak(habitBusiness);
     
     // Calculate what the next completion will earn using Option A logic
     // The service increments streak first, then applies conservative multiplier
@@ -874,11 +886,15 @@ export class HomePage implements OnInit, OnDestroy {
         this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
       });
     });
+    this.pendingSyncSub = this.offlineQueueService.pendingCount$.subscribe(
+      count => (this.pendingSyncCount = count)
+    );
   }
 
   ngOnDestroy() {
     this.tickSub?.unsubscribe();
     this.tapToCompleteSub?.unsubscribe();
+    this.pendingSyncSub?.unsubscribe();
     this.countdownTickService.unregister();
     this.stopAutoCarousel();
     // Clean up any ongoing hold timers
@@ -1042,56 +1058,80 @@ export class HomePage implements OnInit, OnDestroy {
    * Show a prompt when the user tries to complete a habit they missed yesterday.
    * Lets them choose to mark yesterday or today as complete.
    */
-  private async showMissedYesterdayAlert(habitBusiness: HabitBusiness) {
-    const alert = await this.alertController.create({
-      header: '⏰ Forgot to mark your habit yesterday?',
-      message: 'You missed marking this habit yesterday. Did you complete it? You can still mark it as complete.\n\nSelect which day to complete:',
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel'
-        },
-        {
-          text: 'Yesterday',
-          handler: () => {
-            // Run async in background so the alert closes immediately
-            (async () => {
-              try {
-                await this.habitBusinessService.completeHabitYesterday(habitBusiness.id);
-                const toast = await this.toastController.create({
-                  message: `✅ "${habitBusiness.business_name}" marked complete for yesterday! Earnings added.`,
-                  duration: 3000,
-                  position: 'top',
-                  color: 'success'
-                });
-                await toast.present();
-                this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-                await this.loadCurrentUser();
-                await this.loadDashboardData();
-              } catch (error) {
-                const errorMessage = (error as any)?.message || 'Unknown error occurred';
-                const errorToast = await this.toastController.create({
-                  message: `❌ Failed: ${errorMessage}`,
-                  duration: 3000,
-                  position: 'top',
-                  color: 'danger'
-                });
-                await errorToast.present();
-              }
-            })();
-          }
-        },
-        {
-          text: 'Today',
-          handler: () => {
-            (async () => {
-              await this.completeHabitBusiness(habitBusiness);
-            })();
-          }
+  private async showMissedYesterdayAlert(habitBusiness: HabitBusiness): Promise<void> {
+    // The alert itself dismisses immediately on tap (buttons run their work
+    // in the background rather than blocking the dialog), but callers
+    // (handleCompleteTap/completeHolding) rely on this promise to know when
+    // it's safe to clear their "isCompleting" guard — resolving as soon as
+    // alert.present() does (instead of waiting for the background work)
+    // would re-enable the complete button/hold gesture before the pending
+    // completion actually finishes, allowing a second, overlapping tap.
+    return new Promise<void>((resolve) => {
+      let resolved = false;
+      const done = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
         }
-      ]
+      };
+
+      this.alertController.create({
+        header: '⏰ Forgot to mark your habit yesterday?',
+        message: 'You missed marking this habit yesterday. Did you complete it? You can still mark it as complete.\n\nSelect which day to complete:',
+        buttons: [
+          {
+            text: 'Cancel',
+            role: 'cancel',
+            handler: () => done()
+          },
+          {
+            text: 'Yesterday',
+            handler: () => {
+              // Run async in background so the alert closes immediately
+              (async () => {
+                try {
+                  await this.habitBusinessService.completeHabitYesterday(habitBusiness.id);
+                  const toast = await this.toastController.create({
+                    message: `✅ "${habitBusiness.business_name}" marked complete for yesterday! Earnings added.`,
+                    duration: 3000,
+                    position: 'top',
+                    color: 'success'
+                  });
+                  await toast.present();
+                  this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+                  await this.loadCurrentUser();
+                  await this.loadDashboardData();
+                } catch (error) {
+                  const isOfflineQueued = error instanceof OfflineQueuedError;
+                  const errorMessage = (error as any)?.message || 'Unknown error occurred';
+                  const errorToast = await this.toastController.create({
+                    message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed: ${errorMessage}`,
+                    duration: 3000,
+                    position: 'top',
+                    color: isOfflineQueued ? 'warning' : 'danger'
+                  });
+                  await errorToast.present();
+                } finally {
+                  done();
+                }
+              })();
+            }
+          },
+          {
+            text: 'Today',
+            handler: () => {
+              (async () => {
+                try {
+                  await this.completeHabitBusiness(habitBusiness);
+                } finally {
+                  done();
+                }
+              })();
+            }
+          }
+        ]
+      }).then(alert => alert.present());
     });
-    await alert.present();
   }
 
   /**
@@ -1332,12 +1372,14 @@ export class HomePage implements OnInit, OnDestroy {
       
     } catch (error) {
       console.error('Error undoing completion:', error);
-      
+
+      const isOfflineQueued = error instanceof OfflineQueuedError;
+      const errorMessage = (error as any)?.message || 'Unknown error';
       const errorToast = await this.toastController.create({
-        message: `❌ Failed to undo completion: ${(error as any)?.message || 'Unknown error'}`,
+        message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to undo completion: ${errorMessage}`,
         duration: 3000,
         position: 'top',
-        color: 'danger'
+        color: isOfflineQueued ? 'warning' : 'danger'
       });
       await errorToast.present();
     }
