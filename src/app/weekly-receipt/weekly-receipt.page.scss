@@ -1,5 +1,15 @@
 // Weekly Receipt — styled to match the rest of the app (Adventure Capitalist gold/dark theme)
 
+ion-toolbar {
+  ion-title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+  }
+}
+
 .scrollable-content {
   height: 100%;
   overflow-y: auto;
