@@ -248,7 +248,11 @@
                       >
                     </ng-container>
                     <span
-                      *ngIf="!notification.type || (notification.type !== 'habit_reminder' && notification.type !== 'stockholder_reminder' && notification.type !== 'friend_milestone')"
+                      *ngIf="notification.type === 'general_achievement'"
+                      >{{ notification.metadata?.achievement_emoji || '🏅' }}</span
+                    >
+                    <span
+                      *ngIf="!notification.type || (notification.type !== 'habit_reminder' && notification.type !== 'stockholder_reminder' && notification.type !== 'friend_milestone' && notification.type !== 'general_achievement')"
                       >🔔</span
                     >
                   </div>
