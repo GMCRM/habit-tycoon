@@ -67,6 +67,14 @@ interface GeneralAchievementCategoryGroup {
   earnedCount: number;
 }
 
+interface AchievementDetail {
+  emoji: string;
+  label: string;
+  description: string;
+  earned: boolean;
+  progressLabel?: string;
+}
+
 const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string; icon: string }> = {
   net_worth: { label: 'Net Worth', icon: '💵' },
   business: { label: 'Business Empire', icon: '🏢' },
@@ -122,6 +130,8 @@ export class WeeklyReceiptPage implements OnInit {
   totalEarnedGeneral = 0;
   totalPossibleGeneral = 0;
   generalLegendExpanded = false;
+
+  selectedAchievement: AchievementDetail | null = null;
 
   constructor(
     private receiptService: WeeklyReceiptService,
@@ -221,6 +231,31 @@ export class WeeklyReceiptPage implements OnInit {
 
   toggleLegend() {
     this.legendExpanded = !this.legendExpanded;
+  }
+
+  openMilestoneDetail(milestone: HabitMilestoneState) {
+    this.selectedAchievement = {
+      emoji: milestone.emoji,
+      label: milestone.label,
+      description: milestone.description,
+      earned: milestone.earned,
+      progressLabel: milestone.earned ? undefined : this.milestoneProgressLabel(milestone),
+    };
+  }
+
+  openGeneralDetail(achievement: GeneralAchievementState) {
+    this.selectedAchievement = {
+      emoji: achievement.emoji,
+      label: achievement.label,
+      description: achievement.description,
+      earned: achievement.earned,
+      progressLabel:
+        achievement.earned || !achievement.metric ? undefined : this.generalProgressLabel(achievement),
+    };
+  }
+
+  closeAchievementDetail() {
+    this.selectedAchievement = null;
   }
 
   onAchievementsSubTabChange(event: any) {

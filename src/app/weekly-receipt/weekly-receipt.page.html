@@ -145,10 +145,10 @@
         <!-- Habit / General sub-tab toggle -->
         <ion-segment [value]="achievementsSubTab" (ionChange)="onAchievementsSubTabChange($event)" class="receipt-tabs">
           <ion-segment-button value="habits">
-            <ion-label>Habit Achievements</ion-label>
+            <ion-label>Habit</ion-label>
           </ion-segment-button>
           <ion-segment-button value="general">
-            <ion-label>General Achievements</ion-label>
+            <ion-label>General</ion-label>
           </ion-segment-button>
         </ion-segment>
 
@@ -228,6 +228,12 @@
                   class="badge"
                   *ngFor="let m of ha.milestones"
                   [class.earned]="m.earned"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="m.label + ' achievement details'"
+                  (click)="openMilestoneDetail(m)"
+                  (keydown.enter)="openMilestoneDetail(m)"
+                  (keydown.space)="openMilestoneDetail(m)"
                 >
                   <div class="badge-emoji-wrap">
                     <span class="badge-emoji">{{ m.emoji }}</span>
@@ -307,6 +313,12 @@
                   class="badge"
                   *ngFor="let a of cat.achievements"
                   [class.earned]="a.earned"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="a.label + ' achievement details'"
+                  (click)="openGeneralDetail(a)"
+                  (keydown.enter)="openGeneralDetail(a)"
+                  (keydown.space)="openGeneralDetail(a)"
                 >
                   <div class="badge-emoji-wrap">
                     <span class="badge-emoji">{{ a.emoji }}</span>
@@ -379,6 +391,39 @@
             {{ receipt.net >= 0 ? '+' : '-' }}${{ formatMoney(receipt.net < 0 ? receipt.net * -1 : receipt.net) }}
           </div>
         </div>
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>
+
+<!-- Achievement detail popup -->
+<ion-modal
+  class="achievement-modal"
+  [isOpen]="!!selectedAchievement"
+  (didDismiss)="closeAchievementDetail()"
+>
+  <ng-template>
+    <div class="achievement-modal-content" *ngIf="selectedAchievement as sel">
+      <div class="achievement-modal-header">
+        <button class="achievement-modal-close" (click)="closeAchievementDetail()" aria-label="Close">
+          <ion-icon name="close"></ion-icon>
+        </button>
+      </div>
+
+      <div class="achievement-modal-emoji-wrap">
+        <span class="achievement-modal-emoji">{{ sel.emoji }}</span>
+        <ion-icon *ngIf="!sel.earned" name="lock-closed-outline" class="achievement-modal-lock"></ion-icon>
+      </div>
+
+      <h2 class="achievement-modal-label">{{ sel.label }}</h2>
+      <div class="achievement-modal-status" [class.earned]="sel.earned">
+        {{ sel.earned ? 'Earned' : 'Locked' }}
+      </div>
+
+      <p class="achievement-modal-description">{{ sel.description }}</p>
+
+      <div class="achievement-modal-progress" *ngIf="!sel.earned && sel.progressLabel">
+        Progress: {{ sel.progressLabel }}
       </div>
     </div>
   </ng-template>
