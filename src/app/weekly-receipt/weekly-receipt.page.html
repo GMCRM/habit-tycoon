@@ -102,7 +102,7 @@
         <div class="day-section" *ngFor="let day of receipt.days">
           <div class="day-header">
             <div class="day-header-left">
-              <span class="day-name">{{ day.dayName }}</span>
+              <span class="day-name" *ngIf="!day.isToday">{{ day.dayName }}</span>
               <span class="day-date">{{ day.dateLabel }}</span>
               <span class="day-today-tag" *ngIf="day.isToday">Today</span>
             </div>
