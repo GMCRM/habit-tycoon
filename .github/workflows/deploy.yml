@@ -65,7 +65,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add www index.html 3rdpartylicenses.txt prerendered-routes.json assets main-*.js polyfills-*.js styles-*.css chunk-*.js
+          # `-A --` (not a bare `git add <glob>`) so pathspec matching finds
+          # files that were tracked, then rm'd above and no longer exist on
+          # disk — a shell glob can't match those, which used to leave every
+          # prior build's stale hashed files sitting around as untracked
+          # deletions forever.
+          git add -A -- www index.html 3rdpartylicenses.txt prerendered-routes.json assets 'main-*.js' 'polyfills-*.js' 'styles-*.css' 'chunk-*.js'
           if git diff --cached --quiet; then
             echo "Build output unchanged — nothing to sync."
             exit 0
