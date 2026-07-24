@@ -1159,6 +1159,33 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
+   * Format dividends earned for the portfolio list: exact below 1k,
+   * abbreviated (1.1k, 20.4k, 100.2k, 2.4M, 1.2T) at or above 1k.
+   */
+  formatDividendsAbbreviated(amount: number): string {
+    const value = amount || 0;
+    if (value >= 1000000000000) {
+      return `${(value / 1000000000000).toFixed(1)}T`;
+    } else if (value >= 1000000000) {
+      return `${(value / 1000000000).toFixed(1)}B`;
+    } else if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}k`;
+    }
+    return value.toFixed(2);
+  }
+
+  async showTotalDividendsEarned(holding: any) {
+    const alert = await this.alertController.create({
+      header: 'Total Dividends Earned',
+      message: this.formatCurrency(holding.totalDividendsEarned || 0),
+      buttons: ['OK']
+    });
+    await alert.present();
+  }
+
+  /**
    * Format large numbers with abbreviations (K, M, B, T)
    */
   formatLargeNumber(amount: number): string {

@@ -703,14 +703,7 @@ ion-content {
           flex-direction: column;
           align-items: flex-end;
           gap: 4px;
-          
-          .current-price {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--ion-color-primary);
-            text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
-          }
-          
+
           .price-change {
             font-size: 0.8rem;
             padding: 2px 6px;
@@ -741,8 +734,17 @@ ion-content {
             color: rgba(255, 255, 255, 0.7);
           }
         }
+
+        .holding-current-price {
+          text-align: center;
+          font-size: 1.2rem;
+          font-weight: bold;
+          color: #10dc60;
+          text-shadow: 0 0 6px rgba(16, 220, 96, 0.3);
+          margin-top: 8px;
+        }
       }
-      
+
       .earnings-section {
         text-align: center;
         min-width: 120px;
@@ -1304,13 +1306,13 @@ ion-content {
           .price-badge {
             align-items: flex-end;
 
-            .current-price {
-              font-size: 1.1rem;
-            }
-            
             .shares-owned {
               font-size: 0.75rem;
             }
+          }
+
+          .holding-current-price {
+            font-size: 1.1rem;
           }
         }
         

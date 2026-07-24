@@ -540,9 +540,6 @@
                 >
                   <h3 class="business-name">{{ holding.businessName }}</h3>
                   <div class="price-badge">
-                    <span class="current-price"
-                      >${{ (holding.currentPrice || 0) | number: '1.2-2' }}</span
-                    >
                     <span class="shares-owned"
                       >{{ holding.sharesOwned }} shares</span
                     >
@@ -562,10 +559,14 @@
                     <div class="stat-label">Invested</div>
                     <div class="stat-value">${{ holding.totalInvested }}</div>
                   </div>
-                  <div class="stat-item">
-                    <div class="stat-label">Dividends Earned</div>
+                  <div
+                    class="stat-item"
+                    (click)="showTotalDividendsEarned(holding)"
+                    style="cursor: pointer"
+                  >
+                    <div class="stat-label">Dividends</div>
                     <div class="stat-value dividend-potential">
-                      ${{ (holding.totalDividendsEarned || 0).toFixed(2) }}
+                      ${{ formatDividendsAbbreviated(holding.totalDividendsEarned || 0) }}
                     </div>
                   </div>
                   <div class="stat-item">
@@ -633,6 +634,10 @@
                       </ion-button>
                     </div>
                   </div>
+                </div>
+
+                <div class="holding-current-price">
+                  ${{ (holding.currentPrice || 0) | number: '1.2-2' }}
                 </div>
 
                 <!-- Habit Grid showing habit completion pattern -->
