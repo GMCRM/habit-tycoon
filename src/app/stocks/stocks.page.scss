@@ -697,52 +697,6 @@ ion-content {
           }
         }
         
-        // Price badge styling for stocks
-        .price-badge {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 4px;
-
-          .price-change {
-            font-size: 0.8rem;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-weight: 600;
-            
-            &.price-up {
-              color: #10dc60;
-              background: rgba(16, 220, 96, 0.15);
-              border: 1px solid rgba(16, 220, 96, 0.3);
-            }
-            
-            &.price-down {
-              color: #ff4757;
-              background: rgba(255, 71, 87, 0.15);
-              border: 1px solid rgba(255, 71, 87, 0.3);
-            }
-            
-            &.price-neutral {
-              color: #b0b0b0;
-              background: rgba(176, 176, 176, 0.15);
-              border: 1px solid rgba(176, 176, 176, 0.3);
-            }
-          }
-          
-          .shares-owned {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-          }
-        }
-
-        .holding-current-price {
-          text-align: center;
-          font-size: 1.2rem;
-          font-weight: bold;
-          color: #10dc60;
-          text-shadow: 0 0 6px rgba(16, 220, 96, 0.3);
-          margin-top: 8px;
-        }
       }
 
       .earnings-section {
@@ -787,36 +741,57 @@ ion-content {
           .profit-loss {
             font-size: 0.9rem;
             font-weight: 600;
-            
+
             &.profit {
               color: #10dc60;
             }
-            
+
             &.loss {
               color: #f53d3d;
             }
+
+            .invested-note {
+              font-weight: 500;
+              color: rgba(255, 255, 255, 0.55);
+            }
           }
         }
-        
+
         .checkin-action {
           margin-top: 8px;
-          
+
           ion-button {
             --border-radius: 8px;
             font-size: 0.85rem;
             font-weight: 600;
-            
+
             &[color="success"] {
               --background: var(--earnings-color);
               --color: #000000;
               --box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
             }
-            
+
             &[color="secondary"] {
               --background: rgba(255, 165, 0, 0.8);
               --color: #000000;
               --box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
             }
+          }
+        }
+
+        .holding-actions-row {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          align-items: center;
+          gap: 8px;
+          margin-top: 8px;
+
+          ion-button {
+            --border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 0;
           }
         }
       }
@@ -1257,19 +1232,6 @@ ion-content {
                 overflow: hidden;
                 text-overflow: ellipsis;
               }
-
-              // Portfolio's action-buttons row: always its own full-width row
-              // instead of squeezing 3 buttons into a stat-column
-              &.holding-actions-stat {
-                flex: 1 1 100%;
-                min-width: 100%;
-              }
-            }
-
-            .holding-actions-buttons {
-              flex-wrap: wrap;
-              justify-content: center;
-              row-gap: 8px;
             }
           }
           
@@ -1303,29 +1265,18 @@ ion-content {
             }
           }
           
-          .price-badge {
-            align-items: flex-end;
-
-            .shares-owned {
-              font-size: 0.75rem;
-            }
-          }
-
-          .holding-current-price {
-            font-size: 1.1rem;
-          }
         }
-        
+
         .earnings-section {
           min-width: auto;
           width: 100%;
           margin-top: 8px;
-          
+
           .earnings-total {
             .total-amount {
               font-size: 1.2rem;
             }
-            
+
             .earnings-label {
               font-size: 0.7rem;
             }
@@ -1333,13 +1284,19 @@ ion-content {
           
           .checkin-action {
             margin-top: 6px;
-            
+
             ion-button {
               font-size: 0.8rem;
               --padding-start: 12px;
               --padding-end: 12px;
               --padding-top: 8px;
               --padding-bottom: 8px;
+            }
+          }
+
+          .holding-actions-row {
+            ion-button {
+              font-size: 0.75rem;
             }
           }
         }

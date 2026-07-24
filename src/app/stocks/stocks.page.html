@@ -531,33 +531,21 @@
                 {{ holding.businessIcon || '📈' }}
               </div>
               <div class="business-info">
-                <div
-                  style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                  "
-                >
-                  <h3 class="business-name">{{ holding.businessName }}</h3>
-                  <div class="price-badge">
-                    <span class="shares-owned"
-                      >{{ holding.sharesOwned }} shares</span
-                    >
-                    <span
-                      class="shares-owned"
-                      *ngIf="getBusinessForHolding(holding) as business"
-                      >{{ business.sharesAvailable }} left to buy</span
-                    >
-                  </div>
-                </div>
+                <h3 class="business-name">{{ holding.businessName }}</h3>
                 <div class="owner-section">
                   <div class="owner-label">Business Owner:</div>
                   <div class="owner-name">{{ holding.ownerName }}</div>
                 </div>
                 <div class="habit-stats">
                   <div class="stat-item">
-                    <div class="stat-label">Invested</div>
-                    <div class="stat-value">${{ holding.totalInvested }}</div>
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-value streak">
+                      {{ getEffectiveStreakForHolding(holding) }} days
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">Owned</div>
+                    <div class="stat-value">{{ holding.sharesOwned }} shares</div>
                   </div>
                   <div
                     class="stat-item"
@@ -569,79 +557,9 @@
                       ${{ formatDividendsAbbreviated(holding.totalDividendsEarned || 0) }}
                     </div>
                   </div>
-                  <div class="stat-item">
-                    <div class="stat-label">Streak</div>
-                    <div class="stat-value streak">
-                      {{ getEffectiveStreakForHolding(holding) }} days
-                    </div>
-                  </div>
-                  <div class="stat-item holding-actions-stat">
-                    <div
-                      class="holding-actions-buttons"
-                      style="display: flex; gap: 8px; align-items: center"
-                    >
-                      <ion-button
-                        *ngIf="canBuyMoreShares(holding)"
-                        fill="outline"
-                        size="small"
-                        color="success"
-                        (click)="openBuyModal(getBusinessForHolding(holding))"
-                        [disabled]="isLoading"
-                        class="buy-more-button"
-                      >
-                        <ion-icon name="add-circle" slot="start"></ion-icon>
-                        Buy
-                      </ion-button>
-                      <ion-button
-                        fill="outline"
-                        size="small"
-                        color="warning"
-                        (click)="openSellModal(holding)"
-                        class="sell-button"
-                      >
-                        <ion-icon name="trending-down" slot="start"></ion-icon>
-                        Sell
-                      </ion-button>
-                      <ion-button
-                        fill="clear"
-                        size="small"
-                        color="tertiary"
-                        (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
-                        class="stockholders-button"
-                      >
-                        <ion-icon name="people" slot="icon-only"></ion-icon>
-                      </ion-button>
-                      <ion-button
-                        fill="clear"
-                        size="small"
-                        (click)="sendReminder(holding)"
-                        class="remind-button"
-                        [disabled]="isRemindButtonDisabled(holding)"
-                        [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                        [style.--color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                        [style.opacity]="isRemindButtonDisabled(holding) ? '0.5' : '1'"
-                      >
-                        <span
-                          [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                          >👉</span
-                        >
-                        <span
-                          [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                        >
-                          {{ hasAlreadyRemindedToday(holding.businessId) ?
-                          'Reminded' : 'Remind' }}
-                        </span>
-                      </ion-button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="holding-current-price">
-                  ${{ (holding.currentPrice || 0) | number: '1.2-2' }}
                 </div>
 
                 <!-- Habit Grid showing habit completion pattern -->
-                <!-- DEBUG: stockId={{holding.stockId}} -->
                 <div class="habit-grid-wrapper">
                   <app-habit-grid
                     [businessId]="holding.stockId"
@@ -662,6 +580,105 @@
                     [currentStreak]="getEffectiveStreakForHolding(holding)"
                   >
                   </app-stock-chart>
+                </div>
+              </div>
+
+              <!-- Vertical separator line -->
+              <div
+                style="
+                  width: 1px;
+                  background: linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    var(--ion-color-medium-tint) 10%,
+                    var(--ion-color-medium) 50%,
+                    var(--ion-color-medium-tint) 90%,
+                    transparent 100%
+                  );
+                  margin: 0 16px;
+                  align-self: stretch;
+                "
+              ></div>
+
+              <div class="earnings-section">
+                <div class="earnings-total">
+                  <div
+                    class="total-amount"
+                    [class.profit]="holding.profitLoss >= 0"
+                    [class.loss]="holding.profitLoss < 0"
+                  >
+                    ${{ (holding.currentPrice || 0) | number: '1.2-2' }}
+                  </div>
+                  <div class="earnings-label">current price</div>
+                  <div
+                    class="profit-loss"
+                    [class.profit]="holding.profitLoss >= 0"
+                    [class.loss]="holding.profitLoss < 0"
+                  >
+                    {{ holding.profitLoss >= 0 ? '+' : '' }}${{
+                    holding.profitLoss.toFixed(2) }}
+                    <span class="invested-note"
+                      >(${{ holding.totalInvested }} invested)</span
+                    >
+                  </div>
+                </div>
+
+                <!-- Stockholders Action -->
+                <ion-button
+                  fill="clear"
+                  color="tertiary"
+                  size="small"
+                  (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
+                  style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                >
+                  <ion-icon name="people" slot="icon-only"></ion-icon>
+                </ion-button>
+
+                <div class="holding-actions-row">
+                  <ion-button
+                    *ngIf="canBuyMoreShares(holding)"
+                    fill="solid"
+                    color="success"
+                    size="small"
+                    (click)="openBuyModal(getBusinessForHolding(holding))"
+                    [disabled]="isLoading"
+                    class="buy-more-button"
+                  >
+                    <ion-icon name="add-circle" slot="start"></ion-icon>
+                    Buy ({{ getBusinessForHolding(holding)?.sharesAvailable }}
+                    left)
+                  </ion-button>
+                  <ion-button
+                    fill="outline"
+                    size="small"
+                    color="warning"
+                    (click)="openSellModal(holding)"
+                    class="sell-button"
+                  >
+                    <ion-icon name="trending-down" slot="start"></ion-icon>
+                    Sell
+                  </ion-button>
+                  <ion-button
+                    fill="clear"
+                    size="small"
+                    (click)="sendReminder(holding)"
+                    class="remind-button"
+                    [disabled]="isRemindButtonDisabled(holding)"
+                    [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                    [style.--color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                    [style.opacity]="isRemindButtonDisabled(holding) ? '0.5' : '1'"
+                  >
+                    <span
+                      [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                      >👉</span
+                    >
+                    <span
+                      [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                    >
+                      {{ hasAlreadyRemindedToday(holding.businessId) ?
+                      'Reminded' : 'Remind' }}
+                    </span>
+                  </ion-button>
                 </div>
               </div>
             </div>

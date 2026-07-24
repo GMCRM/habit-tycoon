@@ -754,7 +754,7 @@ export class HabitBusinessService {
     }
   }
 
-  async completeHabit(habitBusinessId: string): Promise<void> {
+  async completeHabit(habitBusinessId: string): Promise<{ earnings: number; streak: number }> {
     if (this.offlineQueue.isOffline()) {
       await this.offlineQueue.enqueue('completeHabit', [habitBusinessId], 'Complete habit');
       throw new OfflineQueuedError("You're offline — this completion will sync automatically once you're back online.");
@@ -1058,11 +1058,13 @@ export class HabitBusinessService {
         throw new Error('Habit completed but failed to add earnings');
       }
 
+      return { earnings: totalEarnings, streak: newStreak };
+
     } catch (error) {
       console.error('Error in completeHabit:', error);
       // Only show generic error if we haven't already shown a specific one
-      if (error instanceof Error && 
-          !error.message.includes('already completed') && 
+      if (error instanceof Error &&
+          !error.message.includes('already completed') &&
           !error.message.includes('Goal already completed')) {
         await this.showErrorToast('Failed to complete habit. Please try again.');
       }
@@ -1251,7 +1253,7 @@ export class HabitBusinessService {
   /**
    * Undo a habit completion for today
    */
-  async undoHabitCompletion(habitBusinessId: string): Promise<void> {
+  async undoHabitCompletion(habitBusinessId: string): Promise<{ earnings: number }> {
     if (this.offlineQueue.isOffline()) {
       await this.offlineQueue.enqueue('undoHabitCompletion', [habitBusinessId], 'Undo habit completion');
       throw new OfflineQueuedError("You're offline — this undo will sync automatically once you're back online.");
@@ -1392,6 +1394,8 @@ export class HabitBusinessService {
         console.error('Error deleting completion record:', deleteError);
         // Continue anyway as the main reversal is done
       }
+
+      return { earnings: todaysCompletion.earnings };
 
     } catch (error) {
       console.error('Error in undoHabitCompletion:', error);

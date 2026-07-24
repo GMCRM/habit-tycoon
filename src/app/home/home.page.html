@@ -149,9 +149,8 @@
         </ion-card>
       </div>
 
-      <!-- Stats Grid -->
-      <!-- Desktop: All 3 cards -->
-      <div class="stats-grid ion-margin-bottom desktop-stats">
+      <!-- Stats Grid: all 3 cards shown together at every screen size -->
+      <div class="stats-grid ion-margin-bottom">
         <ion-card
           class="stat-card"
           [class.clickable-card]="isStatAbbreviated(pendingHabitsCount)"
@@ -196,42 +195,6 @@
             </div>
           </ion-card-content>
         </ion-card>
-      </div>
-
-      <!-- Mobile: Carousel with single card -->
-      <div class="mobile-stats-carousel ion-margin-bottom">
-        <div
-          class="carousel-container"
-          (touchstart)="onStatTouchStart($event)"
-          (touchend)="onStatTouchEnd($event)"
-        >
-          <ion-card
-            class="stat-card carousel-card"
-            *ngIf="statsCards[currentStatIndex] as stat"
-            [class.clickable-card]="isStatAbbreviated(stat.getRawValue())"
-            (click)="showExactStatValue(stat.label, stat.getRawValue(), stat.isCurrency)"
-          >
-            <ion-card-content>
-              <div class="stat-content">
-                <div class="stat-info">
-                  <h2>{{ stat.getValue() }}</h2>
-                  <p>{{ stat.label }}</p>
-                </div>
-              </div>
-            </ion-card-content>
-          </ion-card>
-
-          <!-- Carousel indicators -->
-          <div class="carousel-indicators">
-            <span
-              *ngFor="let stat of statsCards; let i = index"
-              class="indicator"
-              [class.active]="i === currentStatIndex"
-              (click)="currentStatIndex = i; stopAutoCarousel()"
-            >
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- My Habit-Businesses - NO CARD BACKGROUND -->

@@ -863,8 +863,8 @@ ion-modal.achievement-modal {
 
 .badge-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .badge {
@@ -872,7 +872,8 @@ ion-modal.achievement-modal {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 12px 6px;
+  min-width: 0;
+  padding: 10px 4px;
   background: var(--business-item-background);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
@@ -923,6 +924,9 @@ ion-modal.achievement-modal {
     color: rgba(255, 255, 255, 0.85);
     margin-bottom: 4px;
     line-height: 1.2;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
   }
 
   &.earned .badge-label {
@@ -956,9 +960,29 @@ ion-modal.achievement-modal {
   }
 }
 
-@media (min-width: 480px) and (max-width: 767.98px) {
+@media (max-width: 400px) {
+  .habit-achievement-card {
+    padding: 12px;
+  }
+
   .badge-grid {
-    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .badge {
+    padding: 8px 3px;
+
+    .badge-emoji {
+      font-size: 1.5rem;
+    }
+
+    .badge-label {
+      font-size: 0.66rem;
+    }
+
+    .badge-progress-text {
+      font-size: 0.6rem;
+    }
   }
 }
 

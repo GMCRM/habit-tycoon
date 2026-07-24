@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -66,12 +66,6 @@ export class HomePage implements OnInit, OnDestroy {
   ];
   currentTagline = "";
 
-  // Mobile carousel properties for stats cards
-  currentStatIndex = 0;
-  autoCarouselInterval: any = null;
-  isMobileScreen = false;
-  statsCards: any[] = [];
-
   // Countdown timer state
   countdowns: Record<string, string> = {};
   private tickSub?: Subscription;
@@ -96,8 +90,6 @@ export class HomePage implements OnInit, OnDestroy {
   ) {
     addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield, people });
     this.setRandomTagline();
-    this.checkScreenSize();
-    this.setupStatsCards();
   }
 
   /**
@@ -287,14 +279,6 @@ export class HomePage implements OnInit, OnDestroy {
         }).length;
         
         console.log(`📊 Dashboard calculations complete: pending=${this.pendingHabitsCount}, habit earnings=$${this.todaysEarnings.toFixed(2)}, stock dividends=$${this.todaysStockEarnings.toFixed(2)}`);
-        
-        // Update stats cards with new data
-        this.setupStatsCards();
-        
-        // Start carousel if on mobile
-        if (this.isMobileScreen && this.statsCards.length > 0) {
-          this.startAutoCarousel();
-        }
       } else {
         console.warn('⚠️  No current user found, cannot load dashboard data');
       }
@@ -326,11 +310,11 @@ export class HomePage implements OnInit, OnDestroy {
     
     try {
       // Call the actual habit completion service
-      await this.habitBusinessService.completeHabit(habitBusiness.id);
-      
+      const { earnings } = await this.habitBusinessService.completeHabit(habitBusiness.id);
+
       // Show success toast instead of blocking alert
       const toast = await this.toastController.create({
-        message: `🎉 Habit "${habitBusiness.business_name}" completed! +$${habitBusiness.earnings_per_completion} earned`,
+        message: `🎉 Habit "${habitBusiness.business_name}" completed! +$${earnings.toFixed(2)} earned`,
         duration: 3000,
         position: 'top',
         color: 'success'
@@ -436,11 +420,11 @@ export class HomePage implements OnInit, OnDestroy {
     
     try {
       // Call the undo completion service method directly
-      await this.habitBusinessService.undoHabitCompletion(habitBusiness.id);
-      
+      const { earnings } = await this.habitBusinessService.undoHabitCompletion(habitBusiness.id);
+
       // Show success toast
       const toast = await this.toastController.create({
-        message: `↩️ Completion undone for "${habitBusiness.business_name}"! -$${habitBusiness.earnings_per_completion} removed`,
+        message: `↩️ Completion undone for "${habitBusiness.business_name}"! -$${earnings.toFixed(2)} removed`,
         duration: 3000,
         position: 'top',
         color: 'warning'
@@ -852,87 +836,6 @@ export class HomePage implements OnInit, OnDestroy {
   tapToComplete = false;
   private tapToCompleteSub?: Subscription;
 
-  // Carousel methods for mobile stats
-  @HostListener('window:resize', ['$event'])
-  onResize(event: any) {
-    this.checkScreenSize();
-  }
-
-  private checkScreenSize() {
-    const width = window.innerWidth;
-    this.isMobileScreen = width <= 768;
-    
-    if (this.isMobileScreen && this.statsCards.length > 0) {
-      this.startAutoCarousel();
-    } else {
-      this.stopAutoCarousel();
-    }
-  }
-
-  private setupStatsCards() {
-    this.statsCards = [
-      {
-        icon: 'checkmark-circle',
-        color: 'success',
-        getValue: () => this.formatCount(this.pendingHabitsCount),
-        getRawValue: () => this.pendingHabitsCount,
-        isCurrency: false,
-        label: 'Pending Habits'
-      },
-      {
-        icon: 'business',
-        color: 'success',
-        getValue: () => this.formatCurrency(this.todaysEarnings),
-        getRawValue: () => this.todaysEarnings,
-        isCurrency: true,
-        label: "Today's Habit Earnings"
-      },
-      {
-        icon: 'wallet',
-        color: 'secondary',
-        getValue: () => this.formatCurrency(this.todaysStockEarnings),
-        getRawValue: () => this.todaysStockEarnings,
-        isCurrency: true,
-        label: "Today's Stock Dividends"
-      }
-    ];
-  }
-
-  startAutoCarousel() {
-    this.stopAutoCarousel();
-    this.autoCarouselInterval = setInterval(() => {
-      this.nextStat();
-    }, 4000); // Change every 4 seconds
-  }
-
-  stopAutoCarousel() {
-    if (this.autoCarouselInterval) {
-      clearInterval(this.autoCarouselInterval);
-      this.autoCarouselInterval = null;
-    }
-  }
-
-  nextStat() {
-    this.currentStatIndex = (this.currentStatIndex + 1) % this.statsCards.length;
-  }
-
-  previousStat() {
-    this.currentStatIndex = this.currentStatIndex === 0 
-      ? this.statsCards.length - 1 
-      : this.currentStatIndex - 1;
-  }
-
-  onStatTouchStart(event: TouchEvent) {
-    this.stopAutoCarousel(); // Stop auto-rotation when user interacts
-  }
-
-  onStatTouchEnd(event: TouchEvent) {
-    // Restart auto-rotation after user interaction
-    if (this.isMobileScreen && this.statsCards.length > 0) {
-      setTimeout(() => this.startAutoCarousel(), 2000);
-    }
-  }
-
   ngOnInit() {
     this.tapToCompleteSub = this.settingsService.tapToComplete$.subscribe(
       value => (this.tapToComplete = value)
@@ -955,7 +858,6 @@ export class HomePage implements OnInit, OnDestroy {
     this.tapToCompleteSub?.unsubscribe();
     this.pendingSyncSub?.unsubscribe();
     this.countdownTickService.unregister();
-    this.stopAutoCarousel();
     // Clean up any ongoing hold timers
     Object.values(this.holdingStates).forEach(state => {
       if (state.timer) clearTimeout(state.timer);

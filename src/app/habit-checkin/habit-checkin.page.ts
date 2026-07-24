@@ -289,14 +289,12 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
 
   private async executeHabitCompletion(habit: HabitWithCompletion) {
     try {
-      await this.habitBusinessService.completeHabit(habit.id);
-      
-      // Show success message with earnings
-      const nextStreak = habit.streak + 1;
-      const streakMultiplier = nextStreak === 1 ? 0 : Math.min((nextStreak - 1) * 0.1, 1);
-      const earnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
+      const { earnings, streak } = await this.habitBusinessService.completeHabit(habit.id);
+
+      // Show success message with the actual earnings paid out (includes streak
+      // bonus and any stock-ownership boost, unlike a client-side re-estimate)
       await this.showToast(
-        `🎉 Habit completed! You earned $${earnings} (Day ${nextStreak})`, 
+        `🎉 Habit completed! You earned $${earnings.toFixed(2)} (Day ${streak})`,
         'success'
       );
       

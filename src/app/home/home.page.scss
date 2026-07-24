@@ -1208,92 +1208,27 @@ button, span, div, ion-button {
   }
 }
 
-// Mobile responsive stats
-@media (min-width: 769px) {
-  .desktop-stats {
-    display: grid;
-  }
-
-  .mobile-stats-carousel {
-    display: none;
-  }
-}
-
+// Mobile responsive stats — all 3 cards stay side-by-side at every width,
+// they just shrink progressively instead of collapsing into a carousel.
 @media (max-width: 768px) {
-  .desktop-stats {
-    display: none;
-  }
+  .stats-grid {
+    gap: 8px;
+    padding: 0 12px;
 
-  .mobile-stats-carousel {
-    display: block;
-    
-    .carousel-container {
-      position: relative;
-      width: 100%;
-      
-      .carousel-card {
-        margin: 0;
-        width: 100%;
-        min-height: 100px;
-        background: var(--business-item-background);
-        border: var(--business-item-border);
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
-        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        
-        &.clickable-card {
-          cursor: pointer;
-          
-          &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(255, 215, 0, 0.2);
-          }
-          
-          &:active {
-            transform: translateY(0);
-          }
-        }
-        
+    .stat-card {
+      ion-card-content {
+        padding: 10px 6px;
+
         .stat-content {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-
           .stat-info {
             h2 {
-              margin: 0;
-              font-size: 1.5rem;
-              font-weight: bold;
-              color: var(--cash-color);
-              text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+              font-size: 1.25rem;
             }
 
             p {
-              margin: 4px 0 0 0;
-              font-size: 1rem;
-              color: rgba(255, 255, 255, 0.8);
+              font-size: 0.7rem;
+              line-height: 1.2;
             }
-          }
-        }
-      }
-      
-      .carousel-indicators {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 12px;
-        
-        .indicator {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background-color: var(--ion-color-light);
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-          
-          &.active {
-            background-color: var(--ion-color-primary);
           }
         }
       }
@@ -1301,25 +1236,23 @@ button, span, div, ion-button {
   }
 }
 
-// Very small screens - single column layout for stats cards
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 0 16px;
-    
+    gap: 6px;
+    padding: 0 10px;
+
     .stat-card {
       ion-card-content {
-        padding: 14px;
-        
+        padding: 8px 4px;
+
         .stat-content {
           .stat-info {
             h2 {
-              font-size: 1.6rem;
+              font-size: 1.05rem;
             }
 
             p {
-              font-size: 0.85rem;
+              font-size: 0.62rem;
             }
           }
         }
