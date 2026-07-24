@@ -213,20 +213,7 @@
                 {{ business.businessIcon || '🏢' }}
               </div>
               <div class="business-info">
-                <div
-                  style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                  "
-                >
-                  <h3 class="business-name">{{ business.businessName }}</h3>
-                  <div class="price-badge">
-                    <span class="current-price"
-                      >${{ (business.stockPrice || 0) | number: '1.2-2' }}</span
-                    >
-                  </div>
-                </div>
+                <h3 class="business-name">{{ business.businessName }}</h3>
                 <div class="owner-section">
                   <div class="owner-label">Business Owner:</div>
                   <div class="owner-name">{{ business.ownerName }}</div>
