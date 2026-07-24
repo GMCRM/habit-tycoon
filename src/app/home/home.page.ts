@@ -584,8 +584,8 @@ export class HomePage implements OnInit, OnDestroy {
       
       // Show success toast
       const successToast = await this.toastController.create({
-        message: `🎉 Successfully upgraded "${habitBusiness.business_name}" to ${newBusinessType.icon} ${newBusinessType.name}!`,
-        duration: 4000,
+        message: `🎉 Upgraded to ${newBusinessType.icon} ${newBusinessType.name}! Your old "${habitBusiness.business_name}" is now listed on the Marketplace for friends to buy.`,
+        duration: 4500,
         position: 'top',
         color: 'success'
       });
@@ -694,32 +694,30 @@ export class HomePage implements OnInit, OnDestroy {
         return;
       }
 
-      // Calculate sell value (70% of original cost)
-      const originalCost = habitBusiness.cost || 100;
-      const sellValue = Math.floor(originalCost * 0.7);
-      const loss = originalCost - sellValue;
+      // Preview the exact price this business will list for on the Marketplace
+      const listingPrice = this.habitBusinessService.getMarketplaceListingPrice(habitBusiness);
 
       // Show modern confirmation alert
       const alert = await this.alertController.create({
-        header: '🗑️ Sell Habit Business',
-        message: `Are you sure you want to sell "${habitBusiness.business_name}"?\n\n💰 You will receive: $${sellValue}\n⚠️ You will lose: $${loss} from your original investment\n\nThis action cannot be undone.`,
+        header: '🗑️ Delete Habit',
+        message: `Are you sure you want to delete "${habitBusiness.business_name}"?\n\n🏪 It will be listed on the Marketplace for $${listingPrice.toFixed(2)} for 24 hours so a friend can buy it.\n💰 You're guaranteed that $${listingPrice.toFixed(2)} either way — sooner if a friend buys it, otherwise automatically once the listing expires.\n\nThis action cannot be undone.`,
         buttons: [
           {
             text: 'Cancel',
             role: 'cancel'
           },
           {
-            text: 'Sell & Delete',
+            text: 'Delete & List',
             role: 'destructive',
             handler: async () => {
               try {
                 // Call the delete service method
-                const sellValue = await this.habitBusinessService.deleteHabitBusiness(habitBusiness.id);
-                
+                const listingPrice = await this.habitBusinessService.deleteHabitBusiness(habitBusiness.id);
+
                 // Show success toast
                 const successToast = await this.toastController.create({
-                  message: `💰 Habit business "${habitBusiness.business_name}" sold for $${sellValue}!`,
-                  duration: 3000,
+                  message: `🏪 "${habitBusiness.business_name}" is listed on the Marketplace for $${listingPrice.toFixed(2)}!`,
+                  duration: 4000,
                   position: 'top',
                   color: 'success'
                 });

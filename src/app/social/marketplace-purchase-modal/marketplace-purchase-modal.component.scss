@@ -1,0 +1,136 @@
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.purchase-modal-content {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+}
+
+.purchased-business-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--business-item-background);
+  border: var(--business-item-border);
+
+  .business-icon {
+    font-size: 2.5rem;
+  }
+
+  .business-details {
+    h2 {
+      margin: 0 0 4px 0;
+      color: var(--ion-color-primary);
+    }
+
+    p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.section-subtitle {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+  margin: 0 0 16px 0;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.existing-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--business-item-background);
+  border: var(--business-item-border);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover, &:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
+  }
+
+  .option-icon {
+    font-size: 1.8rem;
+  }
+
+  .option-details {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 2px 0;
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.65);
+    }
+  }
+
+  .option-arrow {
+    transform: rotate(180deg);
+    opacity: 0.6;
+  }
+}
+
+.empty-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.day-picker {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  margin: 12px 0;
+
+  .day-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+
+    &.active {
+      background: var(--ion-color-primary);
+      color: #000;
+      border-color: var(--ion-color-primary);
+    }
+  }
+}
+
+.goal-input {
+  width: 100%;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+}
+
+.footer-content {
+  padding: 8px 16px;
+}

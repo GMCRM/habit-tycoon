@@ -56,6 +56,11 @@
             <ion-icon name="people"></ion-icon>
             <ion-label>Friends</ion-label>
           </ion-segment-button>
+          <ion-segment-button value="marketplace">
+            <ion-icon name="storefront"></ion-icon>
+            <ion-label>Marketplace</ion-label>
+            <ion-badge *ngIf="unresolvedPurchase" color="danger">1</ion-badge>
+          </ion-segment-button>
         </ion-segment>
 
         <!-- Friends Tab -->
@@ -506,6 +511,98 @@
                 <ion-icon name="person-add" slot="start"></ion-icon>
                 Add Friends
               </ion-button>
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Marketplace Tab -->
+        <div
+          *ngIf="selectedSegment === 'marketplace'"
+          class="tab-content marketplace-tab"
+        >
+          <div class="marketplace-header">
+            <h2>🏪 Marketplace</h2>
+          </div>
+
+          <ion-card *ngIf="unresolvedPurchase" class="unresolved-purchase-card">
+            <ion-card-content>
+              <div class="unresolved-purchase-info">
+                <div class="unresolved-icon">{{ unresolvedPurchase.business_icon }}</div>
+                <div class="unresolved-details">
+                  <h3>Finish setting up "{{ unresolvedPurchase.business_name }}"</h3>
+                  <p>
+                    You bought this for ${{ unresolvedPurchase.purchase_price | number:'1.2-2' }} —
+                    choose where it goes.
+                  </p>
+                </div>
+                <ion-button
+                  fill="solid"
+                  color="primary"
+                  size="small"
+                  (click)="openResolvePurchaseModal(unresolvedPurchase)"
+                >
+                  Choose
+                </ion-button>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <div *ngIf="isLoadingMarketplace" class="cash-loading">
+            <ion-spinner name="crescent"></ion-spinner>
+          </div>
+
+          <div
+            *ngIf="!isLoadingMarketplace && marketplaceListings.length > 0; else noListings"
+            class="marketplace-list"
+          >
+            <ion-card
+              *ngFor="let listing of marketplaceListings"
+              class="marketplace-listing-card"
+              [class.own-listing]="listing.is_own"
+            >
+              <ion-card-content>
+                <div class="listing-info">
+                  <div class="listing-icon">{{ listing.business_icon }}</div>
+                  <div class="listing-details">
+                    <h3>{{ listing.business_name }}</h3>
+                    <p class="listing-seller">
+                      {{ listing.is_own ? 'Your listing' : listing.seller_name }}
+                    </p>
+                    <div class="listing-meta">
+                      <span class="listing-price">${{ listing.listing_price | number:'1.2-2' }}</span>
+                      <span class="listing-streak" *ngIf="listing.streak_at_listing > 0"
+                        >+{{ getStreakBonusPercent(listing) }}%</span
+                      >
+                      <span class="listing-reason" *ngIf="listing.reason === 'habit_deletion'"
+                        >Guaranteed payout</span
+                      >
+                    </div>
+                    <p class="listing-countdown">
+                      ⏱️ {{ getListingCountdown(listing) }} left
+                    </p>
+                  </div>
+                  <ion-button
+                    *ngIf="!listing.is_own"
+                    fill="solid"
+                    color="success"
+                    size="small"
+                    (click)="buyListing(listing)"
+                  >
+                    Buy
+                  </ion-button>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </div>
+
+          <ng-template #noListings>
+            <div class="empty-state" *ngIf="!isLoadingMarketplace">
+              <ion-icon name="storefront"></ion-icon>
+              <h3>No listings right now</h3>
+              <p>
+                When you or a friend upgrades a business or deletes a habit, it
+                shows up here for 24 hours so friends can buy it.
+              </p>
             </div>
           </ng-template>
         </div>

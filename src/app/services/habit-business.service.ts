@@ -37,6 +37,7 @@ export interface HabitBusiness {
   display_order: number; // User's preferred order for display
   user_custom_order: number; // User's original custom order (for resetting)
   last_upgraded_at?: string; // Last tier-upgrade timestamp; upgrades are rate-limited to once/24h
+  marketplace_base_value?: number | null; // 70% of Marketplace purchase price, when this business was bought via the Marketplace; overrides cost*0.7 for future sell/listing value
   created_at: string;
   updated_at: string;
   business_types?: BusinessType;
@@ -165,6 +166,73 @@ export class HabitBusinessService {
     if (error) {
       console.error('Error recalculating net worth:', error);
     }
+  }
+
+  /**
+   * A business's base sell value (before the streak bonus): 70% of the price
+   * it was last acquired for. Marketplace-sourced businesses use
+   * marketplace_base_value (70% of the purchase price); everything else
+   * falls back to 70% of its business-type cost.
+   */
+  private getBaseSellValue(business: { cost?: number; marketplace_base_value?: number | null }): number {
+    if (business.marketplace_base_value != null) {
+      return business.marketplace_base_value;
+    }
+    return Math.floor((business.cost || 0) * 0.7);
+  }
+
+  /**
+   * Marketplace listing price: base sell value boosted by the habit's current
+   * streak, capped at +100% (a 100-day+ streak), matching the cap already
+   * used for the dividend/stock-price streak multiplier elsewhere.
+   */
+  private calculateMarketplaceListingPrice(baseSellValue: number, streak: number): number {
+    const multiplier = 1 + Math.min(Math.max(streak, 0), 100) * 0.01;
+    return Math.round(baseSellValue * multiplier * 100) / 100;
+  }
+
+  /**
+   * The exact price a business would list for on the Marketplace right now —
+   * used to preview the amount before an upgrade or habit deletion actually
+   * creates the listing (e.g. a confirmation dialog).
+   */
+  getMarketplaceListingPrice(business: { cost?: number; marketplace_base_value?: number | null; streak?: number }): number {
+    return this.calculateMarketplaceListingPrice(this.getBaseSellValue(business), business.streak || 0);
+  }
+
+  /**
+   * Snapshot a business onto the Marketplace before it's overwritten (upgrade)
+   * or deactivated (habit deletion). Returns the frozen listing price.
+   */
+  private async createMarketplaceListing(
+    userId: string,
+    business: HabitBusiness,
+    reason: 'upgrade' | 'habit_deletion'
+  ): Promise<number> {
+    const baseSellValue = this.getBaseSellValue(business);
+    const listingPrice = this.calculateMarketplaceListingPrice(baseSellValue, business.streak || 0);
+
+    const { error } = await this.supabase
+      .from('marketplace_listings')
+      .insert({
+        seller_id: userId,
+        habit_business_id: business.id,
+        business_type_id: business.business_type_id,
+        business_name: business.business_name,
+        business_icon: business.business_icon,
+        base_cost: business.cost,
+        earnings_per_completion: business.earnings_per_completion,
+        base_sell_value: baseSellValue,
+        streak_at_listing: business.streak || 0,
+        listing_price: listingPrice,
+        reason
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    return listingPrice;
   }
 
   /**
@@ -426,6 +494,20 @@ export class HabitBusinessService {
         throw new Error('Invalid new business type');
       }
 
+      // Get the current (pre-upgrade) business details — this is snapshotted onto a
+      // Marketplace listing below, since the update further down mutates this same
+      // row in place and nothing else preserves the old business afterwards.
+      const { data: oldBusiness, error: oldBusinessError } = await this.supabase
+        .from('habit_businesses')
+        .select('*')
+        .eq('id', habitBusinessId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (oldBusinessError || !oldBusiness) {
+        throw new Error('Habit-business not found or you do not have permission to upgrade it');
+      }
+
       // Check if user has enough cash for the upgrade
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
@@ -439,6 +521,15 @@ export class HabitBusinessService {
 
       if (profile.cash < upgradeCost) {
         throw new Error(`Insufficient funds. Need $${upgradeCost}, but you only have $${profile.cash}`);
+      }
+
+      // List the old business on the Marketplace before it's overwritten below.
+      // The upgrade itself always proceeds regardless of whether this insert
+      // succeeds or whether the listing ever sells.
+      try {
+        await this.createMarketplaceListing(user.id, oldBusiness, 'upgrade');
+      } catch (listingError) {
+        console.error('Error creating marketplace listing for upgraded business:', listingError);
       }
 
       // Update the habit-business with new business type details
@@ -584,13 +675,12 @@ export class HabitBusinessService {
         throw new Error('Cannot delete your only habit business! You must have at least one active business.');
       }
 
-      // Calculate sell value: 70% of original cost (to prevent exploitation)
-      // plus the habit's current per-completion pay (base pay + streak bonus)
-      const originalCost = habitBusiness.cost || habitBusiness.business_types?.base_cost || 1;
-      const streakMultiplier = habitBusiness.streak > 1 ? Math.min((habitBusiness.streak - 1) * 0.1, 1) : 0;
-      const baseEarnings = habitBusiness.earnings_per_completion || 0;
-      const perCompletionPay = baseEarnings + baseEarnings * streakMultiplier;
-      const sellValue = Math.floor(originalCost * 0.7) + Math.floor(perCompletionPay);
+      // Deleting a habit no longer pays out instantly — the business is listed on
+      // the Marketplace instead. A friend can buy it within 24h for the listed
+      // price, or (since this listing exists because the player is walking away
+      // from the habit entirely, not upgrading) the seller is guaranteed the
+      // payout automatically once the listing expires unsold.
+      const listingPrice = await this.createMarketplaceListing(user.id, habitBusiness, 'habit_deletion');
 
       // Deactivate the habit-business (soft delete to preserve history)
       // Note: Database trigger will automatically refund all stockholders at current stock price
@@ -607,53 +697,13 @@ export class HabitBusinessService {
         throw deleteError;
       }
 
-      // Add sell value to user's cash
-      const { data: profile, error: profileError } = await this.supabase
-        .from('user_profiles')
-        .select('cash')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Could not load user profile');
-      }
-
-      const newCash = profile.cash + sellValue;
-
-      const { error: updateCashError } = await this.supabase
-        .from('user_profiles')
-        .update({
-          cash: newCash,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateCashError) {
-        console.error('Error updating user cash after sale:', updateCashError);
-        throw new Error('Habit business deleted but failed to add sale proceeds');
-      }
-
-      // Business is now inactive, so its value has dropped out of net worth too — recalc from scratch
+      // Business is now inactive, so its value has dropped out of net worth too — recalc from scratch.
+      // Cash isn't credited yet, and the Weekly Receipt's business_sales row isn't logged
+      // yet either — both happen at settlement time (purchase_marketplace_listing or
+      // resolve_expired_marketplace_listings), whichever pays the seller first.
       await this.recalculateNetWorth(user.id);
 
-      // Record the sale for the Weekly Receipt page. Best-effort: the sale itself
-      // already completed above, so a logging failure here shouldn't surface as an error.
-      const { error: saleRecordError } = await this.supabase
-        .from('business_sales')
-        .insert({
-          user_id: user.id,
-          habit_business_id: habitBusinessId,
-          business_name: habitBusiness.business_name,
-          business_type_name: habitBusiness.business_types?.name || 'Business',
-          sell_value: sellValue,
-          streak_at_sale: habitBusiness.streak || 0
-        });
-
-      if (saleRecordError) {
-        console.error('Error recording business sale for receipt history:', saleRecordError);
-      }
-
-      return sellValue;
+      return listingPrice;
     } catch (error) {
       console.error('Error in deleteHabitBusiness:', error);
       throw error;

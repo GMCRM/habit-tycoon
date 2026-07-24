@@ -209,7 +209,13 @@ describe('HabitBusinessService', () => {
         data: { cash: 600 },
         error: null
       });
-      const habitBusinessesQuery = makeQuery();
+      const habitBusinessesQuery = makeQuery({
+        data: {
+          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
+          business_icon: '🍋', cost: 200, earnings_per_completion: 10, streak: 5
+        },
+        error: null
+      });
 
       mockSupabaseClient.from.and.callFake((table: string) => {
         if (table === 'business_types') return businessTypesQuery;
@@ -236,7 +242,13 @@ describe('HabitBusinessService', () => {
         data: { cash: 20 },
         error: null
       });
-      const habitBusinessesQuery = makeQuery();
+      const habitBusinessesQuery = makeQuery({
+        data: {
+          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
+          business_icon: '🍋', cost: 200, earnings_per_completion: 10, streak: 5
+        },
+        error: null
+      });
 
       mockSupabaseClient.from.and.callFake((table: string) => {
         if (table === 'business_types') return businessTypesQuery;
@@ -260,7 +272,13 @@ describe('HabitBusinessService', () => {
         error: null
       });
       const userProfilesQuery = makeQuery({ data: { cash: 5000 }, error: null });
-      const habitBusinessesQuery = makeQuery();
+      const habitBusinessesQuery = makeQuery({
+        data: {
+          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
+          business_icon: '🍋', cost: 200, earnings_per_completion: 10, streak: 5
+        },
+        error: null
+      });
 
       mockSupabaseClient.from.and.callFake((table: string) => {
         if (table === 'business_types') return businessTypesQuery;
@@ -809,6 +827,122 @@ describe('HabitBusinessService', () => {
       });
 
       await expectAsync(service.getUserStockHoldings('user-1')).toBeRejected();
+    });
+  });
+
+  // ==========================================================================
+  // TEST GROUP 11: Marketplace Listings
+  // "Test that upgrading/deleting a business creates a correctly priced
+  //  Marketplace listing, with the streak bonus capped at +100%."
+  // ==========================================================================
+  describe('Group 11 – Marketplace Listings', () => {
+
+    // Spec example: $700 base, 23-day streak → $861
+    it('should apply a 1%/day streak bonus to the base sell value', () => {
+      const price = service.getMarketplaceListingPrice({ cost: 1000, streak: 23 });
+      expect(price).toBe(861); // floor(1000*0.7)=700, 700*1.23=861
+    });
+
+    it('should cap the streak bonus at +100% (a 100-day+ streak)', () => {
+      const at100 = service.getMarketplaceListingPrice({ cost: 1000, streak: 100 });
+      const at500 = service.getMarketplaceListingPrice({ cost: 1000, streak: 500 });
+
+      expect(at100).toBe(1400); // 700 * 2.00
+      expect(at500).toBe(1400); // still capped at 2.00x
+    });
+
+    // Spec example: after a Marketplace purchase, base value becomes 70% of the
+    // purchase price ($602.70), and a later 15-day streak values it at $693.11
+    it('should use marketplace_base_value instead of cost*0.7 for a Marketplace-sourced business', () => {
+      const price = service.getMarketplaceListingPrice({
+        cost: 1000, marketplace_base_value: 602.70, streak: 15
+      });
+      expect(price).toBeCloseTo(693.11, 2);
+    });
+
+    it('should list the old business on the Marketplace when upgrading, before overwriting the row', async () => {
+      const businessTypesQuery = makeQuery({
+        data: { id: 2, icon: '🏭', base_cost: 500, base_pay: 50 },
+        error: null
+      });
+      const userProfilesQuery = makeQuery({ data: { cash: 600 }, error: null });
+      const habitBusinessesQuery = makeQuery({
+        data: {
+          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
+          business_icon: '🍋', cost: 1000, earnings_per_completion: 10, streak: 23
+        },
+        error: null
+      });
+      const marketplaceListingsQuery = makeQuery({ data: null, error: null });
+
+      mockSupabaseClient.from.and.callFake((table: string) => {
+        if (table === 'business_types') return businessTypesQuery;
+        if (table === 'user_profiles') return userProfilesQuery;
+        if (table === 'habit_businesses') return habitBusinessesQuery;
+        if (table === 'marketplace_listings') return marketplaceListingsQuery;
+        return makeQuery();
+      });
+
+      await service.upgradeHabitBusiness('habit-1', 2, 100);
+
+      expect(marketplaceListingsQuery.insert).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          seller_id: 'user-1',
+          habit_business_id: 'habit-1',
+          business_name: 'Lemonade Stand',
+          reason: 'upgrade',
+          listing_price: 861 // floor(1000*0.7)=700, streak 23 → 700*1.23
+        })
+      );
+    });
+
+    it('should list a deleted habit on the Marketplace instead of paying out immediately', async () => {
+      const habitQuery = makeQuery({
+        data: {
+          id: 'h1', user_id: 'user-1', is_active: true, cost: 1000, streak: 23,
+          business_name: 'Lemonade Stand', business_icon: '🍋', business_type_id: 1,
+          earnings_per_completion: 10,
+          business_types: { base_cost: 1000, name: 'Lemonade Stand' }
+        },
+        error: null
+      });
+      const marketplaceListingsQuery = makeQuery({ data: null, error: null });
+
+      let fromCallIdx = 0;
+      mockSupabaseClient.from.and.callFake((table: string) => {
+        if (table === 'habit_businesses') {
+          fromCallIdx++;
+          if (fromCallIdx === 1) return habitQuery; // fetch business details
+          if (fromCallIdx === 2) {
+            // count query – 2 active businesses, so deletion is allowed
+            const cq = makeQuery();
+            cq.select.and.returnValue(cq);
+            let eqCount = 0;
+            cq.eq.and.callFake(() => {
+              eqCount++;
+              if (eqCount >= 2) {
+                return Promise.resolve({ data: [{ id: 'h1' }, { id: 'h2' }], error: null });
+              }
+              return cq;
+            });
+            return cq;
+          }
+          return habitQuery; // for the deactivate update
+        }
+        if (table === 'marketplace_listings') return marketplaceListingsQuery;
+        return makeQuery();
+      });
+
+      const listingPrice = await service.deleteHabitBusiness('h1');
+
+      expect(listingPrice).toBe(861); // floor(1000*0.7)=700, streak 23 → 700*1.23
+      expect(marketplaceListingsQuery.insert).toHaveBeenCalledWith(
+        jasmine.objectContaining({ reason: 'habit_deletion', listing_price: 861 })
+      );
+
+      // No table in this flow should be credited cash directly — the seller is paid
+      // out via the Marketplace purchase/expiry RPCs instead, not an instant payout.
+      expect(habitQuery.update).not.toHaveBeenCalledWith(jasmine.objectContaining({ cash: jasmine.anything() }));
     });
   });
 });

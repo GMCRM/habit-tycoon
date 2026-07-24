@@ -1,0 +1,122 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="storefront" color="success"></ion-icon>
+        Set Up Your Business
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="purchase-modal-content">
+  <div class="purchased-business-info">
+    <div class="business-icon">{{ purchase.business_icon }}</div>
+    <div class="business-details">
+      <h2>{{ purchase.business_name }}</h2>
+      <p>Pays ${{ purchase.earnings_per_completion | number:'1.2-2' }} per completion</p>
+    </div>
+  </div>
+
+  <!-- Choose: merge into an existing business, or start fresh -->
+  <ng-container *ngIf="view === 'choose'">
+    <p class="section-subtitle">
+      Merge this business into one of your existing habits, or start a brand-new habit around it.
+      Streaks, stockholders, and habit history never transfer — only the business does.
+    </p>
+
+    <div class="options-list" *ngIf="eligibleBusinesses.length > 0">
+      <div
+        *ngFor="let hb of eligibleBusinesses"
+        class="existing-option"
+        (click)="chooseExisting(hb)"
+      >
+        <div class="option-icon">{{ hb.business_icon }}</div>
+        <div class="option-details">
+          <h3>{{ hb.business_name }}</h3>
+          <p>Replace this business &middot; {{ hb.streak }} day streak stays with the habit</p>
+        </div>
+        <ion-icon name="arrow-back" class="option-arrow"></ion-icon>
+      </div>
+    </div>
+
+    <p class="empty-hint" *ngIf="eligibleBusinesses.length === 0">
+      You don't have any equal-or-lower-level businesses to replace — start a new habit instead.
+    </p>
+
+    <ion-button expand="block" fill="outline" color="primary" (click)="showNewHabitForm()">
+      <ion-icon name="add" slot="start"></ion-icon>
+      Start a New Habit Instead
+    </ion-button>
+  </ng-container>
+
+  <!-- New habit form -->
+  <ng-container *ngIf="view === 'new-habit'">
+    <ion-item lines="full">
+      <ion-label position="stacked">Habit Description</ion-label>
+      <ion-textarea
+        [(ngModel)]="habitDescription"
+        placeholder="e.g. Take a one mile walk each day"
+        [autoGrow]="true"
+      ></ion-textarea>
+    </ion-item>
+
+    <ion-item lines="full">
+      <ion-label position="stacked">How Often</ion-label>
+      <ion-select [(ngModel)]="recurrenceInterval" interface="popover">
+        <ion-select-option value="24h">Every day</ion-select-option>
+        <ion-select-option value="specific_days">Specific days</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <div class="day-picker" *ngIf="recurrenceInterval === 'specific_days'">
+      <button
+        *ngFor="let dow of dayDows; let i = index"
+        type="button"
+        class="day-btn"
+        [class.active]="isDayActive(dow)"
+        (click)="toggleDay(dow)"
+      >
+        {{ dayLabels[i] }}
+      </button>
+    </div>
+
+    <ion-item lines="full">
+      <ion-label position="stacked">Goal Per Active Day</ion-label>
+      <input
+        type="number"
+        min="1"
+        max="20"
+        [(ngModel)]="goalValue"
+        class="goal-input"
+      />
+    </ion-item>
+
+    <ion-button expand="block" fill="clear" color="medium" (click)="backToChoices()">
+      <ion-icon name="arrow-back" slot="start"></ion-icon>
+      Back
+    </ion-button>
+  </ng-container>
+</ion-content>
+
+<ion-footer *ngIf="view === 'new-habit'">
+  <ion-toolbar>
+    <div class="footer-content">
+      <ion-button
+        expand="block"
+        fill="solid"
+        color="success"
+        [disabled]="!isNewHabitFormValid"
+        (click)="confirmNewHabit()"
+      >
+        <ion-icon name="storefront" slot="start"></ion-icon>
+        Create New Habit
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

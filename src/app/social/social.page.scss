@@ -858,21 +858,149 @@ ion-badge {
         display: flex;
         align-items: center;
         flex-shrink: 0;
-        
+
         .delete-button {
           --padding-start: 8px;
           --padding-end: 8px;
           --color: var(--ion-color-danger);
           margin: 0;
-          
+
           ion-icon {
             font-size: 1.2rem;
           }
-          
+
           &:hover {
             --background: rgba(var(--ion-color-danger-rgb), 0.1);
           }
         }
+      }
+    }
+  }
+}
+
+// Marketplace tab
+.marketplace-header {
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.3rem;
+  }
+}
+
+.unresolved-purchase-card {
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.4);
+  border-radius: 12px;
+  margin-bottom: 16px;
+
+  .unresolved-purchase-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .unresolved-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .unresolved-details {
+      flex: 1;
+      min-width: 0;
+
+      h3 {
+        margin: 0 0 4px 0;
+        font-size: 1rem;
+        color: var(--ion-color-primary);
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.75);
+      }
+    }
+  }
+}
+
+.marketplace-listing-card {
+  background: var(--business-item-background);
+  border: var(--business-item-border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+
+  &.own-listing {
+    opacity: 0.85;
+  }
+
+  ion-card-content {
+    padding: 16px 20px;
+  }
+
+  .listing-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    .listing-icon {
+      font-size: 2.2rem;
+      flex-shrink: 0;
+    }
+
+    .listing-details {
+      flex: 1;
+      min-width: 0;
+
+      h3 {
+        margin: 0 0 2px 0;
+        font-size: 1.1rem;
+        color: var(--ion-color-primary);
+      }
+
+      .listing-seller {
+        margin: 0 0 6px 0;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .listing-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+
+        .listing-price {
+          font-weight: 700;
+          color: #ffd700;
+          font-size: 1rem;
+        }
+
+        .listing-streak {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--ion-color-success);
+          background: rgba(var(--ion-color-success-rgb), 0.15);
+          padding: 2px 6px;
+          border-radius: 6px;
+        }
+
+        .listing-reason {
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.7);
+          background: rgba(255, 255, 255, 0.08);
+          padding: 2px 6px;
+          border-radius: 6px;
+        }
+      }
+
+      .listing-countdown {
+        margin: 0;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
       }
     }
   }

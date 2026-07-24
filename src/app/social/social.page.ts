@@ -2,20 +2,24 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { 
+import {
   IonContent, IonHeader, IonTitle, IonToolbar,
   IonCard, IonCardContent, IonSegment, IonSegmentButton,
-  IonButton, IonIcon, IonLabel, IonBadge, IonSpinner, ToastController, AlertController
+  IonButton, IonIcon, IonLabel, IonBadge, IonSpinner, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 import { SocialService, Friend } from '../services/social.service';
-import { HabitBusinessService } from '../services/habit-business.service';
+import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
+import { MarketplaceService, MarketplaceListing, MarketplacePurchase } from '../services/marketplace.service';
+import { CountdownTickService } from '../services/countdown-tick.service';
+import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
-  notifications, checkmark, close, notificationsOutline, settings, trashOutline } from 'ionicons/icons';
+  notifications, checkmark, close, notificationsOutline, settings, trashOutline, storefront } from 'ionicons/icons';
 
 @Component({
   selector: 'app-social',
@@ -37,14 +41,22 @@ export class SocialPage implements OnInit, OnDestroy {
   
   currentUser: any = null;
   userProfile: any = null;
-  selectedSegment: 'friends' | 'notifications' | 'leaderboard' = 'leaderboard';
-  
+  selectedSegment: 'friends' | 'notifications' | 'leaderboard' | 'marketplace' = 'leaderboard';
+
   // Social data
   friends: Friend[] = [];
   notifications: any[] = [];
   pendingRequests: any[] = [];
   sentRequests: any[] = [];
   friendsLeaderboard: any[] = [];
+
+  // Marketplace data
+  marketplaceListings: MarketplaceListing[] = [];
+  unresolvedPurchase: MarketplacePurchase | null = null;
+  isLoadingMarketplace = false;
+  private marketplaceTickSubscription: Subscription | null = null;
+  // Incrementing tick makes Angular re-evaluate getListingCountdown() bindings every second
+  marketplaceTick = 0;
 
   // Leaderboard view state
   leaderboardView: 'networth' | 'cashearned' = 'networth';
@@ -62,15 +74,18 @@ export class SocialPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private socialService: SocialService,
     private habitBusinessService: HabitBusinessService,
+    private marketplaceService: MarketplaceService,
+    private countdownTickService: CountdownTickService,
     private toastController: ToastController,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private modalController: ModalController
   ) {
-    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business});
-    
+    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront});
+
     // Restore the previously selected tab from localStorage (only if the user has explicitly chosen one)
     const savedTab = localStorage.getItem('social-selected-tab');
-    if (savedTab && ['friends', 'notifications', 'leaderboard'].includes(savedTab)) {
-      this.selectedSegment = savedTab as 'friends' | 'notifications' | 'leaderboard';
+    if (savedTab && ['friends', 'notifications', 'leaderboard', 'marketplace'].includes(savedTab)) {
+      this.selectedSegment = savedTab as 'friends' | 'notifications' | 'leaderboard' | 'marketplace';
     } else {
       this.selectedSegment = 'leaderboard';
     }
@@ -83,7 +98,15 @@ export class SocialPage implements OnInit, OnDestroy {
     if (!this.timeRefreshInterval) {
       this.timeRefreshInterval = setInterval(() => { this.timeRefreshTick++; }, 60_000);
     }
-    
+
+    // Shared 1s ticker so Marketplace countdowns stay live while this page is visible
+    this.countdownTickService.register();
+    if (!this.marketplaceTickSubscription) {
+      this.marketplaceTickSubscription = this.countdownTickService.tick$.subscribe(() => {
+        this.marketplaceTick++;
+      });
+    }
+
     // Always ensure data is loaded when entering the view
     if (!this.isInitialized) {
       await this.initializePage();
@@ -199,14 +222,17 @@ export class SocialPage implements OnInit, OnDestroy {
         this.socialService.getSentRequests(this.currentUser.id),
         this.socialService.getFriendsLeaderboard(this.currentUser.id)
       ]);
-      
+
       // Extract results or use fallbacks
       this.friends = friends.status === 'fulfilled' ? friends.value : [];
       this.notifications = notifications.status === 'fulfilled' ? notifications.value : [];
       this.pendingRequests = pendingRequests.status === 'fulfilled' ? pendingRequests.value : [];
       this.sentRequests = sentRequests.status === 'fulfilled' ? sentRequests.value : [];
       this.friendsLeaderboard = leaderboard.status === 'fulfilled' ? leaderboard.value : [];
-      
+
+      // Best-effort, doesn't block the rest of the page from loading
+      this.loadMarketplaceData();
+
       console.log('Social data loaded:', {
         friends: this.friends.length,
         notifications: this.notifications.length,
@@ -857,17 +883,187 @@ export class SocialPage implements OnInit, OnDestroy {
     this.router.navigate(['/weekly-receipt']);
   }
 
+  async loadMarketplaceData() {
+    if (!this.currentUser) return;
+
+    this.isLoadingMarketplace = true;
+    try {
+      // Lazy settlement: pay out any of the user's own expired "habit deletion"
+      // listings (guaranteed) and close out expired "upgrade" listings (no payout).
+      // No scheduled job exists in this app — this is the trigger for that logic.
+      await this.marketplaceService.resolveExpiredListings(this.currentUser.id);
+
+      const [listings, unresolvedPurchase] = await Promise.all([
+        this.marketplaceService.getListings(this.currentUser.id),
+        this.marketplaceService.getUnresolvedPurchase(this.currentUser.id)
+      ]);
+
+      this.marketplaceListings = listings;
+      this.unresolvedPurchase = unresolvedPurchase;
+    } catch (error) {
+      console.error('Error loading marketplace data:', error);
+      this.marketplaceListings = [];
+    } finally {
+      this.isLoadingMarketplace = false;
+    }
+  }
+
+  /** Streak bonus shown on a listing card, e.g. 23 for "+23%" — capped the same way the listing price is. */
+  getStreakBonusPercent(listing: MarketplaceListing): number {
+    return Math.min(Math.max(listing.streak_at_listing, 0), 100);
+  }
+
+  /** Live "Xh Ym Zs" countdown to a listing's expiry; ticks every second via marketplaceTick. */
+  getListingCountdown(listing: MarketplaceListing, _tick = this.marketplaceTick): string {
+    const msRemaining = new Date(listing.expires_at).getTime() - Date.now();
+    if (msRemaining <= 0) return 'Expired';
+
+    const totalSeconds = Math.floor(msRemaining / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  }
+
+  async buyListing(listing: MarketplaceListing) {
+    if (listing.is_own || !this.currentUser) return;
+
+    const alert = await this.alertController.create({
+      header: '🛒 Buy Business',
+      message: `Buy "${listing.business_name}" from ${listing.seller_name} for $${listing.listing_price.toFixed(2)}?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Buy',
+          handler: async () => {
+            try {
+              const result = await this.marketplaceService.purchaseListing(this.currentUser.id, listing.id);
+              if (!result.success) {
+                throw new Error(result.error || 'Purchase failed');
+              }
+
+              const toast = await this.toastController.create({
+                message: `🎉 Bought "${listing.business_name}" for $${listing.listing_price.toFixed(2)}!`,
+                duration: 3000,
+                position: 'top',
+                color: 'success'
+              });
+              await toast.present();
+
+              await this.loadCurrentUser();
+              await this.loadMarketplaceData();
+
+              if (this.unresolvedPurchase) {
+                await this.openResolvePurchaseModal(this.unresolvedPurchase);
+              }
+            } catch (error) {
+              const toast = await this.toastController.create({
+                message: error instanceof Error ? error.message : 'Failed to purchase listing',
+                duration: 3000,
+                position: 'top',
+                color: 'danger'
+              });
+              await toast.present();
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  async openResolvePurchaseModal(purchase: MarketplacePurchase) {
+    if (!this.currentUser) return;
+
+    let eligibleBusinesses: HabitBusiness[] = [];
+    try {
+      const ownedBusinesses = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
+      eligibleBusinesses = ownedBusinesses.filter(
+        hb => (hb.business_types?.base_cost ?? hb.cost) <= purchase.base_cost
+      );
+    } catch (error) {
+      console.error('Error loading businesses eligible for merge:', error);
+    }
+
+    const modal = await this.modalController.create({
+      component: MarketplacePurchaseModalComponent,
+      componentProps: {
+        purchase,
+        eligibleBusinesses,
+        modalController: this.modalController
+      },
+      cssClass: 'marketplace-purchase-modal'
+    });
+
+    await modal.present();
+    const { data } = await modal.onDidDismiss<MarketplacePurchaseResolution>();
+    if (!data) return; // Dismissed without choosing — stays unresolved; the nudge banner will prompt again next visit.
+
+    try {
+      if (data.mode === 'merge') {
+        await this.marketplaceService.resolvePurchaseIntoExisting(this.currentUser.id, purchase.id, data.targetHabitBusinessId);
+      } else {
+        const newHabitBusinessId = await this.marketplaceService.resolvePurchaseIntoNewHabit(
+          this.currentUser.id,
+          purchase.id,
+          data.habitDescription,
+          data.recurrenceInterval,
+          data.goalValue,
+          data.activeDays
+        );
+        // A brand-new habit needs its own stock listing, same as any freshly created habit business
+        await this.habitBusinessService.createBusinessStock(newHabitBusinessId);
+      }
+
+      this.marketplaceService.clearUnresolvedPurchase();
+      this.unresolvedPurchase = null;
+
+      const toast = await this.toastController.create({
+        message: `✅ "${purchase.business_name}" is set up and ready to go!`,
+        duration: 2500,
+        position: 'top',
+        color: 'success'
+      });
+      await toast.present();
+
+      await this.loadCurrentUser();
+    } catch (error) {
+      console.error('Error resolving marketplace purchase:', error);
+      const toast = await this.toastController.create({
+        message: error instanceof Error ? error.message : 'Failed to finish setting up your purchase',
+        duration: 3000,
+        position: 'top',
+        color: 'danger'
+      });
+      await toast.present();
+    }
+  }
+
   ionViewWillLeave() {
     if (this.timeRefreshInterval) {
       clearInterval(this.timeRefreshInterval);
       this.timeRefreshInterval = null;
     }
+    this.unregisterMarketplaceTick();
   }
 
   ngOnDestroy() {
     if (this.timeRefreshInterval) {
       clearInterval(this.timeRefreshInterval);
       this.timeRefreshInterval = null;
+    }
+    this.unregisterMarketplaceTick();
+  }
+
+  private unregisterMarketplaceTick() {
+    if (this.marketplaceTickSubscription) {
+      this.marketplaceTickSubscription.unsubscribe();
+      this.marketplaceTickSubscription = null;
+      this.countdownTickService.unregister();
     }
   }
 
