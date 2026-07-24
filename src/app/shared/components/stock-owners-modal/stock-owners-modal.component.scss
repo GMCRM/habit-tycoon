@@ -1,0 +1,88 @@
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.stock-owners-modal-content {
+  --background: var(--ion-color-light);
+}
+
+.business-name-header {
+  padding: 16px 16px 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.empty-state {
+  padding: 24px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.owners-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.owner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--business-item-background);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.owner-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.owner-avatar {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.owner-name {
+  font-weight: 500;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-badge {
+  flex-shrink: 0;
+}
+
+.owner-shares {
+  font-weight: 600;
+  color: var(--ion-color-success);
+  white-space: nowrap;
+  padding-left: 12px;
+}
+
+.owners-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px 0 14px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}

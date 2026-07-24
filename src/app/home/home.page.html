@@ -415,6 +415,22 @@
                       </ion-button>
                       <ion-button
                         fill="clear"
+                        color="tertiary"
+                        size="default"
+                        (click)="openStockOwnersModal(hb)"
+                        style="
+                          margin: 0;
+                          --padding-start: 12px;
+                          --padding-end: 12px;
+                        "
+                      >
+                        <ion-icon
+                          name="people"
+                          slot="icon-only"
+                        ></ion-icon>
+                      </ion-button>
+                      <ion-button
+                        fill="clear"
                         size="default"
                         (click)="editHabitBusiness(hb)"
                         style="

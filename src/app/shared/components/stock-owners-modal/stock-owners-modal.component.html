@@ -1,0 +1,43 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="people" color="tertiary"></ion-icon>
+        Stockholders
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="stock-owners-modal-content">
+  <div class="business-name-header">{{ businessName }}</div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div *ngIf="!isLoading && owners.length === 0" class="empty-state">
+    No stockholders found for this business.
+  </div>
+
+  <div *ngIf="!isLoading && owners.length > 0" class="owners-list">
+    <div class="owner-row" *ngFor="let owner of owners">
+      <div class="owner-info">
+        <ion-icon name="person-circle" class="owner-avatar"></ion-icon>
+        <span class="owner-name">{{ owner.name }}</span>
+        <ion-badge *ngIf="owner.isBusinessOwner" color="warning" class="owner-badge">Owner</ion-badge>
+      </div>
+      <div class="owner-shares">{{ owner.sharesOwned }} {{ owner.sharesOwned === 1 ? 'share' : 'shares' }}</div>
+    </div>
+
+    <div class="owners-total">
+      <span>Total shares held</span>
+      <span>{{ totalShares() }}</span>
+    </div>
+  </div>
+</ion-content>

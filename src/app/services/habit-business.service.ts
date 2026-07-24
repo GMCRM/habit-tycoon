@@ -51,6 +51,12 @@ export interface CreateHabitBusinessRequest {
   active_days?: number[]; // required when recurrence_interval === 'specific_days'
 }
 
+export interface StockOwner {
+  name: string;
+  sharesOwned: number;
+  isBusinessOwner: boolean;
+}
+
 export interface BusinessStock {
   id: string;
   habit_business_id: string;
@@ -1891,6 +1897,31 @@ export class HabitBusinessService {
     }
 
     return boosts;
+  }
+
+  /**
+   * Get everyone who owns shares of a business's stock — the business owner's
+   * retained shares plus every investor's holding — sorted by shares owned
+   * (descending). Uses a SECURITY DEFINER RPC since stock_holdings' RLS only
+   * lets a user see their own holdings or holdings of businesses they own.
+   */
+  async getStockOwners(habitBusinessId: string): Promise<StockOwner[]> {
+    try {
+      const { data, error } = await this.supabase.rpc('get_stock_owners', {
+        business_id_param: habitBusinessId
+      });
+
+      if (error) throw error;
+
+      return (data || []).map((row: any) => ({
+        name: row.owner_name || 'Unknown',
+        sharesOwned: row.shares_owned,
+        isBusinessOwner: row.is_business_owner
+      }));
+    } catch (error) {
+      console.error('Error in getStockOwners:', error);
+      return [];
+    }
   }
 
   /**

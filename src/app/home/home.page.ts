@@ -18,11 +18,12 @@ import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.component';
+import { StockOwnersModalComponent } from '../shared/components/stock-owners-modal/stock-owners-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield, people } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -93,7 +94,7 @@ export class HomePage implements OnInit, OnDestroy {
     private countdownTickService: CountdownTickService,
     private offlineQueueService: OfflineQueueService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield });
+    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield, people });
     this.setRandomTagline();
     this.checkScreenSize();
     this.setupStatsCards();
@@ -656,6 +657,22 @@ export class HomePage implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error opening edit modal:', error);
     }
+  }
+
+  /**
+   * Show who owns shares of this business's stock, and how many each holds
+   */
+  async openStockOwnersModal(habitBusiness: HabitBusiness) {
+    const modal = await this.modalController.create({
+      component: StockOwnersModalComponent,
+      componentProps: {
+        businessName: habitBusiness.business_name,
+        habitBusinessId: habitBusiness.id,
+        modalController: this.modalController
+      },
+      cssClass: 'stock-owners-modal'
+    });
+    await modal.present();
   }
 
   /**
