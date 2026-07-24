@@ -79,10 +79,6 @@ export interface HabitGridDay {
             <span class="stat-label">Success Rate</span>
           </div>
           <div class="stat">
-            <span class="stat-value">{{ currentStreak }}</span>
-            <span class="stat-label">Current Streak</span>
-          </div>
-          <div class="stat">
             <span class="stat-value">{{ longestStreak }}</span>
             <span class="stat-label">Longest Streak</span>
           </div>
