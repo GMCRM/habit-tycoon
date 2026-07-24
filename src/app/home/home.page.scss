@@ -1494,20 +1494,22 @@ button, span, div, ion-button {
   .section-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     margin: 24px 8px 16px 0;
+    position: relative;
 
     ion-icon {
       font-size: 1.3rem;
       color: var(--ion-color-primary);
     }
-    
+
     h2 {
       margin: 0;
-      flex: 1;
       color: var(--ion-color-primary);
-      font-size: 1.3rem;
+      font-size: 1.6rem;
       font-weight: 600;
+      text-align: center;
     }
     
     .help-text {
