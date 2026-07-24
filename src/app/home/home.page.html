@@ -152,36 +152,48 @@
       <!-- Stats Grid -->
       <!-- Desktop: All 3 cards -->
       <div class="stats-grid ion-margin-bottom desktop-stats">
-        <ion-card class="stat-card">
+        <ion-card
+          class="stat-card"
+          [class.clickable-card]="isStatAbbreviated(pendingHabitsCount)"
+          (click)="showExactStatValue('Pending Habits', pendingHabitsCount, false)"
+        >
           <ion-card-content>
             <div class="stat-content">
               <ion-icon name="checkmark-circle" color="success"></ion-icon>
               <div class="stat-info">
-                <h2>{{ pendingHabitsCount }}</h2>
+                <h2>{{ formatCount(pendingHabitsCount) }}</h2>
                 <p>Pending Habits</p>
               </div>
             </div>
           </ion-card-content>
         </ion-card>
 
-        <ion-card class="stat-card">
+        <ion-card
+          class="stat-card"
+          [class.clickable-card]="isStatAbbreviated(todaysEarnings)"
+          (click)="showExactStatValue('Today\'s Habit Earnings', todaysEarnings, true)"
+        >
           <ion-card-content>
             <div class="stat-content">
               <ion-icon name="business" color="success"></ion-icon>
               <div class="stat-info">
-                <h2>${{ todaysEarnings.toFixed(2) }}</h2>
+                <h2>{{ formatCurrency(todaysEarnings) }}</h2>
                 <p>Today's Habit Earnings</p>
               </div>
             </div>
           </ion-card-content>
         </ion-card>
 
-        <ion-card class="stat-card">
+        <ion-card
+          class="stat-card"
+          [class.clickable-card]="isStatAbbreviated(todaysStockEarnings)"
+          (click)="showExactStatValue('Today\'s Stock Dividends', todaysStockEarnings, true)"
+        >
           <ion-card-content>
             <div class="stat-content">
               <ion-icon name="wallet" color="secondary"></ion-icon>
               <div class="stat-info">
-                <h2>${{ todaysStockEarnings.toFixed(2) }}</h2>
+                <h2>{{ formatCurrency(todaysStockEarnings) }}</h2>
                 <p>Today's Stock Dividends</p>
               </div>
             </div>
@@ -199,8 +211,8 @@
           <ion-card
             class="stat-card carousel-card"
             *ngIf="statsCards[currentStatIndex] as stat"
-            [class.clickable-card]="stat.clickAction"
-            (click)="stat.clickAction && stat.clickAction()"
+            [class.clickable-card]="isStatAbbreviated(stat.getRawValue())"
+            (click)="showExactStatValue(stat.label, stat.getRawValue(), stat.isCurrency)"
           >
             <ion-card-content>
               <div class="stat-content">
