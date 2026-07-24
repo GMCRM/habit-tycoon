@@ -559,19 +559,13 @@
                 </div>
                 <div class="habit-stats">
                   <div class="stat-item">
-                    <div class="stat-label">Avg Price</div>
-                    <div class="stat-value">
-                      ${{ holding.averagePurchasePrice }}
-                    </div>
-                  </div>
-                  <div class="stat-item">
                     <div class="stat-label">Invested</div>
                     <div class="stat-value">${{ holding.totalInvested }}</div>
                   </div>
                   <div class="stat-item">
-                    <div class="stat-label">Est./Comp.</div>
+                    <div class="stat-label">Dividends Earned</div>
                     <div class="stat-value dividend-potential">
-                      ${{ holding.dailyDividendRate?.toFixed(2) || '0.00' }}
+                      ${{ (holding.totalDividendsEarned || 0).toFixed(2) }}
                     </div>
                   </div>
                   <div class="stat-item">
