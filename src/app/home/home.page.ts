@@ -537,9 +537,11 @@ export class HomePage implements OnInit, OnDestroy {
         return;
       }
       
-      // Current business sell value: marketplace_base_value for a
-      // Marketplace-sourced business, otherwise 70% of original cost
-      const currentBusinessValue = this.habitBusinessService.getBaseSellValue(habitBusiness);
+      // Current business sell value: base value (marketplace_base_value for a
+      // Marketplace-sourced business, otherwise 70% of original cost) boosted
+      // +1%/streak day up to +100%; falls back to the base value once the
+      // streak breaks and resets to 0.
+      const currentBusinessValue = this.habitBusinessService.getMarketplaceListingPrice(habitBusiness);
       
       // Open the professional upgrade modal
       const modal = await this.modalController.create({
