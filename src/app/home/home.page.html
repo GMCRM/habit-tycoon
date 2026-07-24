@@ -654,21 +654,21 @@
                       </div>
                       <div
                         class="breakdown-item"
-                        *ngIf="getEarningsBreakdown(hb).streakBonus > 0"
-                      >
-                        <span class="breakdown-label">Streak Bonus:</span>
-                        <span class="breakdown-value"
-                          >+${{ getEarningsBreakdown(hb).streakBonus.toFixed(2)
-                          }}</span
-                        >
-                      </div>
-                      <div
-                        class="breakdown-item"
                         *ngIf="getEarningsBreakdown(hb).stockBoost > 0"
                       >
                         <span class="breakdown-label">Stock Boost:</span>
                         <span class="breakdown-value"
                           >+${{ getEarningsBreakdown(hb).stockBoost.toFixed(2)
+                          }}</span
+                        >
+                      </div>
+                      <div
+                        class="breakdown-item"
+                        *ngIf="getEarningsBreakdown(hb).streakBonus > 0"
+                      >
+                        <span class="breakdown-label">Streak Bonus:</span>
+                        <span class="breakdown-value"
+                          >+${{ getEarningsBreakdown(hb).streakBonus.toFixed(2)
                           }}</span
                         >
                       </div>

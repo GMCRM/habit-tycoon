@@ -248,7 +248,17 @@ export class HomePage implements OnInit, OnDestroy {
         
         // Load actual habit-business data
         this.habitBusinesses = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
-        
+
+        // Load each business's stock ownership pay boost (1% per share purchased by investors)
+        try {
+          this.stockBoostByBusinessId = await this.habitBusinessService.getStockOwnershipBoosts(
+            this.habitBusinesses.map(hb => hb.id)
+          );
+        } catch (stockBoostError) {
+          console.error('❌ Error loading stock ownership boosts (non-critical):', stockBoostError);
+          this.stockBoostByBusinessId = {};
+        }
+
         // Load today's habits
         this.todaysHabits = await this.habitBusinessService.getTodaysHabits(this.currentUser.id);
         
@@ -740,23 +750,25 @@ export class HomePage implements OnInit, OnDestroy {
     // The stored earnings_per_completion is the base rate without multipliers
     const baseEarnings = habitBusiness.earnings_per_completion;
     const currentStreak = this.habitIntervalService.getEffectiveStreak(habitBusiness);
-    
+
     // Calculate what the next completion will earn using Option A logic
     // The service increments streak first, then applies conservative multiplier
     // So we need to show earnings for (currentStreak + 1)
     const nextStreak = currentStreak + 1;
-    
+
+    // Stock ownership boost: 1% base pay per tradeable share purchased by investors,
+    // applied to base pay before the streak bonus
+    const stockBoostPercentage = this.stockBoostByBusinessId[habitBusiness.id] || 0;
+    const stockBoost = baseEarnings * (stockBoostPercentage / 100);
+    const boostedBaseEarnings = baseEarnings + stockBoost;
+
     // Day 1: $1.00 (0x bonus), Day 2: $1.10 (0.1x bonus), Day 3: $1.20 (0.2x bonus), etc.
     const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
-    const baseTotal = baseEarnings + (baseEarnings * streakMultiplier);
-    const streakBonus = baseTotal - baseEarnings; // The bonus amount
-    
-    // For stock boost, we'll estimate based on typical patterns
-    // TODO: Fetch actual stock data for precise calculation
-    let stockBoost = 0;
-    
-    const totalEarnings = baseTotal + stockBoost;
-    
+    const baseTotal = boostedBaseEarnings + (boostedBaseEarnings * streakMultiplier);
+    const streakBonus = baseTotal - boostedBaseEarnings; // The bonus amount
+
+    const totalEarnings = baseTotal;
+
     return {
       baseEarnings,
       streakBonus,
@@ -790,6 +802,9 @@ export class HomePage implements OnInit, OnDestroy {
 
   // Track which habits have their entire earnings section visible
   showEarningsSection: { [key: string]: boolean } = {};
+
+  // Stock ownership pay-boost percentage per habit business (1% per share purchased by investors)
+  stockBoostByBusinessId: { [habitBusinessId: string]: number } = {};
 
   // Track detailed view state for cash and net worth cards
   showDetailedCash = false;

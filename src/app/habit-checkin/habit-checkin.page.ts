@@ -363,8 +363,8 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
       const stockInfo = this.availableStocks.find(stock => stock.habit_business_id === habit.id);
       if (stockInfo) {
         habit.stockInfo = stockInfo;
-        // Count investors (shares owned by others)
-        habit.stockInvestors = stockInfo.total_shares_issued - stockInfo.shares_owned_by_owner;
+        // Count investors (shares actually purchased by others, not the tradeable pool size)
+        habit.stockInvestors = stockInfo.total_shares_issued - stockInfo.shares_owned_by_owner - stockInfo.shares_available;
       }
       
     } catch (error) {

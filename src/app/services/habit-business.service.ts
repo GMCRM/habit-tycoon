@@ -804,14 +804,12 @@ export class HabitBusinessService {
         }
       }
 
-      // Calculate earnings with streak multiplier + stock boost
-      // Apply streak bonus only if the full goal is completed
-      const streakMultiplier = isGoalCompleted && newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      // Calculate earnings: stock ownership boost is applied to base pay first,
+      // then the streak bonus is applied on top of the boosted base
       const baseEarnings = habitBusiness.earnings_per_completion; // This is already divided by goal_value
-      const bonusAmount = baseEarnings * streakMultiplier;
-      const baseTotal = baseEarnings + bonusAmount;
 
-      // Calculate stock boost from investors (only apply if goal is completed)
+      // Stock ownership boost: each of the (up to 20) tradeable shares purchased by
+      // other investors adds 1% to the owner's base pay (only counts once actually purchased)
       let stockBoost = 0;
       let stockId: string | null = null;
       if (isGoalCompleted) {
@@ -820,6 +818,7 @@ export class HabitBusinessService {
           .select(`
             id,
             shares_owned_by_owner,
+            shares_available,
             total_shares_issued,
             stock_holdings (
               shares_owned,
@@ -831,15 +830,21 @@ export class HabitBusinessService {
 
         if (!stockError && stockData) {
           stockId = stockData.id;
-          // Calculate stock boost: 5% bonus per 10% of shares owned by others
-          const sharesOwnedByOthers = stockData.total_shares_issued - stockData.shares_owned_by_owner;
-          const otherOwnershipPercentage = (sharesOwnedByOthers / stockData.total_shares_issued) * 100;
-          const stockBoostPercentage = Math.floor(otherOwnershipPercentage / 10) * 5; // 5% per 10% owned
-          stockBoost = baseTotal * (stockBoostPercentage / 100);
+          const tradeableShares = stockData.total_shares_issued - stockData.shares_owned_by_owner;
+          const sharesSoldToInvestors = tradeableShares - stockData.shares_available;
+          const stockBoostPercentage = Math.max(0, sharesSoldToInvestors); // 1% per purchased share
+          stockBoost = baseEarnings * (stockBoostPercentage / 100);
         }
       }
 
-      const totalEarnings = baseTotal + stockBoost;
+      const boostedBaseEarnings = baseEarnings + stockBoost;
+
+      // Apply streak bonus only if the full goal is completed — on top of the stock-boosted base
+      const streakMultiplier = isGoalCompleted && newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      const bonusAmount = boostedBaseEarnings * streakMultiplier;
+      const baseTotal = boostedBaseEarnings + bonusAmount;
+
+      const totalEarnings = baseTotal;
 
       // CRITICAL FIX: Ensure completion is recorded for "today" in USER'S local timezone
       // This prevents habits from being marked as completed "tomorrow" due to server timezone differences
@@ -904,10 +909,11 @@ export class HabitBusinessService {
             if (investorShares > 0) {
               // Try RPC function first
               try {
-                const { error: rpcError } = await this.supabase.rpc('process_habit_completion_dividends', { 
-                  completion_uuid: completionData.id 
+                const { error: rpcError } = await this.supabase.rpc('process_habit_completion_dividends', {
+                  completion_uuid: completionData.id,
+                  p_stock_boost_amount: stockBoost
                 });
-                
+
                 if (rpcError) {
                   console.warn('⚠️ RPC function failed:', rpcError.message);
                   throw rpcError;
@@ -916,7 +922,7 @@ export class HabitBusinessService {
                 }
               } catch (rpcFailure) {
                 console.log('🔄 RPC failed, attempting manual dividend processing...');
-                await this.processDividendsManually(habitBusinessId, totalEarnings, stockInfo.id);
+                await this.processDividendsManually(habitBusinessId, stockBoost, stockInfo.id);
               }
             } else {
               console.log('💡 No external investors - skipping dividend processing');
@@ -1062,29 +1068,32 @@ export class HabitBusinessService {
         }
       }
 
-      // Earnings (yesterday's rate)
-      const streakMultiplier = newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      // Earnings (yesterday's rate): stock ownership boost applied to base pay first,
+      // then the streak bonus on top of the boosted base
       const baseEarnings = habitBusiness.earnings_per_completion;
-      const baseTotal = baseEarnings + baseEarnings * streakMultiplier;
 
-      // Stock boost
+      // Stock ownership boost: 1% per tradeable share actually purchased by investors
       let stockBoost = 0;
       let stockInfoId: string | null = null;
       const { data: stockData } = await this.supabase
         .from('business_stocks')
-        .select('id, shares_owned_by_owner, total_shares_issued')
+        .select('id, shares_owned_by_owner, shares_available, total_shares_issued')
         .eq('habit_business_id', habitBusinessId)
         .single();
 
       if (stockData) {
         stockInfoId = stockData.id;
-        const sharesOwnedByOthers = stockData.total_shares_issued - stockData.shares_owned_by_owner;
-        const otherOwnershipPct = (sharesOwnedByOthers / stockData.total_shares_issued) * 100;
-        const boostPct = Math.floor(otherOwnershipPct / 10) * 5;
-        stockBoost = baseTotal * (boostPct / 100);
+        const tradeableShares = stockData.total_shares_issued - stockData.shares_owned_by_owner;
+        const sharesSoldToInvestors = tradeableShares - stockData.shares_available;
+        const boostPct = Math.max(0, sharesSoldToInvestors);
+        stockBoost = baseEarnings * (boostPct / 100);
       }
 
-      const totalEarnings = baseTotal + stockBoost;
+      const boostedBaseEarnings = baseEarnings + stockBoost;
+      const streakMultiplier = newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      const baseTotal = boostedBaseEarnings + boostedBaseEarnings * streakMultiplier;
+
+      const totalEarnings = baseTotal;
 
       // Completion timestamp = yesterday at 6 PM local time
       const yesterdayDateString = this.getLocalDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
@@ -1125,12 +1134,13 @@ export class HabitBusinessService {
           if (stockData && (stockData.total_shares_issued - stockData.shares_owned_by_owner) > 0) {
             try {
               const { error: rpcError } = await this.supabase.rpc('process_habit_completion_dividends', {
-                completion_uuid: completionData.id
+                completion_uuid: completionData.id,
+                p_stock_boost_amount: stockBoost
               });
               if (rpcError) throw rpcError;
               console.log('✅ Dividends processed for backdated completion');
             } catch {
-              await this.processDividendsManually(habitBusinessId, totalEarnings, stockInfoId);
+              await this.processDividendsManually(habitBusinessId, stockBoost, stockInfoId);
             }
           }
         } catch (dividendError) {
@@ -1368,53 +1378,44 @@ export class HabitBusinessService {
   /**
    * Manually process dividends when RPC function fails
    */
-  async processDividendsManually(habitBusinessId: string, totalEarnings: number, stockId: string): Promise<void> {
+  async processDividendsManually(habitBusinessId: string, stockBoostAmount: number, stockId: string): Promise<void> {
     try {
       console.log('🔧 Manual dividend processing for business:', habitBusinessId);
-      
+
       // Get stock holdings for this business
       const { data: holdings, error: holdingsError } = await this.supabase
         .from('stock_holdings')
         .select('*')
         .eq('stock_id', stockId)
         .gt('shares_owned', 0);
-        
+
       if (holdingsError) {
         throw holdingsError;
       }
-      
+
       if (!holdings || holdings.length === 0) {
         console.log('💡 No stockholders found for dividend distribution');
         return;
       }
-      
-      // Calculate dividend pool - typically 50% of the stock boost amount
-      // Stock boost is 5% bonus per 10% external ownership
-      const { data: stockInfo, error: stockError } = await this.supabase
-        .from('business_stocks')
-        .select('total_shares_issued, shares_owned_by_owner')
-        .eq('id', stockId)
-        .single();
-        
-      if (stockError || !stockInfo) {
-        throw new Error('Could not get stock information');
-      }
-      
-      const investorShares = stockInfo.total_shares_issued - stockInfo.shares_owned_by_owner;
-      const ownershipPercentage = investorShares / stockInfo.total_shares_issued;
-      const stockBoostMultiplier = Math.floor(ownershipPercentage * 10) * 0.05; // 5% per 10% ownership
-      const stockBoostAmount = totalEarnings * stockBoostMultiplier;
-      const dividendPool = stockBoostAmount * 0.5; // Investors get 50% of the boost
-      
-      console.log(`💰 Dividend calculation: total_earnings=${totalEarnings}, ownership=${(ownershipPercentage*100).toFixed(1)}%, boost=${stockBoostAmount.toFixed(2)}, pool=${dividendPool.toFixed(2)}`);
-      
-      if (dividendPool <= 0) {
+
+      // Investors get 50% of the owner's stock-ownership pay boost as a dividend pool.
+      // stockBoostAmount is the exact dollar boost already computed by the caller
+      // (1% of base pay per tradeable share actually purchased by investors)
+      const dividendPool = stockBoostAmount * 0.5;
+
+      // Split the pool across the shares actually held today (not the fixed 20-share
+      // tradeable pool — if only some of the shares are sold, only those count)
+      const totalSharesHeld = holdings.reduce((sum, holding) => sum + holding.shares_owned, 0);
+
+      console.log(`💰 Dividend calculation: stock_boost=${stockBoostAmount.toFixed(2)}, pool=${dividendPool.toFixed(2)}, shares_held=${totalSharesHeld}`);
+
+      if (dividendPool <= 0 || totalSharesHeld <= 0) {
         console.log('💡 No dividend pool to distribute');
         return;
       }
-      
+
       // Calculate dividend per share
-      const dividendPerShare = dividendPool / investorShares;
+      const dividendPerShare = dividendPool / totalSharesHeld;
       
       // Distribute dividends to each stockholder
       for (const holding of holdings) {
@@ -1859,6 +1860,35 @@ export class HabitBusinessService {
       console.error('Error in getUserStockHoldings:', error);
       throw error;
     }
+  }
+
+  /**
+   * Batch-fetch the stock ownership pay-boost percentage for a set of habit businesses.
+   * Each of the (up to 20) tradeable shares actually purchased by other investors adds
+   * 1% to the owner's base pay, so the returned value is directly a percentage (0-20).
+   */
+  async getStockOwnershipBoosts(habitBusinessIds: string[]): Promise<{ [habitBusinessId: string]: number }> {
+    const boosts: { [habitBusinessId: string]: number } = {};
+    if (habitBusinessIds.length === 0) return boosts;
+
+    try {
+      const { data, error } = await this.supabase
+        .from('business_stocks')
+        .select('habit_business_id, shares_owned_by_owner, shares_available, total_shares_issued')
+        .in('habit_business_id', habitBusinessIds);
+
+      if (error || !data) return boosts;
+
+      for (const stock of data) {
+        const tradeableShares = stock.total_shares_issued - stock.shares_owned_by_owner;
+        const sharesSoldToInvestors = tradeableShares - stock.shares_available;
+        boosts[stock.habit_business_id] = Math.max(0, sharesSoldToInvestors);
+      }
+    } catch (error) {
+      console.error('Error in getStockOwnershipBoosts:', error);
+    }
+
+    return boosts;
   }
 
   /**
