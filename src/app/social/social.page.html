@@ -59,7 +59,9 @@
           <ion-segment-button value="marketplace">
             <ion-icon name="storefront"></ion-icon>
             <ion-label>Marketplace</ion-label>
-            <ion-badge *ngIf="unresolvedPurchase" color="danger">1</ion-badge>
+            <ion-badge *ngIf="marketplaceBadgeCount > 0" color="danger"
+              >{{ marketplaceBadgeCount }}</ion-badge
+            >
           </ion-segment-button>
         </ion-segment>
 

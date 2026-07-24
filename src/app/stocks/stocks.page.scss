@@ -278,9 +278,11 @@ ion-content {
 // Stats grid styling - matches homepage
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 24px;
+  width: 100%;
+  padding: 0 12px;
 
   .stat-card {
     background: var(--business-item-background);
@@ -288,29 +290,38 @@ ion-content {
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
 
+    &.clickable-card {
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.2);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
     ion-card-content {
       padding: 16px;
-      
+
       .stat-content {
         display: flex;
         align-items: center;
-        gap: 12px;
-        
-        ion-icon {
-          font-size: 2rem;
-          color: var(--ion-color-primary);
-          filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
-        }
-        
+        justify-content: center;
+        text-align: center;
+
         .stat-info {
           h2 {
             margin: 0;
             font-size: 1.8rem;
             font-weight: bold;
-            color: var(--cash-color);
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+            color: var(--earnings-color);
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
           }
-          
+
           p {
             margin: 0;
             color: rgba(255, 255, 255, 0.8);
@@ -1325,10 +1336,9 @@ ion-content {
 @media (min-width: 768px) and (max-width: 1023px) {
   // Tablet styles (iPad, Android tablets)
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
-  
+
   .habit-business-item {
     .item-content {
       gap: 16px;
@@ -1459,85 +1469,27 @@ ion-content {
   }
 }
 
-// Mobile portfolio stats carousel
+// Mobile responsive stats — all 3 cards stay side-by-side at every width,
+// they just shrink progressively (matches the Daily Stats cards on Home).
 @media (max-width: 768px) {
-  .desktop-stats {
-    display: none;
-  }
+  .stats-grid {
+    gap: 8px;
+    padding: 0 12px;
 
-  .mobile-stats-carousel {
-    display: block;
-    
-    .carousel-container {
-      position: relative;
-      width: 100%;
-      
-      .carousel-card {
-        margin: 0;
-        width: 100%;
-        min-height: 100px;
-        background: var(--business-item-background);
-        border: var(--business-item-border);
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
-        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        
+    .stat-card {
+      ion-card-content {
+        padding: 10px 6px;
+
         .stat-content {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          justify-content: center;
-          text-align: center;
-
-          ion-icon {
-            font-size: 28px;
-            min-width: 36px;
-            color: var(--ion-color-primary);
-            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
-          }
-
           .stat-info {
             h2 {
-              margin: 0;
-              font-size: 1.5rem;
-              font-weight: bold;
-              color: var(--cash-color);
-              text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
-
-              &.profit {
-                color: var(--ion-color-success);
-              }
-
-              &.loss {
-                color: var(--ion-color-danger);
-              }
+              font-size: 1.25rem;
             }
 
             p {
-              margin: 4px 0 0 0;
-              font-size: 1rem;
-              color: rgba(255, 255, 255, 0.8);
+              font-size: 0.7rem;
+              line-height: 1.2;
             }
-          }
-        }
-      }
-      
-      .carousel-indicators {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 12px;
-        
-        .indicator {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background-color: var(--ion-color-light);
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-          
-          &.active {
-            background-color: var(--ion-color-primary);
           }
         }
       }
@@ -1627,6 +1579,29 @@ ion-content {
 
 // Extra small screens (very narrow phones)
 @media (max-width: 480px) {
+  .stats-grid {
+    gap: 6px;
+    padding: 0 10px;
+
+    .stat-card {
+      ion-card-content {
+        padding: 8px 4px;
+
+        .stat-content {
+          .stat-info {
+            h2 {
+              font-size: 1.05rem;
+            }
+
+            p {
+              font-size: 0.62rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
   .habit-business-item {
     margin: 6px 0;
     padding: 10px;
@@ -1711,17 +1686,6 @@ ion-content {
         }
       }
     }
-  }
-}
-
-// Desktop responsive stats
-@media (min-width: 769px) {
-  .desktop-stats {
-    display: grid;
-  }
-
-  .mobile-stats-carousel {
-    display: none;
   }
 }
 

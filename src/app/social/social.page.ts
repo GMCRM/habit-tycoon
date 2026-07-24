@@ -242,7 +242,7 @@ export class SocialPage implements OnInit, OnDestroy {
       });
 
       // Keep the bottom-nav badge(s) in sync with the freshly loaded notifications/requests.
-      this.socialService.setNotificationBadgeCount(this.totalNotificationsBadgeCount);
+      this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
 
       // Debug: Check notification structure
       if (this.notifications.length > 0) {
@@ -292,6 +292,17 @@ export class SocialPage implements OnInit, OnDestroy {
     this.selectedSegment = event.detail.value;
     // Save the selected tab to localStorage
     localStorage.setItem('social-selected-tab', this.selectedSegment);
+
+    if (this.selectedSegment === 'marketplace') {
+      this.markMarketplaceListingsSeen();
+    }
+  }
+
+  /** Clears the "new listings" badge for this user and syncs the bottom-nav count. */
+  private markMarketplaceListingsSeen() {
+    if (!this.currentUser) return;
+    this.marketplaceService.markListingsSeen(this.currentUser.id);
+    this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
   }
 
   async onLeaderboardViewChange(view: 'networth' | 'cashearned') {
@@ -567,7 +578,7 @@ export class SocialPage implements OnInit, OnDestroy {
         console.log('🔍 Before update - is_read:', notification.is_read);
         notification.is_read = true;
         console.log('✅ After update - is_read:', notification.is_read);
-        this.socialService.setNotificationBadgeCount(this.totalNotificationsBadgeCount);
+        this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
 
         // Show success feedback
         const toast = await this.toastController.create({
@@ -643,7 +654,7 @@ export class SocialPage implements OnInit, OnDestroy {
       });
 
       if (successCount > 0) {
-        this.socialService.setNotificationBadgeCount(this.totalNotificationsBadgeCount);
+        this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
       }
 
       // Show appropriate toast message
@@ -900,6 +911,15 @@ export class SocialPage implements OnInit, OnDestroy {
 
       this.marketplaceListings = listings;
       this.unresolvedPurchase = unresolvedPurchase;
+
+      // If the Marketplace tab was already selected (e.g. restored from localStorage on
+      // load), the listings we just fetched are about to be shown, so clear the badge for
+      // them immediately instead of waiting for a segment change that won't happen.
+      if (this.selectedSegment === 'marketplace') {
+        this.markMarketplaceListingsSeen();
+      } else {
+        this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
+      }
     } catch (error) {
       console.error('Error loading marketplace data:', error);
       this.marketplaceListings = [];
@@ -1078,5 +1098,20 @@ export class SocialPage implements OnInit, OnDestroy {
 
   get hasUnreadNotifications(): boolean {
     return this.unreadNotificationsCount > 0;
+  }
+
+  /** Unresolved purchase (1) + friends' listings posted since this user last viewed the Marketplace tab. */
+  get marketplaceBadgeCount(): number {
+    if (!this.currentUser) return 0;
+    const lastSeen = this.marketplaceService.getLastSeenTime(this.currentUser.id);
+    const newListingsCount = this.marketplaceListings.filter(
+      l => !l.is_own && new Date(l.created_at).getTime() > lastSeen
+    ).length;
+    return (this.unresolvedPurchase ? 1 : 0) + newListingsCount;
+  }
+
+  /** Combined count shown on the bottom-nav Social icon: notifications + marketplace signals. */
+  get bottomNavBadgeCount(): number {
+    return this.totalNotificationsBadgeCount + this.marketplaceBadgeCount;
   }
 }

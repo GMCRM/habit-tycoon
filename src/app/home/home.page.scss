@@ -126,10 +126,10 @@ button, span, div, ion-button {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 24px;
   width: 100%;
-  padding: 0 16px;
+  padding: 0 12px;
 
   .stat-card {
     background: var(--business-item-background);
@@ -165,8 +165,8 @@ button, span, div, ion-button {
             margin: 0;
             font-size: 1.8rem;
             font-weight: bold;
-            color: var(--cash-color);
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+            color: var(--earnings-color);
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
           }
 
           p {
@@ -961,8 +961,8 @@ button, span, div, ion-button {
 @media (min-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    padding: 0 20px;
+    gap: 14px;
+    padding: 0 14px;
   }
   
   .user-info {
@@ -1114,10 +1114,10 @@ button, span, div, ion-button {
 // Mobile-specific styling to eliminate white space
 @media (max-width: 768px) {
   .stats-grid {
-    gap: 8px;
-    padding: 0 12px;
+    gap: 6px;
+    padding: 0 8px;
   }
-  
+
   // Enhanced mobile styling for hold-complete button
   .hold-complete-button {
     min-width: 100px !important;
@@ -1212,8 +1212,8 @@ button, span, div, ion-button {
 // they just shrink progressively instead of collapsing into a carousel.
 @media (max-width: 768px) {
   .stats-grid {
-    gap: 8px;
-    padding: 0 12px;
+    gap: 6px;
+    padding: 0 8px;
 
     .stat-card {
       ion-card-content {
@@ -1238,8 +1238,8 @@ button, span, div, ion-button {
 
 @media (max-width: 480px) {
   .stats-grid {
-    gap: 6px;
-    padding: 0 10px;
+    gap: 4px;
+    padding: 0 6px;
 
     .stat-card {
       ion-card-content {

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
+import { MarketplaceService } from './marketplace.service';
 
 export interface Friend {
   id: string;
@@ -57,7 +58,7 @@ export interface Challenge {
 export class SocialService {
   private supabase: SupabaseClient;
 
-  constructor(supabaseService: SupabaseService) {
+  constructor(supabaseService: SupabaseService, private marketplaceService: MarketplaceService) {
     this.supabase = supabaseService.client;
   }
 
@@ -617,17 +618,18 @@ export class SocialService {
 
   async getTotalNotificationBadgeCount(userId: string): Promise<number> {
     try {
-      const [pokes, pendingCount] = await Promise.all([
+      const [pokes, pendingCount, marketplaceBadgeCount] = await Promise.all([
         this.getUserPokes(userId),
         this.supabase
           .from('friendships')
           .select('id', { count: 'exact', head: true })
           .eq('friend_id', userId)
-          .eq('status', 'pending')
+          .eq('status', 'pending'),
+        this.marketplaceService.getMarketplaceBadgeCount(userId)
       ]);
 
       const unreadPokes = pokes.filter((p: any) => !p.is_read).length;
-      return unreadPokes + (pendingCount.count || 0);
+      return unreadPokes + (pendingCount.count || 0) + marketplaceBadgeCount;
     } catch (error) {
       console.error('Error loading notification badge count:', error);
       return 0;

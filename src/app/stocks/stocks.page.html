@@ -426,93 +426,59 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Portfolio Summary Stats -->
+      <!-- Portfolio Summary Stats: all 3 cards shown together at every screen size -->
       <div *ngIf="!isLoading && portfolio.length > 0">
-        <!-- Desktop: Original 4-card grid -->
-        <div class="stats-grid ion-margin-bottom desktop-stats">
-          <ion-card class="stat-card">
+        <div class="stats-grid ion-margin-bottom">
+          <ion-card
+            class="stat-card"
+            [class.clickable-card]="isStatAbbreviated(getTotalDailyDividends())"
+            (click)="showExactStatValue('Today\'s Actual Dividends', getTotalDailyDividends(), true)"
+          >
             <ion-card-content>
               <div class="stat-content">
-                <ion-icon name="wallet" color="secondary"></ion-icon>
                 <div class="stat-info">
-                  <h2>${{ getTotalDailyDividends().toFixed(2) }}</h2>
+                  <h2>{{ formatStatCurrency(getTotalDailyDividends()) }}</h2>
                   <p>Today's Actual Dividends</p>
                 </div>
               </div>
             </ion-card-content>
           </ion-card>
 
-          <ion-card class="stat-card">
+          <ion-card
+            class="stat-card"
+            [class.clickable-card]="isStatAbbreviated(getTotalPortfolioValue())"
+            (click)="showExactStatValue('Portfolio Value', getTotalPortfolioValue(), true)"
+          >
             <ion-card-content>
               <div class="stat-content">
-                <ion-icon name="wallet" color="primary"></ion-icon>
                 <div class="stat-info">
-                  <h2>${{ getTotalPortfolioValue().toFixed(2) }}</h2>
+                  <h2>{{ formatStatCurrency(getTotalPortfolioValue()) }}</h2>
                   <p>Portfolio Value</p>
                 </div>
               </div>
             </ion-card-content>
           </ion-card>
 
-          <ion-card class="stat-card">
+          <ion-card
+            class="stat-card"
+            [class.clickable-card]="isStatAbbreviated(getTotalPortfolioProfitLoss())"
+            (click)="showExactStatValue('All-Time Gains', getTotalPortfolioProfitLoss(), true)"
+          >
             <ion-card-content>
               <div class="stat-content">
-                <ion-icon
-                  name="trending-up"
-                  [color]="getTotalPortfolioProfitLoss() >= 0 ? 'success' : 'danger'"
-                ></ion-icon>
                 <div class="stat-info">
                   <h2
                     [class.profit]="getTotalPortfolioProfitLoss() >= 0"
                     [class.loss]="getTotalPortfolioProfitLoss() < 0"
                   >
-                    {{ getTotalPortfolioProfitLoss() >= 0 ? '+' : '' }}${{
-                    getTotalPortfolioProfitLoss().toFixed(2) }}
+                    {{ getTotalPortfolioProfitLoss() >= 0 ? '+' : '' }}{{
+                    formatStatCurrency(getTotalPortfolioProfitLoss()) }}
                   </h2>
                   <p>All-Time Gains</p>
                 </div>
               </div>
             </ion-card-content>
           </ion-card>
-        </div>
-
-        <!-- Mobile: Carousel with single card -->
-        <div class="mobile-stats-carousel ion-margin-bottom">
-          <div
-            class="carousel-container"
-            (touchstart)="onStatTouchStart($event)"
-            (touchend)="onStatTouchEnd($event)"
-          >
-            <ion-card
-              class="stat-card carousel-card"
-              *ngIf="portfolioStats[currentStatIndex] as stat"
-            >
-              <ion-card-content>
-                <div class="stat-content">
-                  <ion-icon
-                    [name]="stat.icon"
-                    [color]="stat.color || stat.getColor?.()"
-                  >
-                  </ion-icon>
-                  <div class="stat-info">
-                    <h2 [class]="stat.getClass?.()">${{ stat.getValue() }}</h2>
-                    <p>{{ stat.label }}</p>
-                  </div>
-                </div>
-              </ion-card-content>
-            </ion-card>
-
-            <!-- Carousel indicators -->
-            <div class="carousel-indicators">
-              <span
-                *ngFor="let stat of portfolioStats; let i = index"
-                class="indicator"
-                [class.active]="i === currentStatIndex"
-                (click)="currentStatIndex = i; stopAutoCarousel()"
-              >
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 

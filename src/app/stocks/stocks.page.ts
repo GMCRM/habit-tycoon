@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -92,7 +92,7 @@ interface Portfolio {
     BottomNavComponent, HabitGridComponent, StockChartComponent
   ]
 })
-export class StocksPage implements OnInit, OnDestroy {
+export class StocksPage implements OnInit {
   selectedTab: 'available' | 'portfolio' = 'available';
   friendBusinesses: FriendBusiness[] = [];
   portfolio: Portfolio[] = [];
@@ -109,14 +109,10 @@ export class StocksPage implements OnInit, OnDestroy {
   showDetailedNetWorth = false;
   showDetailedCash = false;
   
-  // Portfolio stats carousel properties
-  currentStatIndex = 0;
-  autoCarouselInterval: any = null;
   isMobileScreen = false;
   isMediumSmallScreen = false;
   isMediumLargeScreen = false;
-  portfolioStats: any[] = [];
-  
+
   // Grid display properties
   weeksToShow = 26; // Default weeks to show
   
@@ -171,16 +167,11 @@ export class StocksPage implements OnInit, OnDestroy {
       this.streakSortDirection = savedStreakSort;
     }
 
-    // Check initial screen size and setup carousel
+    // Check initial screen size
     this.checkScreenSize();
-    this.setupPortfolioStats();
-    
+
     await this.loadCurrentUser();
     await this.loadData();
-  }
-
-  ngOnDestroy() {
-    this.stopAutoCarousel();
   }
 
   @HostListener('window:resize', ['$event'])
@@ -208,90 +199,11 @@ export class StocksPage implements OnInit, OnDestroy {
       this.weeksToShow = 53; // Full year for large screens (53 weeks = full year)
       console.log('🖥️ LARGE screen detected:', width + 'px - Setting weeks to:', this.weeksToShow, '(FULL YEAR)');
     }
-    
-    if (this.isMobileScreen && this.selectedTab === 'portfolio' && this.portfolio.length > 0) {
-      this.startAutoCarousel();
-    } else {
-      this.stopAutoCarousel();
-    }
-  }
-
-  private setupPortfolioStats() {
-    this.portfolioStats = [
-      {
-        icon: 'wallet',
-        color: 'secondary',
-        getValue: () => this.getTotalDailyDividends().toFixed(2),
-        label: "Today's Actual Dividends"
-      },
-      {
-        icon: 'wallet', 
-        color: 'primary',
-        getValue: () => this.getTotalPortfolioValue().toFixed(2),
-        label: 'Portfolio Value'
-      },
-      {
-        icon: 'trending-up',
-        getColor: () => this.getTotalPortfolioProfitLoss() >= 0 ? 'success' : 'danger',
-        getValue: () => `${this.getTotalPortfolioProfitLoss() >= 0 ? '+' : ''}$${this.getTotalPortfolioProfitLoss().toFixed(2)}`,
-        label: 'All-Time Gains',
-        getClass: () => this.getTotalPortfolioProfitLoss() >= 0 ? 'profit' : 'loss'
-      },
-      {
-        icon: 'trending-up',
-        color: 'primary', 
-        getValue: () => this.userProfile?.net_worth || '0.00',
-        label: 'Net Worth'
-      }
-    ];
-  }
-
-  private startAutoCarousel() {
-    this.stopAutoCarousel();
-    this.autoCarouselInterval = setInterval(() => {
-      this.nextStat();
-    }, 8000); // Change every 8 seconds
-  }
-
-  stopAutoCarousel() {
-    if (this.autoCarouselInterval) {
-      clearInterval(this.autoCarouselInterval);
-      this.autoCarouselInterval = null;
-    }
-  }
-
-  nextStat() {
-    this.currentStatIndex = (this.currentStatIndex + 1) % this.portfolioStats.length;
-  }
-
-  previousStat() {
-    this.currentStatIndex = this.currentStatIndex === 0 
-      ? this.portfolioStats.length - 1 
-      : this.currentStatIndex - 1;
-  }
-
-  onStatTouchStart(event: TouchEvent) {
-    this.stopAutoCarousel(); // Stop auto-rotation when user interacts
-  }
-
-  onStatTouchEnd(event: TouchEvent) {
-    // Restart auto-rotation after user interaction
-    if (this.isMobileScreen && this.selectedTab === 'portfolio' && this.portfolio.length > 0) {
-      setTimeout(() => this.startAutoCarousel(), 2000);
-    }
   }
 
   selectTab(tab: 'available' | 'portfolio') {
     this.selectedTab = tab;
     localStorage.setItem('stocks-active-tab', tab);
-    
-    // Handle carousel for portfolio tab
-    if (tab === 'portfolio' && this.isMobileScreen && this.portfolio.length > 0) {
-      this.setupPortfolioStats();
-      this.startAutoCarousel();
-    } else {
-      this.stopAutoCarousel();
-    }
   }
 
   toggleHelpSection() {
@@ -325,12 +237,6 @@ export class StocksPage implements OnInit, OnDestroy {
       
       // Load reminder history after portfolio data is loaded
       this.loadReminderHistory();
-      
-      // Setup carousel after data is loaded
-      if (this.selectedTab === 'portfolio' && this.isMobileScreen && this.portfolio.length > 0) {
-        this.setupPortfolioStats();
-        this.startAutoCarousel();
-      }
     } catch (error) {
       console.error('Error loading stocks data:', error);
     }
@@ -482,6 +388,65 @@ export class StocksPage implements OnInit, OnDestroy {
 
   getPotentialDailyDividends(): number {
     return this.portfolio.reduce((sum, item) => sum + item.dailyDividendRate, 0);
+  }
+
+  // Portfolio stat numbers abbreviate (100K, 1M, 1T...) once they hit this size
+  private readonly STAT_ABBREVIATE_THRESHOLD = 100000;
+
+  isStatAbbreviated(value: number): boolean {
+    return Math.abs(value || 0) >= this.STAT_ABBREVIATE_THRESHOLD;
+  }
+
+  /**
+   * Abbreviate a number to K/M/B/T, always rounding UP so the displayed
+   * value never understates the real amount (e.g. 100,001 -> "101K").
+   */
+  private abbreviateStatNumber(value: number): string {
+    const units = ['', 'K', 'M', 'B', 'T'];
+    const sign = value < 0 ? '-' : '';
+    let scaled = Math.abs(value);
+    let unitIndex = 0;
+    while (scaled >= 1000 && unitIndex < units.length - 1) {
+      scaled /= 1000;
+      unitIndex++;
+    }
+    let rounded = Math.ceil(scaled * 10) / 10;
+    // Rounding up can push a value like 999.99K to 1000K - roll it into the next unit
+    if (rounded >= 1000 && unitIndex < units.length - 1) {
+      rounded = Math.ceil((rounded / 1000) * 10) / 10;
+      unitIndex++;
+    }
+    const display = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
+    return `${sign}${display}${units[unitIndex]}`;
+  }
+
+  /**
+   * Format a currency amount with thousands separators (e.g. $1,234.56),
+   * abbreviating to $101K / $1.2M / $1T once it crosses the threshold.
+   */
+  formatStatCurrency(amount: number): string {
+    const value = amount || 0;
+    if (this.isStatAbbreviated(value)) {
+      return '$' + this.abbreviateStatNumber(value);
+    }
+    return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /**
+   * Show the exact value behind an abbreviated portfolio stat in a popup.
+   */
+  async showExactStatValue(label: string, value: number, isCurrency: boolean) {
+    if (!this.isStatAbbreviated(value)) return;
+    const exact = value || 0;
+    const message = isCurrency
+      ? '$' + exact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : exact.toLocaleString('en-US');
+    const alert = await this.alertController.create({
+      header: label,
+      message,
+      buttons: ['OK'],
+    });
+    await alert.present();
   }
 
   /**

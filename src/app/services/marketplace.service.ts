@@ -150,4 +150,37 @@ export class MarketplaceService {
   clearUnresolvedPurchase(): void {
     this.unresolvedPurchaseSubject.next(null);
   }
+
+  private getLastSeenKey(viewerId: string): string {
+    return `marketplace-last-seen-${viewerId}`;
+  }
+
+  /** Timestamp (ms) this user last viewed the Marketplace tab; listings created after this count as "new". */
+  getLastSeenTime(viewerId: string): number {
+    const stored = localStorage.getItem(this.getLastSeenKey(viewerId));
+    return stored ? parseInt(stored, 10) : 0;
+  }
+
+  /** Call when the user opens the Marketplace tab, to clear the "new listings" badge. */
+  markListingsSeen(viewerId: string): void {
+    localStorage.setItem(this.getLastSeenKey(viewerId), Date.now().toString());
+  }
+
+  /** Unresolved purchase (1) + friends' listings posted since this user last viewed the Marketplace tab. */
+  async getMarketplaceBadgeCount(viewerId: string): Promise<number> {
+    try {
+      const [listings, unresolvedPurchase] = await Promise.all([
+        this.getListings(viewerId),
+        this.getUnresolvedPurchase(viewerId)
+      ]);
+
+      const lastSeen = this.getLastSeenTime(viewerId);
+      const newListingsCount = listings.filter(l => !l.is_own && new Date(l.created_at).getTime() > lastSeen).length;
+
+      return (unresolvedPurchase ? 1 : 0) + newListingsCount;
+    } catch (error) {
+      console.error('Error computing marketplace badge count:', error);
+      return 0;
+    }
+  }
 }

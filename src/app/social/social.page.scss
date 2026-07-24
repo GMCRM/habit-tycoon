@@ -185,6 +185,26 @@ ion-content {
   }
 }
 
+// Mobile view: icon-only tabs, no text labels
+@media (max-width: 480px) {
+  .social-tabs {
+    ion-segment-button {
+      ion-label {
+        display: none;
+      }
+
+      ion-icon {
+        margin-bottom: 0;
+      }
+
+      // Re-centre the badge over the icon now that the label is gone
+      ion-badge {
+        right: calc(50% - 20px);
+      }
+    }
+  }
+}
+
 // Tab content container
 .tab-content {
   min-height: 400px;
