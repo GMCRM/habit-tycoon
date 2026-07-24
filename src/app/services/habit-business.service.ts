@@ -36,6 +36,7 @@ export interface HabitBusiness {
   is_active: boolean;
   display_order: number; // User's preferred order for display
   user_custom_order: number; // User's original custom order (for resetting)
+  last_upgraded_at?: string; // Last tier-upgrade timestamp; upgrades are rate-limited to once/24h
   created_at: string;
   updated_at: string;
   business_types?: BusinessType;
@@ -2627,7 +2628,8 @@ export class HabitBusinessService {
           currentProgress: holding.current_progress || 0,
           lastCompletedAt: holding.last_completed_at,
           recurrenceInterval: holding.recurrence_interval,
-          activeDays: holding.active_days || []
+          activeDays: holding.active_days || [],
+          lastPurchaseAt: holding.last_purchase_at
         };
       });
       

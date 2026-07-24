@@ -485,7 +485,26 @@ export class HomePage implements OnInit, OnDestroy {
    */
   async upgradeHabitBusiness(habitBusiness: HabitBusiness) {
     console.log('📈 Upgrading habit business:', habitBusiness);
-    
+
+    // Businesses can only be upgraded once every 24h (server-enforced too —
+    // this just avoids a round trip and gives a friendlier message).
+    const UPGRADE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    if (habitBusiness.last_upgraded_at) {
+      const msSinceUpgrade = Date.now() - new Date(habitBusiness.last_upgraded_at).getTime();
+      const msRemaining = UPGRADE_COOLDOWN_MS - msSinceUpgrade;
+      if (msRemaining > 0) {
+        const hoursRemaining = Math.ceil(msRemaining / (60 * 60 * 1000));
+        const toast = await this.toastController.create({
+          message: `⏳ This business was just upgraded — you can upgrade it again in ${hoursRemaining}h.`,
+          duration: 3000,
+          position: 'top',
+          color: 'warning'
+        });
+        await toast.present();
+        return;
+      }
+    }
+
     try {
       // Get all available business types to show upgrade options
       const businessTypes = await this.habitBusinessService.getBusinessTypes();

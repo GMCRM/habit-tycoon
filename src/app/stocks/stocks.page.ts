@@ -73,6 +73,7 @@ interface Portfolio {
   lastCompletedAt: string | null;
   recurrenceInterval: string;
   activeDays: number[];
+  lastPurchaseAt: string;
 }
 
 @Component({
@@ -484,6 +485,24 @@ export class StocksPage implements OnInit, OnDestroy {
    */
   async sellStocks(holding: Portfolio, quantityOrPercentage: number = 0.5) {
     try {
+      // Shares can't be sold until 48h after purchase (server-enforced too —
+      // this just avoids a round trip and gives a friendlier message).
+      const VESTING_PERIOD_MS = 48 * 60 * 60 * 1000;
+      if (holding.lastPurchaseAt) {
+        const msSincePurchase = Date.now() - new Date(holding.lastPurchaseAt).getTime();
+        const msRemaining = VESTING_PERIOD_MS - msSincePurchase;
+        if (msRemaining > 0) {
+          const hoursRemaining = Math.ceil(msRemaining / (60 * 60 * 1000));
+          const toast = await this.toastController.create({
+            message: `⏳ These shares are still vesting — sellable in ${hoursRemaining}h.`,
+            duration: 3000,
+            color: 'warning'
+          });
+          await toast.present();
+          return;
+        }
+      }
+
       let sharesToSell: number;
       let isPercentage = false;
       
