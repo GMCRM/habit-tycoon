@@ -4,6 +4,9 @@
     <ion-tab-button class="nav-button" (click)="openSocial()">
       <ion-icon name="people"></ion-icon>
       <ion-label>Social</ion-label>
+      <ion-badge *ngIf="notificationBadgeCount > 0" color="danger" class="social-badge"
+        >{{ notificationBadgeCount }}</ion-badge
+      >
     </ion-tab-button>
 
     <!-- Main Button: Add or Home -->

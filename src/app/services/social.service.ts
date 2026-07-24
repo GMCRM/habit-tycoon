@@ -607,6 +607,27 @@ export class SocialService {
     }
   }
 
+  // Lightweight count for badges (unread notifications + pending friend requests),
+  // mirroring social.page.ts's totalNotificationsBadgeCount without the heavy profile enrichment.
+  async getTotalNotificationBadgeCount(userId: string): Promise<number> {
+    try {
+      const [pokes, pendingCount] = await Promise.all([
+        this.getUserPokes(userId),
+        this.supabase
+          .from('friendships')
+          .select('id', { count: 'exact', head: true })
+          .eq('friend_id', userId)
+          .eq('status', 'pending')
+      ]);
+
+      const unreadPokes = pokes.filter((p: any) => !p.is_read).length;
+      return unreadPokes + (pendingCount.count || 0);
+    } catch (error) {
+      console.error('Error loading notification badge count:', error);
+      return 0;
+    }
+  }
+
   async markPokeAsRead(pokeId: string): Promise<void> {
     try {
       console.log('🔍 SocialService: Marking poke as read:', pokeId);

@@ -1,23 +1,41 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { IonTabBar, IonTabButton, IonIcon, IonLabel } from '@ionic/angular/standalone';
+import { IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { add, people, trendingUp, home } from 'ionicons/icons';
+import { AuthService } from '../../services/auth.service';
+import { SocialService } from '../../services/social.service';
 
 @Component({
   selector: 'app-bottom-nav',
   templateUrl: './bottom-nav.component.html',
   styleUrls: ['./bottom-nav.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonTabBar, IonTabButton, IonIcon, IonLabel]
+  imports: [CommonModule, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge]
 })
-export class BottomNavComponent {
+export class BottomNavComponent implements OnInit {
 
   @Input() mainButton: 'add' | 'home' = 'add';
+  notificationBadgeCount = 0;
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private socialService: SocialService
+  ) {
     addIcons({ add, people, trendingUp, home });
+  }
+
+  async ngOnInit() {
+    try {
+      const { data: { user } } = await this.authService.getUser();
+      if (user) {
+        this.notificationBadgeCount = await this.socialService.getTotalNotificationBadgeCount(user.id);
+      }
+    } catch (error) {
+      console.error('❌ BottomNav: Failed to load notification badge count:', error);
+    }
   }
 
 

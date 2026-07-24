@@ -55,6 +55,7 @@
 .nav-button {
   --color: #ffdb1a;
   --color-selected: #ffdb1a;
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -62,6 +63,17 @@
   justify-content: center;
   min-height: 50px;
   transition: all 0.2s ease;
+}
+
+.social-badge {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 22px);
+  font-size: 0.65rem;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .nav-button:hover {
