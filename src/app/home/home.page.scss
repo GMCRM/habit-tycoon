@@ -157,14 +157,9 @@ button, span, div, ion-button {
       .stat-content {
         display: flex;
         align-items: center;
-        gap: 12px;
-        
-        ion-icon {
-          font-size: 2rem;
-          color: var(--ion-color-primary);
-          filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
-        }
-        
+        justify-content: center;
+        text-align: center;
+
         .stat-info {
           h2 {
             margin: 0;
@@ -173,7 +168,7 @@ button, span, div, ion-button {
             color: var(--cash-color);
             text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
           }
-          
+
           p {
             margin: 0;
             color: rgba(255, 255, 255, 0.8);
@@ -201,6 +196,8 @@ button, span, div, ion-button {
     margin-bottom: 12px;
     
     .welcome-text {
+      text-align: center;
+
       h2 {
         margin: 0;
         color: var(--ion-color-primary);
@@ -1260,16 +1257,8 @@ button, span, div, ion-button {
         .stat-content {
           display: flex;
           align-items: center;
-          gap: 12px;
           justify-content: center;
           text-align: center;
-
-          ion-icon {
-            font-size: 28px;
-            min-width: 36px;
-            color: var(--ion-color-primary);
-            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
-          }
 
           .stat-info {
             h2 {
@@ -1324,17 +1313,11 @@ button, span, div, ion-button {
         padding: 14px;
         
         .stat-content {
-          gap: 10px;
-          
-          ion-icon {
-            font-size: 1.8rem;
-          }
-          
           .stat-info {
             h2 {
               font-size: 1.6rem;
             }
-            
+
             p {
               font-size: 0.85rem;
             }

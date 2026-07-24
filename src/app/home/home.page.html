@@ -159,7 +159,6 @@
         >
           <ion-card-content>
             <div class="stat-content">
-              <ion-icon name="checkmark-circle" color="success"></ion-icon>
               <div class="stat-info">
                 <h2>{{ formatCount(pendingHabitsCount) }}</h2>
                 <p>Pending Habits</p>
@@ -175,7 +174,6 @@
         >
           <ion-card-content>
             <div class="stat-content">
-              <ion-icon name="business" color="success"></ion-icon>
               <div class="stat-info">
                 <h2>{{ formatCurrency(todaysEarnings) }}</h2>
                 <p>Today's Habit Earnings</p>
@@ -191,7 +189,6 @@
         >
           <ion-card-content>
             <div class="stat-content">
-              <ion-icon name="wallet" color="secondary"></ion-icon>
               <div class="stat-info">
                 <h2>{{ formatCurrency(todaysStockEarnings) }}</h2>
                 <p>Today's Stock Dividends</p>
@@ -216,7 +213,6 @@
           >
             <ion-card-content>
               <div class="stat-content">
-                <ion-icon [name]="stat.icon" [color]="stat.color"></ion-icon>
                 <div class="stat-info">
                   <h2>{{ stat.getValue() }}</h2>
                   <p>{{ stat.label }}</p>
