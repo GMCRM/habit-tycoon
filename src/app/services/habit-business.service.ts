@@ -581,7 +581,7 @@ export class HabitBusinessService {
       // Calculate sell value: 70% of original cost (to prevent exploitation)
       // plus the habit's current per-completion pay (base pay + streak bonus)
       const originalCost = habitBusiness.cost || habitBusiness.business_types?.base_cost || 1;
-      const streakMultiplier = habitBusiness.streak > 1 ? (habitBusiness.streak - 1) * 0.1 : 0;
+      const streakMultiplier = habitBusiness.streak > 1 ? Math.min((habitBusiness.streak - 1) * 0.1, 1) : 0;
       const baseEarnings = habitBusiness.earnings_per_completion || 0;
       const perCompletionPay = baseEarnings + baseEarnings * streakMultiplier;
       const sellValue = Math.floor(originalCost * 0.7) + Math.floor(perCompletionPay);
@@ -840,7 +840,8 @@ export class HabitBusinessService {
       const boostedBaseEarnings = baseEarnings + stockBoost;
 
       // Apply streak bonus only if the full goal is completed — on top of the stock-boosted base
-      const streakMultiplier = isGoalCompleted && newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      // Bonus is capped at +100% (2x total pay) so long streaks don't run away unbounded
+      const streakMultiplier = isGoalCompleted && newStreak > 1 ? Math.min((newStreak - 1) * 0.1, 1) : 0;
       const bonusAmount = boostedBaseEarnings * streakMultiplier;
       const baseTotal = boostedBaseEarnings + bonusAmount;
 
@@ -1090,7 +1091,8 @@ export class HabitBusinessService {
       }
 
       const boostedBaseEarnings = baseEarnings + stockBoost;
-      const streakMultiplier = newStreak > 1 ? (newStreak - 1) * 0.1 : 0;
+      // Bonus is capped at +100% (2x total pay) so long streaks don't run away unbounded
+      const streakMultiplier = newStreak > 1 ? Math.min((newStreak - 1) * 0.1, 1) : 0;
       const baseTotal = boostedBaseEarnings + boostedBaseEarnings * streakMultiplier;
 
       const totalEarnings = baseTotal;

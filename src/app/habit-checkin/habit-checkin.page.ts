@@ -212,7 +212,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
 
     // Calculate potential earnings with streak multiplier
     const nextStreak = effectiveStreak + 1;
-    const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
+    const streakMultiplier = nextStreak === 1 ? 0 : Math.min((nextStreak - 1) * 0.1, 1);
     const potentialEarnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
 
     return {
@@ -237,7 +237,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
     this.dailyEarnings = this.habits
       .filter(h => h.completedToday)
       .reduce((total, habit) => {
-        const streakMultiplier = habit.streak === 1 ? 0 : (habit.streak - 1) * 0.1;
+        const streakMultiplier = habit.streak === 1 ? 0 : Math.min((habit.streak - 1) * 0.1, 1);
         const earnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
         return total + earnings;
       }, 0);
@@ -293,7 +293,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
       
       // Show success message with earnings
       const nextStreak = habit.streak + 1;
-      const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
+      const streakMultiplier = nextStreak === 1 ? 0 : Math.min((nextStreak - 1) * 0.1, 1);
       const earnings = habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
       await this.showToast(
         `🎉 Habit completed! You earned $${earnings} (Day ${nextStreak})`, 
@@ -317,7 +317,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
 
   calculateEarnings(habit: HabitWithCompletion): number {
     const nextStreak = habit.streak + 1;
-    const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
+    const streakMultiplier = nextStreak === 1 ? 0 : Math.min((nextStreak - 1) * 0.1, 1);
     return habit.earnings_per_completion + (habit.earnings_per_completion * streakMultiplier);
   }
 

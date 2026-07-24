@@ -762,8 +762,9 @@ export class HomePage implements OnInit, OnDestroy {
     const stockBoost = baseEarnings * (stockBoostPercentage / 100);
     const boostedBaseEarnings = baseEarnings + stockBoost;
 
-    // Day 1: $1.00 (0x bonus), Day 2: $1.10 (0.1x bonus), Day 3: $1.20 (0.2x bonus), etc.
-    const streakMultiplier = nextStreak === 1 ? 0 : (nextStreak - 1) * 0.1;
+    // Day 1: $1.00 (0x bonus), Day 2: $1.10 (0.1x bonus), Day 3: $1.20 (0.2x bonus), ...
+    // capped at +100% (2x total pay) so long streaks don't run away unbounded
+    const streakMultiplier = nextStreak === 1 ? 0 : Math.min((nextStreak - 1) * 0.1, 1);
     const baseTotal = boostedBaseEarnings + (boostedBaseEarnings * streakMultiplier);
     const streakBonus = baseTotal - boostedBaseEarnings; // The bonus amount
 
