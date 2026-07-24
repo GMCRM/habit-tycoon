@@ -8,11 +8,12 @@ import {
   IonButton, IonIcon, IonBadge, IonSpinner,
   IonModal, IonButtons, IonItem, IonLabel, IonInput,
   IonSelect, IonSelectOption,
-  ToastController, AlertController
+  ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
+import { StockOwnersModalComponent } from '../shared/components/stock-owners-modal/stock-owners-modal.component';
 import { HabitBusinessService } from '../services/habit-business.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { OfflineQueuedError } from '../services/offline-queue.service';
@@ -25,7 +26,7 @@ import {
   settings, trendingUpOutline, pieChartOutline,
   swapHorizontal, helpCircle, close, addCircle, pieChart,
   wallet, removeCircle, add, remove, chevronBack,
-  chevronForward, helpCircleOutline
+  chevronForward, helpCircleOutline, people, arrowUp, arrowDown
 } from 'ionicons/icons';
 
 interface FriendBusiness {
@@ -135,7 +136,8 @@ export class StocksPage implements OnInit, OnDestroy {
   
   // Filter properties
   selectedOwnerFilter: string = '';
-  
+  streakSortDirection: 'asc' | 'desc' | null = null;
+
   constructor(
     private router: Router,
     private habitBusinessService: HabitBusinessService,
@@ -143,10 +145,11 @@ export class StocksPage implements OnInit, OnDestroy {
     private socialService: SocialService,
     private authService: AuthService,
     private toastController: ToastController,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private modalController: ModalController
   ) {
     // Register icons
-    addIcons({funnel,closeCircle,settings,trendingUpOutline,pieChartOutline,swapHorizontal,helpCircle,trendingUp,close,addCircle,pieChart,wallet,trendingDown,removeCircle,helpCircleOutline,chevronBack,chevronForward,remove,add,arrowBack,star,business,cash,checkmarkCircle,alertCircle});
+    addIcons({funnel,closeCircle,settings,trendingUpOutline,pieChartOutline,swapHorizontal,helpCircle,trendingUp,close,addCircle,pieChart,wallet,trendingDown,removeCircle,helpCircleOutline,chevronBack,chevronForward,remove,add,arrowBack,star,business,cash,checkmarkCircle,alertCircle,people,arrowUp,arrowDown});
   }
 
   async ngOnInit() {
@@ -161,7 +164,13 @@ export class StocksPage implements OnInit, OnDestroy {
     if (savedOwnerFilter) {
       this.selectedOwnerFilter = savedOwnerFilter;
     }
-    
+
+    // Load saved streak sort direction from localStorage
+    const savedStreakSort = localStorage.getItem('stocks-streak-sort');
+    if (savedStreakSort === 'asc' || savedStreakSort === 'desc') {
+      this.streakSortDirection = savedStreakSort;
+    }
+
     // Check initial screen size and setup carousel
     this.checkScreenSize();
     this.setupPortfolioStats();
@@ -283,11 +292,6 @@ export class StocksPage implements OnInit, OnDestroy {
     } else {
       this.stopAutoCarousel();
     }
-  }
-
-  toggleMobileTab() {
-    const newTab = this.selectedTab === 'available' ? 'portfolio' : 'available';
-    this.selectTab(newTab);
   }
 
   toggleHelpSection() {
@@ -808,6 +812,22 @@ export class StocksPage implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Show who owns shares of a business's stock, and how many each holds
+   */
+  async openStockOwnersModal(businessName: string, habitBusinessId: string) {
+    const modal = await this.modalController.create({
+      component: StockOwnersModalComponent,
+      componentProps: {
+        businessName,
+        habitBusinessId,
+        modalController: this.modalController
+      },
+      cssClass: 'stock-owners-modal'
+    });
+    await modal.present();
+  }
+
   openWeeklyReceipt() {
     this.router.navigate(['/weekly-receipt']);
   }
@@ -1069,15 +1089,25 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Get filtered businesses based on selected owner filter
+   * Get filtered (and optionally streak-sorted) businesses
    */
   getFilteredBusinesses(): FriendBusiness[] {
-    if (!this.selectedOwnerFilter || this.selectedOwnerFilter === '') {
-      return this.friendBusinesses;
+    let businesses = this.friendBusinesses;
+
+    if (this.selectedOwnerFilter) {
+      businesses = businesses.filter(business =>
+        business.ownerName === this.selectedOwnerFilter
+      );
     }
-    return this.friendBusinesses.filter(business => 
-      business.ownerName === this.selectedOwnerFilter
-    );
+
+    if (this.streakSortDirection) {
+      businesses = [...businesses].sort((a, b) => {
+        const diff = this.getEffectiveStreakForFriendBusiness(a) - this.getEffectiveStreakForFriendBusiness(b);
+        return this.streakSortDirection === 'asc' ? diff : -diff;
+      });
+    }
+
+    return businesses;
   }
 
   /**
@@ -1100,11 +1130,32 @@ export class StocksPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Clear the owner filter
+   * Toggle streak sort direction; clicking the active direction turns sorting off
    */
-  clearOwnerFilter(): void {
+  setStreakSort(direction: 'asc' | 'desc'): void {
+    this.streakSortDirection = this.streakSortDirection === direction ? null : direction;
+    if (this.streakSortDirection) {
+      localStorage.setItem('stocks-streak-sort', this.streakSortDirection);
+    } else {
+      localStorage.removeItem('stocks-streak-sort');
+    }
+  }
+
+  /**
+   * Whether any owner filter or streak sort is currently active
+   */
+  hasActiveFilters(): boolean {
+    return !!this.selectedOwnerFilter || !!this.streakSortDirection;
+  }
+
+  /**
+   * Clear the owner filter and streak sort
+   */
+  clearFilters(): void {
     this.selectedOwnerFilter = '';
+    this.streakSortDirection = null;
     localStorage.removeItem('stocks-owner-filter');
+    localStorage.removeItem('stocks-streak-sort');
   }
 
   /**

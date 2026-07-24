@@ -48,87 +48,21 @@
     </div>
 
     <!-- Tab Switcher -->
-    <!-- Desktop Tabs -->
-    <div
-      class="stats-grid ion-margin-bottom desktop-tabs"
-      style="grid-template-columns: 1fr 1fr"
-    >
-      <ion-card
-        class="stat-card clickable-card"
-        [class.active-tab]="selectedTab === 'available'"
+    <div class="stocks-view-toggle ion-margin-bottom">
+      <button
+        class="view-toggle-btn"
+        [class.active]="selectedTab === 'available'"
         (click)="selectTab('available')"
       >
-        <ion-card-content>
-          <div class="stat-content">
-            <ion-icon
-              name="trending-up-outline"
-              [color]="selectedTab === 'available' ? 'primary' : 'medium'"
-            ></ion-icon>
-            <div class="stat-info">
-              <h2
-                [style.color]="selectedTab === 'available' ? 'var(--ion-color-primary)' : 'var(--ion-color-medium)'"
-              >
-                Available
-              </h2>
-              <p>Browse Stocks</p>
-            </div>
-          </div>
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card
-        class="stat-card clickable-card"
-        [class.active-tab]="selectedTab === 'portfolio'"
+        Available
+      </button>
+      <button
+        class="view-toggle-btn"
+        [class.active]="selectedTab === 'portfolio'"
         (click)="selectTab('portfolio')"
       >
-        <ion-card-content>
-          <div class="stat-content">
-            <ion-icon
-              name="pie-chart-outline"
-              [color]="selectedTab === 'portfolio' ? 'primary' : 'medium'"
-            ></ion-icon>
-            <div class="stat-info">
-              <h2
-                [style.color]="selectedTab === 'portfolio' ? 'var(--ion-color-primary)' : 'var(--ion-color-medium)'"
-              >
-                Portfolio
-              </h2>
-              <p>My Investments</p>
-            </div>
-          </div>
-        </ion-card-content>
-      </ion-card>
-    </div>
-
-    <!-- Mobile Combined Tab -->
-    <div class="mobile-combined-tab ion-margin-bottom">
-      <ion-card class="stat-card">
-        <ion-card-content>
-          <div class="combined-tab-header" (click)="toggleMobileTab()">
-            <div class="tab-info">
-              <div class="tab-icon-title">
-                <ion-icon
-                  [name]="selectedTab === 'available' ? 'trending-up-outline' : 'pie-chart-outline'"
-                  color="primary"
-                >
-                </ion-icon>
-                <h2>
-                  {{ selectedTab === 'available' ? 'Available Stocks' : 'My
-                  Portfolio' }}
-                </h2>
-              </div>
-              <p>
-                {{ selectedTab === 'available' ? 'Browse investment
-                opportunities' : 'View your investments' }}
-              </p>
-            </div>
-            <div class="toggle-indicator">
-              <ion-icon name="swap-horizontal" color="medium"></ion-icon>
-              <span class="toggle-text">Tap to switch</span>
-            </div>
-          </div>
-        </ion-card-content>
-      </ion-card>
+        Portfolio
+      </button>
     </div>
 
     <!-- Available Stocks Section -->
@@ -141,52 +75,67 @@
         <h2>Available Stocks</h2>
       </div>
 
-      <!-- Filter Section -->
-      <div class="filter-section ion-margin-bottom">
-        <div class="filter-container">
-          <div class="filter-wrapper">
-            <ion-item fill="outline" class="filter-item">
-              <ion-label position="stacked">Filter by Owner</ion-label>
-              <ion-select
-                [(ngModel)]="selectedOwnerFilter"
-                placeholder="Select Owner"
-                interface="popover"
-                (ionChange)="onOwnerFilterChange()"
-                cancelText="Cancel"
-                okText="Done"
+      <!-- Filter Bar -->
+      <div class="filter-bar ion-margin-bottom">
+        <div class="filter-controls">
+          <div class="owner-filter-select">
+            <ion-icon name="funnel" aria-hidden="true"></ion-icon>
+            <ion-select
+              [(ngModel)]="selectedOwnerFilter"
+              placeholder="All Owners"
+              interface="popover"
+              (ionChange)="onOwnerFilterChange()"
+              cancelText="Cancel"
+              okText="Done"
+              aria-label="Filter by owner"
+            >
+              <ion-select-option value="">All Owners</ion-select-option>
+              <ion-select-option
+                *ngFor="let owner of getUniqueOwners()"
+                [value]="owner"
               >
-                <ion-select-option value="">All Owners</ion-select-option>
-                <ion-select-option
-                  *ngFor="let owner of getUniqueOwners()"
-                  [value]="owner"
-                >
-                  {{ owner }}
-                </ion-select-option>
-              </ion-select>
-              <ion-icon name="funnel" slot="end" color="medium"></ion-icon>
-            </ion-item>
+                {{ owner }}
+              </ion-select-option>
+            </ion-select>
           </div>
 
-          <div
-            class="filter-stats"
-            *ngIf="getFilteredBusinesses().length !== friendBusinesses.length"
-          >
-            <div class="stats-content">
-              <span class="filter-count">
-                {{ getFilteredBusinesses().length }} of {{
-                friendBusinesses.length }} stocks
-              </span>
-              <ion-button
-                fill="clear"
-                size="small"
-                (click)="clearOwnerFilter()"
-                class="clear-filter-btn"
-              >
-                <ion-icon name="close-circle" slot="start"></ion-icon>
-                Clear Filter
-              </ion-button>
-            </div>
+          <div class="streak-sort-toggle" role="group" aria-label="Sort by streak">
+            <button
+              type="button"
+              class="streak-sort-btn"
+              [class.active]="streakSortDirection === 'asc'"
+              (click)="setStreakSort('asc')"
+              title="Sort: lowest streak first"
+              aria-label="Sort streak ascending"
+            >
+              <ion-icon name="arrow-up"></ion-icon>
+            </button>
+            <button
+              type="button"
+              class="streak-sort-btn"
+              [class.active]="streakSortDirection === 'desc'"
+              (click)="setStreakSort('desc')"
+              title="Sort: highest streak first"
+              aria-label="Sort streak descending"
+            >
+              <ion-icon name="arrow-down"></ion-icon>
+            </button>
           </div>
+
+          <button
+            type="button"
+            class="clear-filters-btn"
+            *ngIf="hasActiveFilters()"
+            (click)="clearFilters()"
+            title="Clear filters"
+            aria-label="Clear filters"
+          >
+            <ion-icon name="close-circle"></ion-icon>
+          </button>
+        </div>
+
+        <div class="filter-count" *ngIf="selectedOwnerFilter">
+          {{ getFilteredBusinesses().length }} of {{ friendBusinesses.length }} stocks
         </div>
       </div>
 
@@ -274,7 +223,7 @@
                   <h3 class="business-name">{{ business.businessName }}</h3>
                   <div class="price-badge">
                     <span class="current-price"
-                      >${{ business.stockPrice?.toFixed(2) || '0.00' }}</span
+                      >${{ (business.stockPrice || 0) | number: '1.2-2' }}</span
                     >
                   </div>
                 </div>
@@ -347,10 +296,21 @@
               <div class="earnings-section">
                 <div class="earnings-total">
                   <div class="total-amount">
-                    ${{ business.stockPrice?.toFixed(2) || '0.00' }}
+                    ${{ (business.stockPrice || 0) | number: '1.2-2' }}
                   </div>
                   <div class="earnings-label">per share</div>
                 </div>
+
+                <!-- Stockholders Action -->
+                <ion-button
+                  fill="clear"
+                  color="tertiary"
+                  size="small"
+                  (click)="openStockOwnersModal(business.businessName, business.id)"
+                  style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                >
+                  <ion-icon name="people" slot="icon-only"></ion-icon>
+                </ion-button>
 
                 <!-- Buy Action -->
                 <div class="checkin-action">
@@ -382,7 +342,7 @@
           No stocks found for the selected owner. Try selecting a different
           owner or clear the filter.
         </p>
-        <ion-button fill="outline" color="medium" (click)="clearOwnerFilter()">
+        <ion-button fill="outline" color="medium" (click)="clearFilters()">
           <ion-icon name="close-circle" slot="start"></ion-icon>
           Clear Filter
         </ion-button>
@@ -594,7 +554,7 @@
                   <h3 class="business-name">{{ holding.businessName }}</h3>
                   <div class="price-badge">
                     <span class="current-price"
-                      >${{ holding.currentPrice?.toFixed(2) || '0.00' }}</span
+                      >${{ (holding.currentPrice || 0) | number: '1.2-2' }}</span
                     >
                     <span class="shares-owned"
                       >{{ holding.sharesOwned }} shares</span
@@ -659,6 +619,15 @@
                       >
                         <ion-icon name="trending-down" slot="start"></ion-icon>
                         Sell
+                      </ion-button>
+                      <ion-button
+                        fill="clear"
+                        size="small"
+                        color="tertiary"
+                        (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
+                        class="stockholders-button"
+                      >
+                        <ion-icon name="people" slot="icon-only"></ion-icon>
                       </ion-button>
                       <ion-button
                         fill="clear"
@@ -840,7 +809,7 @@
             <div>
               <h2>{{ selectedBuyBusiness.businessName }}</h2>
               <p>
-                Current Share Price: ${{ selectedBuyBusiness.stockPrice.toFixed(2) }}
+                Current Share Price: ${{ selectedBuyBusiness.stockPrice | number: '1.2-2' }}
               </p>
             </div>
           </div>
@@ -879,7 +848,7 @@
           <div *ngIf="buyQuantity > 0" class="sell-preview">
             <p>
               <strong>Total Cost:</strong> ${{ (buyQuantity *
-              selectedBuyBusiness.stockPrice).toFixed(2) }}
+              selectedBuyBusiness.stockPrice) | number: '1.2-2' }}
             </p>
           </div>
 
