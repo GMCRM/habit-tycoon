@@ -173,8 +173,13 @@ export class HabitBusinessService {
    * it was last acquired for. Marketplace-sourced businesses use
    * marketplace_base_value (70% of the purchase price); everything else
    * falls back to 70% of its business-type cost.
+   *
+   * Public: also used as the upgrade trade-in credit shown/charged in the
+   * upgrade modal, which intentionally excludes the streak bonus applied to
+   * getMarketplaceListingPrice() (see createMarketplaceListing's "upgrade"
+   * reason — that bonus is only realized if the listing later sells).
    */
-  private getBaseSellValue(business: { cost?: number; marketplace_base_value?: number | null }): number {
+  getBaseSellValue(business: { cost?: number; marketplace_base_value?: number | null }): number {
     if (business.marketplace_base_value != null) {
       return business.marketplace_base_value;
     }

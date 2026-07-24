@@ -537,8 +537,9 @@ export class HomePage implements OnInit, OnDestroy {
         return;
       }
       
-      // Calculate current business sell value (70% of original cost)
-      const currentBusinessValue = Math.floor((habitBusiness.cost || 0) * 0.7);
+      // Current business sell value: marketplace_base_value for a
+      // Marketplace-sourced business, otherwise 70% of original cost
+      const currentBusinessValue = this.habitBusinessService.getBaseSellValue(habitBusiness);
       
       // Open the professional upgrade modal
       const modal = await this.modalController.create({
