@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
@@ -609,6 +610,11 @@ export class SocialService {
 
   // Lightweight count for badges (unread notifications + pending friend requests),
   // mirroring social.page.ts's totalNotificationsBadgeCount without the heavy profile enrichment.
+  // Shared across all bottom-nav instances so marking a notification as read anywhere
+  // updates every badge immediately instead of waiting for their next ngOnInit.
+  private notificationBadgeCountSubject = new BehaviorSubject<number>(0);
+  notificationBadgeCount$ = this.notificationBadgeCountSubject.asObservable();
+
   async getTotalNotificationBadgeCount(userId: string): Promise<number> {
     try {
       const [pokes, pendingCount] = await Promise.all([
@@ -626,6 +632,16 @@ export class SocialService {
       console.error('Error loading notification badge count:', error);
       return 0;
     }
+  }
+
+  async refreshNotificationBadgeCount(userId: string): Promise<number> {
+    const count = await this.getTotalNotificationBadgeCount(userId);
+    this.notificationBadgeCountSubject.next(count);
+    return count;
+  }
+
+  setNotificationBadgeCount(count: number): void {
+    this.notificationBadgeCountSubject.next(Math.max(0, count));
   }
 
   async markPokeAsRead(pokeId: string): Promise<void> {

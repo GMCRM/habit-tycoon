@@ -1,6 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { add, people, trendingUp, home } from 'ionicons/icons';
@@ -14,10 +15,12 @@ import { SocialService } from '../../services/social.service';
   standalone: true,
   imports: [CommonModule, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge]
 })
-export class BottomNavComponent implements OnInit {
+export class BottomNavComponent implements OnInit, OnDestroy {
 
   @Input() mainButton: 'add' | 'home' = 'add';
   notificationBadgeCount = 0;
+
+  private badgeCountSubscription?: Subscription;
 
   constructor(
     private router: Router,
@@ -28,14 +31,24 @@ export class BottomNavComponent implements OnInit {
   }
 
   async ngOnInit() {
+    // Subscribe first so this instance (and any other bottom-nav instance on screen)
+    // reflects reads/dismissals from the social page immediately, not just on next load.
+    this.badgeCountSubscription = this.socialService.notificationBadgeCount$.subscribe(count => {
+      this.notificationBadgeCount = count;
+    });
+
     try {
       const { data: { user } } = await this.authService.getUser();
       if (user) {
-        this.notificationBadgeCount = await this.socialService.getTotalNotificationBadgeCount(user.id);
+        await this.socialService.refreshNotificationBadgeCount(user.id);
       }
     } catch (error) {
       console.error('❌ BottomNav: Failed to load notification badge count:', error);
     }
+  }
+
+  ngOnDestroy() {
+    this.badgeCountSubscription?.unsubscribe();
   }
 
 

@@ -207,13 +207,16 @@ export class SocialPage implements OnInit, OnDestroy {
       this.sentRequests = sentRequests.status === 'fulfilled' ? sentRequests.value : [];
       this.friendsLeaderboard = leaderboard.status === 'fulfilled' ? leaderboard.value : [];
       
-      console.log('Social data loaded:', { 
-        friends: this.friends.length, 
+      console.log('Social data loaded:', {
+        friends: this.friends.length,
         notifications: this.notifications.length,
-        pendingRequests: this.pendingRequests.length, 
-        sentRequests: this.sentRequests.length, 
-        leaderboard: this.friendsLeaderboard.length 
+        pendingRequests: this.pendingRequests.length,
+        sentRequests: this.sentRequests.length,
+        leaderboard: this.friendsLeaderboard.length
       });
+
+      // Keep the bottom-nav badge(s) in sync with the freshly loaded notifications/requests.
+      this.socialService.setNotificationBadgeCount(this.totalNotificationsBadgeCount);
 
       // Debug: Check notification structure
       if (this.notifications.length > 0) {
@@ -531,14 +534,15 @@ export class SocialPage implements OnInit, OnDestroy {
       
       await this.socialService.markPokeAsRead(notificationId);
       console.log('✅ Database update completed');
-      
+
       // Update local state
       const notification = this.notifications.find(n => n.id === notificationId);
       if (notification) {
         console.log('🔍 Before update - is_read:', notification.is_read);
         notification.is_read = true;
         console.log('✅ After update - is_read:', notification.is_read);
-        
+        this.socialService.setNotificationBadgeCount(this.totalNotificationsBadgeCount);
+
         // Show success feedback
         const toast = await this.toastController.create({
           message: '✅ Notification marked as read',
@@ -611,7 +615,11 @@ export class SocialPage implements OnInit, OnDestroy {
           console.error(`❌ Failed to mark notification ${unreadNotifications[index].id} as read:`, result.reason);
         }
       });
-      
+
+      if (successCount > 0) {
+        this.socialService.setNotificationBadgeCount(this.totalNotificationsBadgeCount);
+      }
+
       // Show appropriate toast message
       if (failureCount === 0) {
         const toast = await this.toastController.create({
