@@ -76,6 +76,7 @@ export type GeneralAchievementCategory =
   | 'stocks'
   | 'social'
   | 'completions'
+  | 'leaderboard'
   | 'perfect'
   | 'meta';
 
@@ -159,6 +160,10 @@ export const GENERAL_ACHIEVEMENT_DEFINITIONS: GeneralAchievementDefinition[] = [
   { key: 'completions_global_50', category: 'completions', emoji: '⭐', label: '50 Completions', description: 'Complete habits 50 times in total, across all your businesses.', metric: 'global_completions', threshold: 50, unit: 'done' },
   { key: 'completions_global_100', category: 'completions', emoji: '🌟', label: '100 Completions', description: 'Complete habits 100 times in total, across all your businesses.', metric: 'global_completions', threshold: 100, unit: 'done' },
   { key: 'completions_global_1000', category: 'completions', emoji: '🎖️', label: '1,000 Completions', description: 'Complete habits 1,000 times in total, across all your businesses.', metric: 'global_completions', threshold: 1000, unit: 'done' },
+
+  // Weekly leaderboards (requires 5+ accepted friends)
+  { key: 'leaderboard_cash_first', category: 'leaderboard', emoji: '🥇', label: 'Top Earner', description: "Finish #1 on your friend group's weekly cash-earned leaderboard (5+ friends)." },
+  { key: 'leaderboard_completions_first', category: 'leaderboard', emoji: '🏆', label: 'Top Performer', description: "Finish #1 on your friend group's weekly completions leaderboard (5+ friends)." },
 
   // Perfect periods (whole-account)
   { key: 'perfect_week', category: 'perfect', emoji: '🗓️', label: 'Perfect Week', description: 'Complete every one of your active habits every day for a full week.' },

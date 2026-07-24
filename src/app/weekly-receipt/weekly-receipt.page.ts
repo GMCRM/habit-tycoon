@@ -81,6 +81,7 @@ const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string;
   stocks: { label: 'Stocks & Dividends', icon: '📈' },
   social: { label: 'Social', icon: '🤝' },
   completions: { label: 'Habit Completions', icon: '✅' },
+  leaderboard: { label: 'Leaderboards', icon: '🥇' },
   perfect: { label: 'Perfect Streaks', icon: '🗓️' },
   meta: { label: 'Meta', icon: '🏅' },
 };
