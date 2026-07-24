@@ -54,8 +54,13 @@ export class SignUpPage {
       return;
     }
 
-    if (password.length < 6) {
-      alert('Password must be at least 6 characters long');
+    if (password.length < 8) {
+      alert('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      alert('Password must contain at least one letter and one number');
       return;
     }
 

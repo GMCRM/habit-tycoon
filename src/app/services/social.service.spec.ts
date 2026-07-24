@@ -313,7 +313,8 @@ describe('SocialService', () => {
   it('should delete the like for the given post and user', async () => {
     const likeQuery = makeQuery();
     likeQuery.delete.and.returnValue(likeQuery);
-    likeQuery.eq.and.resolveTo({ error: null });
+    // unlikePost chains .eq().eq(): first call must stay chainable, second resolves the query
+    likeQuery.eq.and.returnValues(likeQuery, Promise.resolve({ error: null }));
 
     mockSupabaseClient.from.and.callFake((table: string) => {
       if (table === 'social_likes') return likeQuery;

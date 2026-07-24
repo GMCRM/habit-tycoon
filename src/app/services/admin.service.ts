@@ -5,17 +5,19 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class AdminService {
-  private readonly ADMIN_EMAIL = 'grantmatai@gmail.com';
-
   constructor(private authService: AuthService) {}
 
+  // Authorization is enforced server-side via the `is_admin()` SECURITY
+  // DEFINER function (checks membership in the RLS-protected `admin_users`
+  // table keyed on auth.uid()), not by comparing the client's email string.
   async isAdmin(): Promise<boolean> {
     try {
-      const { data: { user } } = await this.authService.getUser();
-      console.log('🔐 Admin check - User email:', user?.email);
-      console.log('🔐 Admin check - Admin email:', this.ADMIN_EMAIL);
-      console.log('🔐 Admin check - Match:', user?.email === this.ADMIN_EMAIL);
-      return user?.email === this.ADMIN_EMAIL;
+      const { data, error } = await this.authService.supabase.rpc('is_admin');
+      if (error) {
+        console.error('Error checking admin status:', error.message);
+        return false;
+      }
+      return data === true;
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;

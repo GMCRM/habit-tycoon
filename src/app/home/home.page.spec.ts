@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { ModalController } from '@ionic/angular/standalone';
 
 import { HomePage } from './home.page';
 
@@ -7,6 +9,14 @@ describe('HomePage', () => {
   let fixture: ComponentFixture<HomePage>;
 
   beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [HomePage],
+      providers: [
+        provideRouter([]),
+        { provide: ModalController, useValue: jasmine.createSpyObj('ModalController', ['create', 'dismiss']) }
+      ]
+    }).compileComponents();
+
     fixture = TestBed.createComponent(HomePage);
     component = fixture.componentInstance;
     fixture.detectChanges();

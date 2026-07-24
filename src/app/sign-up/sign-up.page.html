@@ -50,9 +50,11 @@
               name="password"
               [(ngModel)]="password"
               required
+              minlength="8"
               maxlength="100"
             ></ion-input>
           </ion-item>
+          <p class="input-helper">At least 8 characters, with a letter and a number</p>
 
           <ion-button
             expand="block"
