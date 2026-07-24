@@ -100,6 +100,67 @@
   --border-radius: 12px;
 }
 
+/*
+ * Toast Notifications
+ * -----------------------------------------------------
+ * Ionic's default color="success"/"danger" toasts render as a solid,
+ * fully-saturated block (#00ff88 / #ff3366), which reads as an unthemed
+ * neon alert rather than part of the app. Instead, toasts use the same
+ * dark card treatment as the rest of the UI, with the status color
+ * expressed as a text/accent color and a soft glow, matching how
+ * earnings/streak colors are already used (see .earnings-display,
+ * .streak-display above).
+ */
+ion-toast {
+  --border-radius: 14px;
+  --box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+ion-toast::part(message) {
+  font-size: 14px;
+}
+
+ion-toast::part(button) {
+  font-weight: 700;
+}
+
+ion-toast.ion-color-success {
+  --background: var(--ion-card-background);
+  --color: var(--earnings-color);
+  --border-width: 1px 1px 1px 4px;
+  --border-style: solid;
+  --border-color: rgba(0, 255, 136, 0.45);
+  --box-shadow: 0 8px 28px rgba(0, 255, 136, 0.12), 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+ion-toast.ion-color-danger {
+  --background: var(--ion-card-background);
+  --color: var(--ion-color-danger);
+  --border-width: 1px 1px 1px 4px;
+  --border-style: solid;
+  --border-color: rgba(255, 51, 102, 0.45);
+  --box-shadow: 0 8px 28px rgba(255, 51, 102, 0.12), 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+ion-toast.ion-color-warning {
+  --background: var(--ion-card-background);
+  --color: var(--streak-color);
+  --border-width: 1px 1px 1px 4px;
+  --border-style: solid;
+  --border-color: rgba(255, 140, 0, 0.45);
+  --box-shadow: 0 8px 28px rgba(255, 140, 0, 0.12), 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+ion-toast.ion-color-medium {
+  --background: var(--ion-card-background);
+  --color: #c9c9e3;
+  --border-width: 1px 1px 1px 4px;
+  --border-style: solid;
+  --border-color: rgba(255, 255, 255, 0.15);
+}
+
 .disabled-button {
   opacity: 0.5 !important;
   pointer-events: none !important;

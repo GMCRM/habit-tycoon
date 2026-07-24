@@ -203,27 +203,6 @@ ion-button {
   }
 }
 
-// Toast styling
-ion-toast {
-  --background: var(--business-item-background);
-  --color: #ffffff;
-  --border: 1px solid rgba(255, 215, 0, 0.3);
-  --border-radius: 12px;
-  --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  
-  &.toast-success {
-    --background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
-    --color: #000000;
-    --border: 1px solid rgba(0, 255, 136, 0.5);
-  }
-  
-  &.toast-danger {
-    --background: linear-gradient(135deg, #ff3366 0%, #e62e5a 100%);
-    --color: #ffffff;
-    --border: 1px solid rgba(255, 51, 102, 0.5);
-  }
-}
-
 // Header styling
 ion-header {
   ion-toolbar {
