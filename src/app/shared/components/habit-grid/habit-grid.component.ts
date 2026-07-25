@@ -6,6 +6,7 @@ import {
 import { Subscription } from 'rxjs';
 import { HabitBusinessService } from '../../../services/habit-business.service';
 import { HabitUpdateService, HabitUpdateEvent } from '../../../services/habit-update.service';
+import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 
 export interface HabitGridDay {
   date: string;
@@ -19,13 +20,19 @@ export interface HabitGridDay {
 @Component({
   selector: 'app-habit-grid',
   standalone: true,
-  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonButton, IonIcon],
+  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonButton, IonIcon, BusinessIconPipe],
   template: `
     <!-- Modal Header (only shows when used as modal) -->
     <ion-header *ngIf="isModal">
       <ion-toolbar class="custom-toolbar">
         <ion-title class="grid-title">
-          <span class="business-emoji">{{ businessEmoji }}</span>
+          <img
+            *ngIf="businessEmoji | businessIconSrc as iconSrc"
+            [src]="iconSrc"
+            [alt]="businessName"
+            class="business-icon-img"
+          />
+          <span *ngIf="!(businessEmoji | businessIconSrc)" class="business-emoji">{{ businessEmoji }}</span>
           {{ businessName }} - {{ currentYear }} Progress
         </ion-title>
       </ion-toolbar>
@@ -170,6 +177,15 @@ export interface HabitGridDay {
     .business-emoji {
       font-size: 1.3rem;
       margin-right: 8px;
+    }
+
+    .business-icon-img {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+      border-radius: 22%;
+      vertical-align: middle;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
     }
 
     .close-icon {

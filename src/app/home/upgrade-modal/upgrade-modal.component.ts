@@ -4,13 +4,14 @@ import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons, IonFooter 
 } from '@ionic/angular/standalone';
 import { HabitBusiness } from '../../services/habit-business.service';
+import { BusinessIconPipe } from '../../shared/pipes/business-icon.pipe';
 
 @Component({
   selector: 'app-upgrade-modal',
   templateUrl: './upgrade-modal.component.html',
   styleUrls: ['./upgrade-modal.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons, IonFooter]
+  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons, IonFooter, BusinessIconPipe]
 })
 export class UpgradeModalComponent implements OnInit {
   @Input() habitBusiness!: HabitBusiness;

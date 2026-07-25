@@ -85,7 +85,13 @@
               [class.completed]="habit.completed_today"
             >
               <div class="item-content">
-                <div class="business-icon">{{ habit.business_icon }}</div>
+                <img
+                  *ngIf="habit.business_icon | businessIconSrc as iconSrc"
+                  [src]="iconSrc"
+                  [alt]="habit.business_name"
+                  class="business-icon-img"
+                />
+                <div *ngIf="!(habit.business_icon | businessIconSrc)" class="business-icon">{{ habit.business_icon }}</div>
                 <div class="business-info">
                   <div
                     style="
@@ -243,7 +249,13 @@
                     [class.profitable]="option.profitFromUpgrade > 0"
                   >
                     <div class="option-header">
-                      <span class="business-icon"
+                      <img
+                        *ngIf="option.businessType.icon | businessIconSrc as iconSrc"
+                        [src]="iconSrc"
+                        [alt]="option.businessType.name"
+                        class="business-icon-img"
+                      />
+                      <span *ngIf="!(option.businessType.icon | businessIconSrc)" class="business-icon"
                         >{{ option.businessType.icon }}</span
                       >
                       <h5>{{ option.businessType.name }}</h5>
@@ -383,7 +395,13 @@
               [class.loss]="(holding.profitLoss || 0) < 0"
             >
               <div class="item-content">
-                <div class="business-icon">
+                <img
+                  *ngIf="holding.business_stocks?.habit_businesses?.business_icon | businessIconSrc as iconSrc"
+                  [src]="iconSrc"
+                  [alt]="holding.business_stocks?.habit_businesses?.business_name"
+                  class="business-icon-img"
+                />
+                <div *ngIf="!(holding.business_stocks?.habit_businesses?.business_icon | businessIconSrc)" class="business-icon">
                   {{ holding.business_stocks?.habit_businesses?.business_icon ||
                   '📈' }}
                 </div>
@@ -481,7 +499,13 @@
               class="habit-business-item"
             >
               <div class="item-content">
-                <div class="business-icon">
+                <img
+                  *ngIf="stock.habit_businesses?.business_icon | businessIconSrc as iconSrc"
+                  [src]="iconSrc"
+                  [alt]="stock.habit_businesses?.business_name"
+                  class="business-icon-img"
+                />
+                <div *ngIf="!(stock.habit_businesses?.business_icon | businessIconSrc)" class="business-icon">
                   {{ stock.habit_businesses?.business_icon || '🏢' }}
                 </div>
                 <div class="business-info">

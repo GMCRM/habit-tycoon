@@ -564,6 +564,15 @@ ion-content {
         padding-right: 12px;
       }
 
+      .business-icon-img {
+        width: 50px;
+        height: 50px;
+        flex-shrink: 0;
+        margin-right: 12px;
+        border-radius: 22%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.3);
+      }
+
       .business-info {
         flex: 1;
         min-width: 0;
@@ -1167,6 +1176,16 @@ ion-content {
         align-items: stretch;
         gap: 8px;
         
+        .business-icon-img {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          width: 32px;
+          height: 32px;
+          margin-right: 0;
+          z-index: 10;
+        }
+
         .business-icon {
           position: absolute;
           top: 12px;
@@ -1348,6 +1367,12 @@ ion-content {
         min-width: 70px;
         padding-right: 8px;
       }
+
+      .business-icon-img {
+        width: 70px;
+        height: 70px;
+        margin-right: 8px;
+      }
       
       .business-info {
         flex: 1;
@@ -1423,6 +1448,11 @@ ion-content {
       .business-icon {
         font-size: 3rem;
         min-width: 80px;
+      }
+
+      .business-icon-img {
+        width: 80px;
+        height: 80px;
       }
       
       .business-info {
@@ -1512,6 +1542,13 @@ ion-content {
         width: auto;
         text-align: center;
         padding-right: 0;
+        align-self: center;
+      }
+
+      .business-icon-img {
+        width: 40px;
+        height: 40px;
+        margin-right: 0;
         align-self: center;
       }
       
@@ -1739,6 +1776,14 @@ ion-content {
         height: 60px;
         background: var(--ion-color-light);
         border-radius: 12px;
+      }
+
+      .business-emoji-img {
+        width: 60px;
+        height: 60px;
+        flex-shrink: 0;
+        border-radius: 22%;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 215, 0, 0.3);
       }
       
       h2 {

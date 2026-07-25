@@ -16,7 +16,13 @@
 
 <ion-content class="purchase-modal-content">
   <div class="purchased-business-info">
-    <div class="business-icon">{{ purchase.business_icon }}</div>
+    <img
+      *ngIf="purchase.business_icon | businessIconSrc as iconSrc"
+      [src]="iconSrc"
+      [alt]="purchase.business_name"
+      class="business-icon-img"
+    />
+    <div *ngIf="!(purchase.business_icon | businessIconSrc)" class="business-icon">{{ purchase.business_icon }}</div>
     <div class="business-details">
       <h2>{{ purchase.business_name }}</h2>
       <p>Pays ${{ purchase.earnings_per_completion | number:'1.2-2' }} per completion</p>
@@ -36,7 +42,13 @@
         class="existing-option"
         (click)="chooseExisting(hb)"
       >
-        <div class="option-icon">{{ hb.business_icon }}</div>
+        <img
+          *ngIf="hb.business_icon | businessIconSrc as iconSrc"
+          [src]="iconSrc"
+          [alt]="hb.business_name"
+          class="option-icon-img"
+        />
+        <div *ngIf="!(hb.business_icon | businessIconSrc)" class="option-icon">{{ hb.business_icon }}</div>
         <div class="option-details">
           <h3>{{ hb.business_name }}</h3>
           <p>Replace this business &middot; {{ hb.streak }} day streak stays with the habit</p>

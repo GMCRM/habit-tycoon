@@ -25,6 +25,7 @@ import {
   GeneralAchievementCategory,
 } from '../services/achievements.service';
 import { AuthService } from '../services/auth.service';
+import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import {
   arrowBack,
@@ -104,6 +105,7 @@ const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string;
     IonSegment,
     IonSegmentButton,
     IonLabel,
+    BusinessIconPipe,
   ],
 })
 export class WeeklyReceiptPage implements OnInit {

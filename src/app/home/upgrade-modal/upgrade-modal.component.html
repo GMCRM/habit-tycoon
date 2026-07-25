@@ -18,7 +18,13 @@
   <div class="scrollable-content">
     <div class="current-business-info">
       <div class="business-header">
-        <div class="business-icon">{{ habitBusiness.business_icon }}</div>
+        <img
+          *ngIf="habitBusiness.business_icon | businessIconSrc as iconSrc"
+          [src]="iconSrc"
+          [alt]="habitBusiness.business_name"
+          class="business-icon-img"
+        />
+        <div *ngIf="!(habitBusiness.business_icon | businessIconSrc)" class="business-icon">{{ habitBusiness.business_icon }}</div>
         <div class="business-details">
           <h2>{{ habitBusiness.business_name }}</h2>
           <p class="habit-description">{{ habitBusiness.habit_description }}</p>
@@ -58,7 +64,13 @@
           (click)="selectUpgrade(businessType)"
         >
           <div class="option-header">
-            <div class="business-type-icon">{{ businessType.icon }}</div>
+            <img
+              *ngIf="businessType.icon | businessIconSrc as iconSrc"
+              [src]="iconSrc"
+              [alt]="businessType.name"
+              class="business-type-icon-img"
+            />
+            <div *ngIf="!(businessType.icon | businessIconSrc)" class="business-type-icon">{{ businessType.icon }}</div>
             <div class="business-type-name">{{ businessType.name }}</div>
           </div>
 

@@ -19,6 +19,7 @@ import { HabitIntervalService } from '../services/habit-interval.service';
 import { OfflineQueuedError } from '../services/offline-queue.service';
 import { SocialService } from '../services/social.service';
 import { AuthService } from '../services/auth.service';
+import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import {
   arrowBack, trendingUp, trendingDown, star, business,
@@ -89,7 +90,8 @@ interface Portfolio {
     IonButton, IonIcon, IonBadge, IonSpinner,
     IonModal, IonButtons, IonItem, IonLabel, IonInput,
     IonSelect, IonSelectOption,
-    BottomNavComponent, HabitGridComponent, StockChartComponent
+    BottomNavComponent, HabitGridComponent, StockChartComponent,
+    BusinessIconPipe
   ]
 })
 export class StocksPage implements OnInit {

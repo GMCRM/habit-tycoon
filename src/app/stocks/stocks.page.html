@@ -209,7 +209,13 @@
             class="habit-business-item"
           >
             <div class="item-content">
-              <div class="business-icon">
+              <img
+                *ngIf="business.businessIcon | businessIconSrc as iconSrc"
+                [src]="iconSrc"
+                [alt]="business.businessName"
+                class="business-icon-img"
+              />
+              <div *ngIf="!(business.businessIcon | businessIconSrc)" class="business-icon">
                 {{ business.businessIcon || '🏢' }}
               </div>
               <div class="business-info">
@@ -493,7 +499,13 @@
         <div *ngIf="!isLoading && portfolio.length > 0">
           <div *ngFor="let holding of portfolio" class="habit-business-item">
             <div class="item-content">
-              <div class="business-icon">
+              <img
+                *ngIf="holding.businessIcon | businessIconSrc as iconSrc"
+                [src]="iconSrc"
+                [alt]="holding.businessName"
+                class="business-icon-img"
+              />
+              <div *ngIf="!(holding.businessIcon | businessIconSrc)" class="business-icon">
                 {{ holding.businessIcon || '📈' }}
               </div>
               <div class="business-info">
@@ -689,7 +701,13 @@
       <div *ngIf="selectedHolding" class="sell-modal-content">
         <div class="business-info">
           <div class="business-header">
-            <span class="business-emoji">{{ selectedHolding.emoji }}</span>
+            <img
+              *ngIf="selectedHolding.emoji | businessIconSrc as iconSrc"
+              [src]="iconSrc"
+              [alt]="selectedHolding.businessName"
+              class="business-emoji-img"
+            />
+            <span *ngIf="!(selectedHolding.emoji | businessIconSrc)" class="business-emoji">{{ selectedHolding.emoji }}</span>
             <div>
               <h2>{{ selectedHolding.businessName }}</h2>
               <p>
@@ -774,7 +792,13 @@
       <div *ngIf="selectedBuyBusiness" class="sell-modal-content">
         <div class="business-info">
           <div class="business-header">
-            <span class="business-emoji">{{ selectedBuyBusiness.businessIcon }}</span>
+            <img
+              *ngIf="selectedBuyBusiness.businessIcon | businessIconSrc as iconSrc"
+              [src]="iconSrc"
+              [alt]="selectedBuyBusiness.businessName"
+              class="business-emoji-img"
+            />
+            <span *ngIf="!(selectedBuyBusiness.businessIcon | businessIconSrc)" class="business-emoji">{{ selectedBuyBusiness.businessIcon }}</span>
             <div>
               <h2>{{ selectedBuyBusiness.businessName }}</h2>
               <p>

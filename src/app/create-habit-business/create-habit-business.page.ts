@@ -29,6 +29,7 @@ import {
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, BusinessType } from '../services/habit-business.service';
 import { AuthService } from '../services/auth.service';
+import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import { add, cash, calendar, business, checkmarkCircle, alertCircle, trophy, rocket, lockClosed, document, arrowBack, warning } from 'ionicons/icons';
 
@@ -59,7 +60,8 @@ import { add, cash, calendar, business, checkmarkCircle, alertCircle, trophy, ro
     IonNote,
     IonSpinner,
     IonBackButton,
-    IonButtons
+    IonButtons,
+    BusinessIconPipe
   ]
 })
 export class CreateHabitBusinessPage implements OnInit {

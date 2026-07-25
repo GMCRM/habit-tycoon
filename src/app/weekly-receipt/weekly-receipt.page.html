@@ -116,7 +116,13 @@
 
           <div class="receipt-list" *ngIf="hasAnyItems(day); else noItems">
             <div class="receipt-row" *ngFor="let item of day.items">
-              <div class="item-icon">{{ item.icon }}</div>
+              <img
+                *ngIf="item.icon | businessIconSrc as iconSrc"
+                [src]="iconSrc"
+                alt=""
+                class="item-icon-img"
+              />
+              <div *ngIf="!(item.icon | businessIconSrc)" class="item-icon">{{ item.icon }}</div>
               <div class="item-info">
                 <div class="item-title">{{ item.title }}</div>
                 <div class="item-subtitle">{{ item.subtitle }}</div>
@@ -215,7 +221,13 @@
             <!-- Per-habit achievement cards -->
             <div class="habit-achievement-card" *ngFor="let ha of habitAchievements">
               <div class="habit-achievement-header">
-                <span class="habit-achievement-icon">{{ ha.habit.business_icon }}</span>
+                <img
+                  *ngIf="ha.habit.business_icon | businessIconSrc as iconSrc"
+                  [src]="iconSrc"
+                  alt=""
+                  class="habit-achievement-icon-img"
+                />
+                <span *ngIf="!(ha.habit.business_icon | businessIconSrc)" class="habit-achievement-icon">{{ ha.habit.business_icon }}</span>
                 <div class="habit-achievement-info">
                   <div class="habit-achievement-name">{{ ha.habit.business_name }}</div>
                   <div class="habit-achievement-type">{{ ha.habit.business_types?.name || 'Business' }}</div>

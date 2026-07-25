@@ -529,7 +529,13 @@
           <ion-card *ngIf="unresolvedPurchase" class="unresolved-purchase-card">
             <ion-card-content>
               <div class="unresolved-purchase-info">
-                <div class="unresolved-icon">{{ unresolvedPurchase.business_icon }}</div>
+                <img
+                  *ngIf="unresolvedPurchase.business_icon | businessIconSrc as iconSrc"
+                  [src]="iconSrc"
+                  [alt]="unresolvedPurchase.business_name"
+                  class="unresolved-icon-img"
+                />
+                <div *ngIf="!(unresolvedPurchase.business_icon | businessIconSrc)" class="unresolved-icon">{{ unresolvedPurchase.business_icon }}</div>
                 <div class="unresolved-details">
                   <h3>Finish setting up "{{ unresolvedPurchase.business_name }}"</h3>
                   <p>
@@ -564,7 +570,13 @@
             >
               <ion-card-content>
                 <div class="listing-info">
-                  <div class="listing-icon">{{ listing.business_icon }}</div>
+                  <img
+                    *ngIf="listing.business_icon | businessIconSrc as iconSrc"
+                    [src]="iconSrc"
+                    [alt]="listing.business_name"
+                    class="listing-icon-img"
+                  />
+                  <div *ngIf="!(listing.business_icon | businessIconSrc)" class="listing-icon">{{ listing.business_icon }}</div>
                   <div class="listing-details">
                     <h3>{{ listing.business_name }}</h3>
                     <p class="listing-seller">

@@ -120,13 +120,21 @@
   }
 }
 
+.business-icon-img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 22%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
 .business-icon-section {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   min-width: 80px;
-  
+
   .business-icon {
     font-size: 2.5rem;
     margin-bottom: 4px;
@@ -487,6 +495,11 @@
         
         .business-icon {
           font-size: 1.5rem;
+        }
+
+        .business-icon-img {
+          width: 24px;
+          height: 24px;
         }
         
         h5 {

@@ -377,6 +377,13 @@
       font-size: 32px;
       width: 48px;
       text-align: center;
+
+      .investment-icon-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 22%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.2);
+      }
     }
     
     .investment-info {
@@ -457,6 +464,16 @@
       color: var(--cash-color);
       font-weight: 600;
       text-align: right;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+
+      .summary-icon-img {
+        width: 20px;
+        height: 20px;
+        border-radius: 22%;
+        vertical-align: middle;
+      }
     }
     
     &.cost .summary-value {

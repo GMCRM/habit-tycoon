@@ -9,6 +9,7 @@ import { addIcons } from 'ionicons';
 import { close, storefront, add, arrowBack } from 'ionicons/icons';
 import { HabitBusiness } from '../../services/habit-business.service';
 import { MarketplacePurchase } from '../../services/marketplace.service';
+import { BusinessIconPipe } from '../../shared/pipes/business-icon.pipe';
 
 export type MarketplacePurchaseResolution =
   | { mode: 'merge'; targetHabitBusinessId: string }
@@ -27,7 +28,8 @@ export type MarketplacePurchaseResolution =
   standalone: true,
   imports: [
     CommonModule, FormsModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon,
-    IonButtons, IonFooter, IonItem, IonLabel, IonTextarea, IonSelect, IonSelectOption
+    IonButtons, IonFooter, IonItem, IonLabel, IonTextarea, IonSelect, IonSelectOption,
+    BusinessIconPipe
   ]
 })
 export class MarketplacePurchaseModalComponent implements OnInit {

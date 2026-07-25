@@ -925,6 +925,14 @@ ion-badge {
       flex-shrink: 0;
     }
 
+    .unresolved-icon-img {
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      border-radius: 22%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.25);
+    }
+
     .unresolved-details {
       flex: 1;
       min-width: 0;
@@ -967,6 +975,14 @@ ion-badge {
     .listing-icon {
       font-size: 2.2rem;
       flex-shrink: 0;
+    }
+
+    .listing-icon-img {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: 22%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.25);
     }
 
     .listing-details {

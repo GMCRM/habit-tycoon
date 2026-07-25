@@ -23,6 +23,7 @@ import { OfflineQueuedError } from '../services/offline-queue.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { AuthService } from '../services/auth.service';
+import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import { 
   checkmarkCircle, 
@@ -71,9 +72,10 @@ interface StockDisplay extends StockHolding {
     IonButton,
     IonIcon,
     IonSpinner,
-    CommonModule, 
+    CommonModule,
     FormsModule,
-    RouterLink
+    RouterLink,
+    BusinessIconPipe
   ]
 })
 export class HabitCheckinPage implements OnInit, OnDestroy {

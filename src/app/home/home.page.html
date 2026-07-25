@@ -347,7 +347,13 @@
                           <ion-icon name="chevron-down"></ion-icon>
                         </button>
                       </div>
-                      <span class="business-icon">{{ hb.business_icon }}</span>
+                      <img
+                        *ngIf="hb.business_icon | businessIconSrc as iconSrc"
+                        [src]="iconSrc"
+                        [alt]="hb.business_name"
+                        class="business-icon business-icon-img"
+                      />
+                      <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
                       <h3 class="business-name">{{ hb.business_name }}</h3>
                     </div>
                     <div class="card-actions">

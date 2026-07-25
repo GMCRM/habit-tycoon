@@ -189,7 +189,15 @@
                   (click)="selectRewardLevel(type)"
                 >
                   <div class="investment-header">
-                    <div class="investment-icon">{{ type.icon }}</div>
+                    <div class="investment-icon">
+                      <img
+                        *ngIf="type.icon | businessIconSrc as iconSrc"
+                        [src]="iconSrc"
+                        [alt]="type.name"
+                        class="investment-icon-img"
+                      />
+                      <span *ngIf="!(type.icon | businessIconSrc)">{{ type.icon }}</span>
+                    </div>
                     <div class="investment-info">
                       <div class="investment-name">{{ type.name }}</div>
                       <div
@@ -253,9 +261,17 @@
               <div class="business-summary">
                 <div class="summary-item">
                   <span class="summary-label">Investment Package:</span>
-                  <span class="summary-value"
-                    >{{ selectedBusinessType?.icon }} {{
-                    selectedBusinessType?.name }}</span
+                  <span class="summary-value">
+                    <img
+                      *ngIf="selectedBusinessType?.icon | businessIconSrc as iconSrc"
+                      [src]="iconSrc"
+                      [alt]="selectedBusinessType?.name"
+                      class="summary-icon-img"
+                    />
+                    <span *ngIf="!(selectedBusinessType?.icon | businessIconSrc)"
+                      >{{ selectedBusinessType?.icon }}</span
+                    >
+                    {{ selectedBusinessType?.name }}</span
                   >
                 </div>
                 <div class="summary-item cost">

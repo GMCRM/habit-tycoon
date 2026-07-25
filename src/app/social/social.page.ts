@@ -16,6 +16,7 @@ import { MarketplaceService, MarketplaceListing, MarketplacePurchase } from '../
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
+import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
@@ -30,7 +31,7 @@ import {
     IonContent, IonHeader, IonTitle, IonToolbar,
     IonCard, IonSegment, IonSegmentButton,
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
-    BottomNavComponent, CommonModule, RouterLink
+    BottomNavComponent, CommonModule, RouterLink, BusinessIconPipe
   ],
 })
 export class SocialPage implements OnInit, OnDestroy {
