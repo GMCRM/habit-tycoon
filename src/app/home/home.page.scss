@@ -56,6 +56,51 @@ button, span, div, ion-button {
   .header-action-btn {
     --padding-start: 8px;
     --padding-end: 8px;
+
+    .btn-label {
+      display: none;
+    }
+  }
+
+  // Icon-only square buttons: bordered/filled boxes rather than plain text buttons
+  .icon-box-btn {
+    --border-radius: 10px;
+    --padding-start: 0;
+    --padding-end: 0;
+    width: 40px;
+    height: 40px;
+    margin-inline: 3px;
+
+    ion-icon {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+
+    &::part(native) {
+      border-radius: 10px;
+    }
+
+    &.gold-outline {
+      --background: rgba(10, 12, 20, 0.6);
+      --color: #ffd700;
+      --border-radius: 10px;
+      border: 1px solid rgba(255, 215, 0, 0.6);
+      border-radius: 10px;
+    }
+
+    &.grey-outline {
+      --background: rgba(10, 12, 20, 0.6);
+      --color: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+    }
+
+    &.gold-filled {
+      --background: linear-gradient(135deg, #ffe985 0%, #ffd700 45%, #e6a800 100%);
+      --border-radius: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
   }
 
   .receipt-coin {
@@ -77,6 +122,18 @@ button, span, div, ion-button {
       inset 0 1px 1px rgba(255, 255, 255, 0.6),
       inset 0 -1px 2px rgba(0, 0, 0, 0.25);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  // On the icon-box button this sits on its own gold-filled background,
+  // so drop the coin's own gold circle/glow to avoid gold-on-gold.
+  .icon-box-btn.gold-filled .receipt-coin {
+    background: none;
+    box-shadow: none;
+    color: #3a2a00;
+    width: auto;
+    height: auto;
+    margin-inline-end: 0;
+    font-size: 1.2rem;
   }
 
   .receipt-btn {
@@ -132,33 +189,61 @@ button, span, div, ion-button {
   padding: 0 12px;
 
   .stat-card {
-    background: var(--business-item-background);
-    border: var(--business-item-border);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
-    
+    position: relative;
+    background: linear-gradient(160deg, #131a2c 0%, #0b0f1a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+
+    // Subtle decorative dot texture in the corner
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 56px;
+      height: 56px;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+      background-size: 8px 8px;
+      -webkit-mask-image: linear-gradient(225deg, #000 0%, transparent 70%);
+      mask-image: linear-gradient(225deg, #000 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    &.gold-accent .stat-info h2 {
+      color: #ffd700;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    }
+
     &.clickable-card {
       cursor: pointer;
       transition: all 0.3s ease;
-      
+
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(255, 215, 0, 0.2);
       }
-      
+
       &:active {
         transform: translateY(0);
       }
     }
-    
+
     ion-card-content {
       padding: 16px;
-      
+
       .stat-content {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
+        gap: 8px;
+
+        .stat-icon-circle {
+          margin-bottom: 2px;
+        }
 
         .stat-info {
           h2 {
@@ -180,167 +265,200 @@ button, span, div, ion-button {
   }
 }
 
-// User info styling
+// User info styling — dark card with a gold-to-green gradient border
 .user-info {
-  background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  border-radius: 12px;
-  padding: 16px;
+  position: relative;
+  background-image:
+    linear-gradient(135deg, #12182b 0%, #0c1220 100%),
+    linear-gradient(180deg, #ffd700 0%, #00ff7f 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  
+
   .welcome-section {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    
+    gap: 12px;
+    margin-bottom: 20px;
+
     .welcome-text {
-      text-align: center;
+      text-align: left;
 
       h2 {
         margin: 0;
-        color: var(--ion-color-primary);
-        font-size: 1.4rem;
-        text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        color: #ffffff;
+        font-size: 1.3rem;
+        font-weight: 600;
+        line-height: 1.3;
+
+        span {
+          display: block;
+          color: var(--ion-color-primary);
+          font-size: 1.7rem;
+          font-weight: 800;
+          text-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+        }
       }
-      
+
       p {
-        margin: 4px 0 0 0;
-        color: rgba(255, 255, 255, 0.8);
+        margin: 6px 0 0 0;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
       }
     }
-    
-    .cash-display {
-      text-align: right;
+
+    .welcome-chart {
+      flex-shrink: 0;
+      width: 96px;
+
+      .chart-svg {
+        width: 100%;
+        height: auto;
+        display: block;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+      }
+    }
+  }
+
+  .cash-display {
+    display: flex;
+    gap: 12px;
+
+    .networth-display,
+    .cash-section {
+      flex: 1;
       display: flex;
-      align-items: flex-end;
-      gap: 16px;
-      
-      .networth-display {
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(5, 7, 12, 0.5);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      .stat-text {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
-        padding: 8px 12px;
-        background: var(--ion-color-dark);
-        border: 2px solid #FFD700;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        user-select: none;
-        
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 2px 15px rgba(255, 215, 0, 0.4);
-          border-color: #FFED4E;
-        }
-        
-        &:active {
-          transform: translateY(0);
-          box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
-        }
-        
-        .networth-amount {
-          font-size: 1.3rem !important;
-          font-weight: 700;
-          color: #FFD700;
-          text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
-        }
-        
-        .networth-label {
-          font-size: 0.75rem;
-          color: white;
-          margin-top: 2px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          
-          .click-hint {
-            font-size: 0.6rem;
-            opacity: 0.7;
-            font-weight: 400;
-            text-transform: lowercase;
-            letter-spacing: 0;
-          }
-        }
+        min-width: 0;
       }
-      
-      .cash-section {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        padding: 8px 12px;
-        background: var(--ion-color-dark);
-        border: 2px solid #00FF7F;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 255, 127, 0.3);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        user-select: none;
-        
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 2px 15px rgba(0, 255, 127, 0.4);
-          border-color: #4AFF85;
-        }
-        
-        &:active {
-          transform: translateY(0);
-          box-shadow: 0 0 8px rgba(0, 255, 127, 0.3);
-        }
+    }
+
+    .networth-display {
+      border: 1px solid rgba(255, 215, 0, 0.6);
+
+      &:hover {
+        transform: translateY(-2px);
+        border-color: #ffed4e;
+        box-shadow: 0 2px 15px rgba(255, 215, 0, 0.3);
       }
-      
-      .cash-amount {
-        font-size: 1.3rem !important;
+
+      .networth-amount {
+        font-size: 1.4rem !important;
         font-weight: 700;
-        color: #00FF7F;
-        text-shadow: 0 0 8px rgba(0, 255, 127, 0.4);
+        color: #ffd700;
       }
-      
-      .cash-label {
-        font-size: 0.75rem;
-        color: white;
+
+      .networth-label {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.85);
         margin-top: 2px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 1px;
       }
-      
-      .click-hint {
-        font-size: 0.6rem;
-        opacity: 0.7;
-        font-weight: 400;
-        text-transform: lowercase;
-        letter-spacing: 0;
+    }
+
+    .cash-section {
+      border: 1px solid rgba(0, 255, 127, 0.6);
+
+      &:hover {
+        transform: translateY(-2px);
+        border-color: #4aff85;
+        box-shadow: 0 2px 15px rgba(0, 255, 127, 0.3);
+      }
+
+      .cash-amount {
+        font-size: 1.4rem !important;
+        font-weight: 700;
+        color: #00ff7f;
+      }
+
+      .cash-label {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 2px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
     }
   }
 }
 
+// Circular icon badge used in the net worth / habit cash rows and stat cards
+.stat-icon-circle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 1rem;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &.gold {
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+  }
+
+  &.green {
+    background: rgba(0, 255, 127, 0.15);
+    color: #00ff7f;
+  }
+
+  &.outline {
+    background: transparent;
+    border: 2px solid currentColor;
+  }
+}
+
 @media (max-width: 480px) {
   .user-info {
+    padding: 16px;
+
     .welcome-section {
-      flex-direction: column;
-      align-items: stretch;
+      .welcome-text h2 {
+        font-size: 1.1rem;
 
-      .cash-display {
-        width: 100%;
-        justify-content: space-between;
-        gap: 12px;
-        margin-top: 12px;
-
-        .networth-display,
-        .cash-section {
-          flex: 1;
-          align-items: center;
-          padding: 8px;
+        span {
+          font-size: 1.4rem;
         }
+      }
 
-        .networth-amount,
-        .cash-amount {
-          font-size: 1.1rem !important;
-        }
+      .welcome-chart {
+        width: 72px;
+      }
+    }
+
+    .cash-display {
+      .networth-amount,
+      .cash-amount {
+        font-size: 1.15rem !important;
       }
     }
   }

@@ -6,8 +6,7 @@
       slot="end"
       fill="clear"
       routerLink="/admin"
-      color="warning"
-      class="header-action-btn"
+      class="header-action-btn icon-box-btn gold-outline"
     >
       <ion-icon name="shield" slot="start"></ion-icon>
       <span class="btn-label">Admin</span>
@@ -17,7 +16,7 @@
       slot="end"
       fill="clear"
       (click)="openWeeklyReceipt()"
-      class="header-action-btn receipt-btn"
+      class="header-action-btn icon-box-btn gold-filled receipt-btn"
       aria-label="Weekly Receipt"
     >
       <span class="receipt-coin" slot="start">$</span>
@@ -28,7 +27,7 @@
       slot="end"
       fill="clear"
       routerLink="/settings"
-      class="header-action-btn"
+      class="header-action-btn icon-box-btn grey-outline"
     >
       <ion-icon name="settings" slot="start"></ion-icon>
       <span class="btn-label">Settings</span>
@@ -57,12 +56,35 @@
             </h2>
             <p>{{ currentTagline }}</p>
           </div>
-          <div class="cash-display">
-            <div class="networth-display" (click)="toggleNetWorthDetail()">
+          <div class="welcome-chart" aria-hidden="true">
+            <svg viewBox="0 0 120 100" class="chart-svg">
+              <defs>
+                <linearGradient id="chartGoldGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffe985"/>
+                  <stop offset="100%" stop-color="#e6a800"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="60" cy="90" rx="52" ry="8" fill="#05070c"/>
+              <rect x="16" y="60" width="15" height="26" rx="2" fill="#3a3f4b"/>
+              <rect x="39" y="48" width="15" height="38" rx="2" fill="#4a4f5b"/>
+              <rect x="62" y="34" width="15" height="52" rx="2" fill="#5a5f6b"/>
+              <rect x="85" y="18" width="15" height="68" rx="2" fill="url(#chartGoldGrad)"/>
+              <polyline points="10,70 46,44 69,52 92,14" stroke="#ffd700" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="92" cy="14" r="5" fill="#ffd700"/>
+            </svg>
+          </div>
+        </div>
+        <div class="cash-display">
+          <div class="networth-display" (click)="toggleNetWorthDetail()">
+            <div class="stat-icon-circle gold">$</div>
+            <div class="stat-text">
               <div class="networth-amount clickable">${{ getDisplayedNetWorth() }}</div>
               <div class="networth-label">NET WORTH</div>
             </div>
-            <div class="cash-section" (click)="toggleCashDetail()">
+          </div>
+          <div class="cash-section" (click)="toggleCashDetail()">
+            <div class="stat-icon-circle green">$</div>
+            <div class="stat-text">
               <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
               <div class="cash-label">HABIT CASH</div>
             </div>
@@ -152,12 +174,15 @@
       <!-- Stats Grid: all 3 cards shown together at every screen size -->
       <div class="stats-grid ion-margin-bottom">
         <ion-card
-          class="stat-card"
+          class="stat-card gold-accent"
           [class.clickable-card]="isStatAbbreviated(pendingHabitsCount)"
           (click)="showExactStatValue('Pending Habits', pendingHabitsCount, false)"
         >
           <ion-card-content>
             <div class="stat-content">
+              <div class="stat-icon-circle gold outline">
+                <ion-icon name="calendar-outline"></ion-icon>
+              </div>
               <div class="stat-info">
                 <h2>{{ formatCount(pendingHabitsCount) }}</h2>
                 <p>Pending Habits</p>
@@ -173,6 +198,9 @@
         >
           <ion-card-content>
             <div class="stat-content">
+              <div class="stat-icon-circle green outline">
+                <ion-icon name="trending-up-outline"></ion-icon>
+              </div>
               <div class="stat-info">
                 <h2>{{ formatCurrency(todaysEarnings) }}</h2>
                 <p>Today's Habit Earnings</p>
@@ -188,6 +216,9 @@
         >
           <ion-card-content>
             <div class="stat-content">
+              <div class="stat-icon-circle green outline">
+                <ion-icon name="logo-usd"></ion-icon>
+              </div>
               <div class="stat-info">
                 <h2>{{ formatCurrency(todaysStockEarnings) }}</h2>
                 <p>Today's Stock Dividends</p>
