@@ -1,12 +1,15 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { add, people, trendingUp, home } from 'ionicons/icons';
 import { AuthService } from '../../services/auth.service';
 import { SocialService } from '../../services/social.service';
+
+type NavSection = 'social' | 'center' | 'stocks';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -19,8 +22,10 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   @Input() mainButton: 'add' | 'home' = 'add';
   notificationBadgeCount = 0;
+  activeSection: NavSection = 'center';
 
   private badgeCountSubscription?: Subscription;
+  private routerSubscription?: Subscription;
 
   constructor(
     private router: Router,
@@ -31,6 +36,11 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+    this.updateActiveSection(this.router.url);
+    this.routerSubscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(event => this.updateActiveSection(event.urlAfterRedirects));
+
     // Subscribe first so this instance (and any other bottom-nav instance on screen)
     // reflects reads/dismissals from the social page immediately, not just on next load.
     this.badgeCountSubscription = this.socialService.notificationBadgeCount$.subscribe(count => {
@@ -49,6 +59,17 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.badgeCountSubscription?.unsubscribe();
+    this.routerSubscription?.unsubscribe();
+  }
+
+  private updateActiveSection(url: string) {
+    if (url.startsWith('/social')) {
+      this.activeSection = 'social';
+    } else if (url.startsWith('/stocks')) {
+      this.activeSection = 'stocks';
+    } else {
+      this.activeSection = 'center';
+    }
   }
 
 

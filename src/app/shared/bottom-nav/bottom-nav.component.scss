@@ -1,17 +1,22 @@
 .bottom-nav-container {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 14px;
+  right: 14px;
   z-index: 1000;
-  background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
-  border-top: 1px solid #FFD700;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #24244d 0%, #171733 100%);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .custom-tab-bar {
   --background: transparent;
   --border: none;
+  position: relative;
   height: 70px;
   padding: 0 20px;
   display: flex;
@@ -19,9 +24,49 @@
   justify-content: space-between;
 }
 
+// Liquid-glass indicator that glides between the Social and Stocks tabs.
+// It parks hidden behind the center button, which already has its own glass treatment.
+.glass-pill {
+  position: absolute;
+  top: 13px;
+  left: 20px;
+  width: calc((100% - 40px) / 3);
+  height: 44px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  opacity: 0;
+  transform: translateX(100%) scale(0.85);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+
+  &.pos-social {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+
+  &.pos-stocks {
+    opacity: 1;
+    transform: translateX(200%) scale(1);
+  }
+
+  &.pos-center {
+    opacity: 0;
+    transform: translateX(100%) scale(0.85);
+  }
+}
+
 .add-button {
   --color: white;
   --color-selected: white;
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   align-items: center;
@@ -95,9 +140,10 @@
 }
 
 .nav-button {
-  --color: #ffdb1a;
+  --color: rgba(255, 219, 26, 0.55);
   --color-selected: #ffdb1a;
   position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -105,6 +151,19 @@
   justify-content: center;
   min-height: 50px;
   transition: all 0.2s ease;
+}
+
+.nav-button.active {
+  --color: #ffdb1a;
+}
+
+.nav-button.active ion-icon {
+  filter: drop-shadow(0 0 6px rgba(255, 219, 26, 0.65));
+  transform: translateY(-1px);
+}
+
+.nav-button.active ion-label {
+  font-weight: 700;
 }
 
 .social-badge {
