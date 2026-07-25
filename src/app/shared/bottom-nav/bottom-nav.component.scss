@@ -28,28 +28,70 @@
   justify-content: center;
 }
 
-// Green circle for both add and home icons
+// Liquid-glass circle for both add and home icons — stays mostly clear but keeps the green tint
 .add-circle {
+  position: relative;
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #00ff88 0%, #00e676 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.32) 0%, rgba(0, 230, 118, 0.18) 55%, rgba(0, 255, 136, 0.28) 100%);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 6px 18px rgba(0, 255, 136, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.65),
+    inset 0 -6px 10px rgba(0, 120, 70, 0.25),
+    inset 0 0 14px rgba(0, 255, 136, 0.12);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+// Specular highlight arc — the "liquid" sheen across the top of the glass
+.add-circle::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 9px;
+  right: 9px;
+  height: 44%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+// Faint rim light at the bottom edge for depth
+.add-circle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 4px rgba(255, 255, 255, 0.15);
+  pointer-events: none;
 }
 
 .add-circle:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+  box-shadow:
+    0 8px 22px rgba(0, 255, 136, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.75),
+    inset 0 -6px 10px rgba(0, 120, 70, 0.3),
+    inset 0 0 16px rgba(0, 255, 136, 0.18);
 }
 
 .add-circle ion-icon {
+  position: relative;
+  z-index: 1;
   font-size: 28px;
-  color: #1e1e3f;
+  color: #ffffff;
   font-weight: bold;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 136, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
 .nav-button {
