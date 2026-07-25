@@ -62,14 +62,22 @@ button, span, div, ion-button {
     }
   }
 
-  // Icon-only square buttons: bordered/filled boxes rather than plain text buttons
+  // Icon-only square buttons: glass boxes with a soft colored glow behind the icon
   .icon-box-btn {
-    --border-radius: 10px;
+    --border-radius: 8px;
     --padding-start: 0;
     --padding-end: 0;
+    --padding-top: 0;
+    --padding-bottom: 0;
+    --background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
     width: 40px;
     height: 40px;
+    min-height: 40px;
+    max-height: 40px;
     margin-inline: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.3);
 
     ion-icon {
       font-size: 1.2rem;
@@ -77,29 +85,31 @@ button, span, div, ion-button {
     }
 
     &::part(native) {
-      border-radius: 10px;
+      border-radius: 8px;
+      overflow: visible;
+      width: 40px;
+      height: 40px;
+      min-height: 40px;
     }
 
     &.gold-outline {
-      --background: rgba(10, 12, 20, 0.6);
       --color: #ffd700;
-      --border-radius: 10px;
-      border: 1px solid rgba(255, 215, 0, 0.6);
-      border-radius: 10px;
+      border-color: rgba(255, 215, 0, 0.8);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 14px rgba(255, 215, 0, 0.45);
+
+      ion-icon {
+        color: #ffd700;
+        filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+      }
     }
 
     &.grey-outline {
-      --background: rgba(10, 12, 20, 0.6);
-      --color: rgba(255, 255, 255, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 10px;
+      --color: rgba(255, 255, 255, 0.8);
     }
 
     &.gold-filled {
-      --background: linear-gradient(135deg, #ffe985 0%, #ffd700 45%, #e6a800 100%);
-      --border-radius: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+      border-color: rgba(255, 215, 0, 0.35);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 14px rgba(255, 215, 0, 0.22);
     }
   }
 
@@ -107,31 +117,21 @@ button, span, div, ion-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    margin-inline-end: 6px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ffe985 0%, #ffd700 45%, #e6a800 100%);
-    color: #3a2a00;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 233, 133, 0.25), rgba(255, 215, 0, 0.08));
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    color: #ffd700;
     font-size: 0.85rem;
     font-weight: 800;
     line-height: 1;
-    box-shadow:
-      0 0 6px rgba(255, 215, 0, 0.7),
-      0 0 14px rgba(255, 215, 0, 0.35),
-      inset 0 1px 1px rgba(255, 255, 255, 0.6),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  // On the icon-box button this sits on its own gold-filled background,
-  // so drop the coin's own gold circle/glow to avoid gold-on-gold.
+  // On the icon-box button this is the only content, so center it with no extra margin.
   .icon-box-btn.gold-filled .receipt-coin {
-    background: none;
-    box-shadow: none;
-    color: #3a2a00;
-    width: auto;
-    height: auto;
     margin-inline-end: 0;
     font-size: 1.2rem;
   }
@@ -171,6 +171,11 @@ button, span, div, ion-button {
       ion-icon {
         margin: 0;
       }
+    }
+
+    .icon-box-btn {
+      --padding-start: 0;
+      --padding-end: 0;
     }
 
     .receipt-coin {
@@ -265,15 +270,15 @@ button, span, div, ion-button {
   }
 }
 
-// User info styling — dark card with a gold-to-green gradient border
+// User info styling — dark card with a gold-to-black-to-green gradient border
 .user-info {
   position: relative;
   background-image:
     linear-gradient(135deg, #12182b 0%, #0c1220 100%),
-    linear-gradient(180deg, #ffd700 0%, #00ff7f 100%);
+    linear-gradient(135deg, #ffd700 0%, #0f0f23 50%, #00ff7f 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
@@ -312,17 +317,6 @@ button, span, div, ion-button {
       }
     }
 
-    .welcome-chart {
-      flex-shrink: 0;
-      width: 96px;
-
-      .chart-svg {
-        width: 100%;
-        height: auto;
-        display: block;
-        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-      }
-    }
   }
 
   .cash-display {
@@ -411,29 +405,27 @@ button, span, div, ion-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   font-weight: 800;
   font-size: 1rem;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.3);
 
   ion-icon {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
   }
 
   &.gold {
-    background: rgba(255, 215, 0, 0.15);
     color: #ffd700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(255, 215, 0, 0.18);
   }
 
   &.green {
-    background: rgba(0, 255, 127, 0.15);
     color: #00ff7f;
-  }
-
-  &.outline {
-    background: transparent;
-    border: 2px solid currentColor;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(0, 255, 127, 0.18);
   }
 }
 
@@ -448,10 +440,6 @@ button, span, div, ion-button {
         span {
           font-size: 1.4rem;
         }
-      }
-
-      .welcome-chart {
-        width: 72px;
       }
     }
 

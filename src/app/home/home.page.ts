@@ -24,7 +24,7 @@ import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.c
 import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield, people } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -89,7 +89,7 @@ export class HomePage implements OnInit, OnDestroy {
     private countdownTickService: CountdownTickService,
     private offlineQueueService: OfflineQueueService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, chevronUp, chevronDown, wallet, cash, arrowBack, settings, helpCircle, close, analytics, shield, people });
+    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people });
     this.setRandomTagline();
   }
 
@@ -810,10 +810,6 @@ export class HomePage implements OnInit, OnDestroy {
   // Stock ownership pay-boost percentage per habit business (1% per share purchased by investors)
   stockBoostByBusinessId: { [habitBusinessId: string]: number } = {};
 
-  // Track detailed view state for cash and net worth cards
-  showDetailedCash = false;
-  showDetailedNetWorth = false;
-
   // Help section visibility
   showStatsHelpSection = false;
   showHabitProgressHelpSection = false;
@@ -1249,8 +1245,12 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
-  // Daily stat numbers abbreviate (100K, 1M, 1T...) once they hit this size
-  private readonly STAT_ABBREVIATE_THRESHOLD = 100000;
+  // Daily stat numbers abbreviate (1K, 1M, 1T...) once they hit this size.
+  // Kept low (matching the header cash/net-worth threshold) because the stat
+  // cards are only ~1/3 of the screen wide with overflow:hidden - an
+  // un-abbreviated value like "$66,000.00" is wider than the card and gets
+  // clipped on both sides by the centered text, e.g. showing "66,000.0".
+  private readonly STAT_ABBREVIATE_THRESHOLD = 1000;
 
   isStatAbbreviated(value: number): boolean {
     return Math.abs(value || 0) >= this.STAT_ABBREVIATE_THRESHOLD;
@@ -1321,39 +1321,44 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Get displayed cash amount (formatted or exact)
+   * Get displayed cash amount, abbreviated once it crosses $1,000
    */
   getDisplayedCash(): string {
     const cash = this.userProfile?.cash || 0;
-    if (cash >= 1000 && !this.showDetailedCash) {
+    if (cash >= 1000) {
       return this.formatLargeNumber(cash);
     }
     return cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /**
-   * Get displayed net worth amount (formatted or exact)
+   * Get displayed net worth amount, abbreviated once it crosses $1,000
    */
   getDisplayedNetWorth(): string {
     const netWorth = this.userProfile?.net_worth || 0;
-    if (netWorth >= 1000 && !this.showDetailedNetWorth) {
+    if (netWorth >= 1000) {
       return this.formatLargeNumber(netWorth);
     }
     return netWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  /**
-   * Toggle detailed view for cash card
-   */
-  toggleCashDetail() {
-    this.showDetailedCash = !this.showDetailedCash;
+  isCashAbbreviated(value: number): boolean {
+    return Math.abs(value || 0) >= 1000;
   }
 
   /**
-   * Toggle detailed view for net worth card
+   * Show the exact value behind an abbreviated cash/net worth header stat in a popup.
    */
-  toggleNetWorthDetail() {
-    this.showDetailedNetWorth = !this.showDetailedNetWorth;
+  async showExactCashValue(label: string, value: number) {
+    if (!this.isCashAbbreviated(value)) return;
+    const exact = value || 0;
+    const message = '$' + exact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const alert = await this.alertController.create({
+      header: label,
+      message,
+      buttons: ['OK'],
+    });
+    await alert.present();
   }
 
   /**

@@ -56,34 +56,23 @@
             </h2>
             <p>{{ currentTagline }}</p>
           </div>
-          <div class="welcome-chart" aria-hidden="true">
-            <svg viewBox="0 0 120 100" class="chart-svg">
-              <defs>
-                <linearGradient id="chartGoldGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#ffe985"/>
-                  <stop offset="100%" stop-color="#e6a800"/>
-                </linearGradient>
-              </defs>
-              <ellipse cx="60" cy="90" rx="52" ry="8" fill="#05070c"/>
-              <rect x="16" y="60" width="15" height="26" rx="2" fill="#3a3f4b"/>
-              <rect x="39" y="48" width="15" height="38" rx="2" fill="#4a4f5b"/>
-              <rect x="62" y="34" width="15" height="52" rx="2" fill="#5a5f6b"/>
-              <rect x="85" y="18" width="15" height="68" rx="2" fill="url(#chartGoldGrad)"/>
-              <polyline points="10,70 46,44 69,52 92,14" stroke="#ffd700" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="92" cy="14" r="5" fill="#ffd700"/>
-            </svg>
-          </div>
         </div>
         <div class="cash-display">
-          <div class="networth-display" (click)="toggleNetWorthDetail()">
-            <div class="stat-icon-circle gold">$</div>
+          <div
+            class="networth-display"
+            [class.clickable-card]="isCashAbbreviated(userProfile?.net_worth || 0)"
+            (click)="showExactCashValue('Net Worth', userProfile?.net_worth || 0)"
+          >
             <div class="stat-text">
               <div class="networth-amount clickable">${{ getDisplayedNetWorth() }}</div>
               <div class="networth-label">NET WORTH</div>
             </div>
           </div>
-          <div class="cash-section" (click)="toggleCashDetail()">
-            <div class="stat-icon-circle green">$</div>
+          <div
+            class="cash-section"
+            [class.clickable-card]="isCashAbbreviated(userProfile?.cash || 0)"
+            (click)="showExactCashValue('Habit Cash', userProfile?.cash || 0)"
+          >
             <div class="stat-text">
               <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
               <div class="cash-label">HABIT CASH</div>
@@ -180,7 +169,7 @@
         >
           <ion-card-content>
             <div class="stat-content">
-              <div class="stat-icon-circle gold outline">
+              <div class="stat-icon-circle gold">
                 <ion-icon name="calendar-outline"></ion-icon>
               </div>
               <div class="stat-info">
@@ -198,7 +187,7 @@
         >
           <ion-card-content>
             <div class="stat-content">
-              <div class="stat-icon-circle green outline">
+              <div class="stat-icon-circle green">
                 <ion-icon name="trending-up-outline"></ion-icon>
               </div>
               <div class="stat-info">
@@ -216,7 +205,7 @@
         >
           <ion-card-content>
             <div class="stat-content">
-              <div class="stat-icon-circle green outline">
+              <div class="stat-icon-circle green">
                 <ion-icon name="logo-usd"></ion-icon>
               </div>
               <div class="stat-info">
