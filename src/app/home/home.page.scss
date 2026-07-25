@@ -480,19 +480,20 @@ button, span, div, ion-button {
   .section-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     margin-bottom: 16px;
     padding: 0 8px;
-    
+
     h2 {
       margin: 0;
-      flex: 1; // Take up remaining space
+      text-align: center;
       color: var(--ion-color-primary);
       font-size: 1.4rem;
       font-weight: bold;
       text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
     }
-    
+
     ion-icon {
       font-size: 1.5rem;
       color: var(--ion-color-primary);
@@ -529,37 +530,33 @@ button, span, div, ion-button {
 
       .business-info {
         min-width: 0; // allow flex child to shrink below content width instead of overflowing
+        text-align: center;
 
-        .card-header-row {
+        // Icon: largest element in the card, front and center. Top-margin
+        // clears the absolutely-positioned corner controls (reorder /
+        // complete-undo) that sit over this same card.
+        .business-hero {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-
-        .business-title-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
+          justify-content: center;
+          margin-top: 52px;
+          margin-bottom: 6px;
         }
 
         .business-icon {
-          font-size: 2.2rem;
+          font-size: 3.6rem;
           flex-shrink: 0;
           filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
         }
 
         .business-icon-img {
-          width: 40px;
-          height: 40px;
+          width: 88px;
+          height: 88px;
           flex-shrink: 0;
           border-radius: 22%;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.3);
         }
 
-        .card-actions {
+        .business-action-icons {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
@@ -567,6 +564,7 @@ button, span, div, ion-button {
           justify-content: center;
           row-gap: 8px;
           width: 100%;
+          margin-top: 8px;
         }
 
         .business-name {
@@ -578,12 +576,30 @@ button, span, div, ion-button {
           min-width: 0;
         }
 
-        .habit-description {
-          margin: 0 0 12px 0;
-          color: rgba(255, 255, 255, 0.9);
-          font-size: 0.95rem;
-          line-height: 1.4;
-          text-align: center;
+        // Description text itself is hidden; this pill just opens a popup with it
+        .description-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          margin: 6px 0 4px;
+          padding: 4px 10px;
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 20px;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.78rem;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+          transition: all 0.2s ease;
+
+          ion-icon {
+            font-size: 0.95rem;
+          }
+
+          &:hover, &:active {
+            color: var(--ion-color-primary);
+            border-color: rgba(255, 215, 0, 0.4);
+          }
         }
 
         .habit-day-chips {
@@ -1094,12 +1110,12 @@ button, span, div, ion-button {
   .habit-business-item {
     .item-content {
       .business-icon {
-        font-size: 3rem;
+        font-size: 4.4rem;
       }
 
       .business-icon-img {
-        width: 52px;
-        height: 52px;
+        width: 108px;
+        height: 108px;
       }
 
       .business-info {
@@ -1271,17 +1287,10 @@ button, span, div, ion-button {
     }
   }
 
-  // Card header/actions - stack the name above the action row so the
-  // controls never compete with it for horizontal space, and shrink the
-  // remaining icon-only buttons (upgrade, edit) to match the others above.
+  // Action-icon row: shrink the icon-only buttons (upgrade, edit) to match
+  // the others alongside them on narrow screens.
   .habit-business-item .item-content .business-info {
-    .card-header-row {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 4px;
-    }
-
-    .card-actions {
+    .business-action-icons {
       justify-content: center;
     }
 
@@ -1784,8 +1793,25 @@ button, span, div, ion-button {
 .habit-business-item {
   position: relative;
 
-  // Now sits inline inside .business-title-row, next to the business icon,
-  // rather than as its own full-height column beside .item-content.
+  // Reorder controls (top-left) and complete/undo controls (top-right)
+  // float over the card so the icon + name can be centered underneath them.
+  .corner-controls {
+    position: absolute;
+    top: 14px;
+    z-index: 3;
+
+    &.corner-top-left {
+      left: 14px;
+    }
+
+    &.corner-top-right {
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
   .reorder-controls {
     display: flex;
     flex-direction: column;

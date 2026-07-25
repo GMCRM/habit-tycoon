@@ -1304,6 +1304,19 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
+   * Show a habit-business's description in a popup (the description text
+   * itself is hidden on the card; only a "Description" link is shown).
+   */
+  async showHabitDescription(habitBusiness: HabitBusiness) {
+    const alert = await this.alertController.create({
+      header: habitBusiness.business_name,
+      message: habitBusiness.habit_description || 'No description provided.',
+      buttons: ['OK'],
+    });
+    await alert.present();
+  }
+
+  /**
    * Show the exact value behind an abbreviated daily stat in a popup.
    */
   async showExactStatValue(label: string, value: number, isCurrency: boolean) {

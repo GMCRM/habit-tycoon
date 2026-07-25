@@ -310,271 +310,285 @@
             let-isLast="isLast"
           >
             <div class="habit-business-item">
+              <!-- Reorder Controls (top-left corner) -->
+              <div class="corner-controls corner-top-left reorder-controls">
+                <button
+                  type="button"
+                  class="reorder-btn"
+                  [disabled]="isFirst"
+                  (click)="moveHabitBusiness(hb, 'up')"
+                  aria-label="Move up"
+                >
+                  <ion-icon name="chevron-up"></ion-icon>
+                </button>
+                <button
+                  type="button"
+                  class="reorder-btn"
+                  [disabled]="isLast"
+                  (click)="moveHabitBusiness(hb, 'down')"
+                  aria-label="Move down"
+                >
+                  <ion-icon name="chevron-down"></ion-icon>
+                </button>
+              </div>
+
+              <!-- Complete/Undo controls (top-right corner) -->
+              <div class="corner-controls corner-top-right">
+                <!-- Single transforming button: Complete -> Undo -->
+                <div
+                  *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
+                  class="hold-complete-button"
+                  [class.is-holding]="holdingStates[hb.id]?.isHolding"
+                  [class.is-completing]="holdingStates[hb.id]?.isCompleting"
+                  [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
+                  [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
+                  (touchstart)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
+                  (touchend)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                  (touchleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                  (touchcancel)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                  (mousedown)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
+                  (mouseup)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                  (mouseleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
+                  (contextmenu)="$event.preventDefault()"
+                >
+                  <!-- Complete progress bar (only visible during complete hold) -->
+                  <div
+                    class="hold-progress"
+                    [style.width.%]="holdingStates[hb.id]?.progress || 0"
+                    *ngIf="!isGoalCompleted(hb)"
+                  ></div>
+
+                  <!-- Undo progress bar (only visible during undo hold) -->
+                  <div
+                    class="undo-progress"
+                    [style.width.%]="holdingStates[hb.id]?.undoProgress || 0"
+                    *ngIf="isGoalCompleted(hb)"
+                  ></div>
+
+                  <!-- Icon changes based on mode -->
+                  <ion-icon
+                    [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
+                    class="button-icon"
+                  ></ion-icon>
+
+                  <!-- Text changes based on mode and progress -->
+                  <span class="button-text" *ngIf="isGoalCompleted(hb)">
+                    Undo
+                  </span>
+                  <span
+                    class="button-text"
+                    *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
+                  >
+                    Complete ({{ hb.current_progress || 0 }}/{{
+                    hb.goal_value }})
+                  </span>
+                  <span
+                    class="button-text"
+                    *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
+                  >
+                    Complete
+                  </span>
+                </div>
+
+                <!-- Tap-to-complete variant: single tap instead of holding -->
+                <div
+                  *ngIf="tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
+                  class="hold-complete-button"
+                  [class.is-completing]="holdingStates[hb.id]?.isCompleting"
+                  [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
+                  [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
+                  (click)="isGoalCompleted(hb) ? handleUndoTap(hb, $event) : handleCompleteTap(hb, $event)"
+                >
+                  <!-- Icon changes based on mode -->
+                  <ion-icon
+                    [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
+                    class="button-icon"
+                  ></ion-icon>
+
+                  <!-- Text changes based on mode and progress -->
+                  <span class="button-text" *ngIf="isGoalCompleted(hb)">
+                    Undo
+                  </span>
+                  <span
+                    class="button-text"
+                    *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
+                  >
+                    Complete ({{ hb.current_progress || 0 }}/{{
+                    hb.goal_value }})
+                  </span>
+                  <span
+                    class="button-text"
+                    *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
+                  >
+                    Complete
+                  </span>
+                </div>
+
+                <!-- Simple back button for multi-completion habits with progress -->
+                <div
+                  *ngIf="isTodayActiveDay(hb) && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
+                  class="back-button"
+                  (click)="undoLastCompletion(hb)"
+                >
+                  <ion-icon
+                    name="arrow-back"
+                    class="back-icon"
+                  ></ion-icon>
+                </div>
+
+                <!-- Show completed status if goal is fully completed but no undo available
+                     (either zero progress left to undo, or it's a rest day — rest days show
+                     in Done regardless of whether the habit was actually completed) -->
+                <ion-button
+                  *ngIf="isGoalCompleted(hb) && ((hb.current_progress || 0) === 0 || !isTodayActiveDay(hb))"
+                  fill="outline"
+                  color="medium"
+                  size="small"
+                  disabled
+                >
+                  <ion-icon
+                    name="checkmark-circle"
+                    slot="start"
+                  ></ion-icon>
+                  <!-- Multi-completion habit, goal actually reached -->
+                  <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) >= hb.goal_value">
+                    Goal Complete ({{ hb.current_progress }}/{{
+                    hb.goal_value }})
+                  </span>
+                  <!-- Multi-completion habit, rest day but goal not reached -->
+                  <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) < hb.goal_value">
+                    Resting ({{ hb.current_progress || 0 }}/{{
+                    hb.goal_value }})
+                  </span>
+                  <!-- Simple text for single completion habits, active day -->
+                  <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && isTodayActiveDay(hb)">
+                    Completed Today
+                  </span>
+                  <!-- Simple text for single completion habits, rest day, actually completed -->
+                  <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) > 0">
+                    Completed
+                  </span>
+                  <!-- Simple text for single completion habits, rest day, not completed -->
+                  <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) === 0">
+                    Resting
+                  </span>
+                </ion-button>
+              </div>
+
               <div class="item-content">
                 <div class="business-info">
-                  <div class="card-header-row">
-                    <div class="business-title-row">
-                      <!-- Reorder Controls -->
-                      <div class="reorder-controls">
-                        <button
-                          type="button"
-                          class="reorder-btn"
-                          [disabled]="isFirst"
-                          (click)="moveHabitBusiness(hb, 'up')"
-                          aria-label="Move up"
-                        >
-                          <ion-icon name="chevron-up"></ion-icon>
-                        </button>
-                        <button
-                          type="button"
-                          class="reorder-btn"
-                          [disabled]="isLast"
-                          (click)="moveHabitBusiness(hb, 'down')"
-                          aria-label="Move down"
-                        >
-                          <ion-icon name="chevron-down"></ion-icon>
-                        </button>
-                      </div>
-                      <img
-                        *ngIf="hb.business_icon | businessIconSrc as iconSrc"
-                        [src]="iconSrc"
-                        [alt]="hb.business_name"
-                        class="business-icon business-icon-img"
-                      />
-                      <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
-                      <h3 class="business-name">{{ hb.business_name }}</h3>
-                    </div>
-                    <div class="card-actions">
-                      <!-- Delete button — lists this business on the Marketplace instead of an instant sale -->
-                      <ion-button
-                        fill="clear"
-                        color="danger"
-                        size="small"
-                        (click)="deleteHabitBusiness(hb)"
-                        style="
-                          margin: 0;
-                          --padding-start: 10px;
-                          --padding-end: 10px;
-                        "
-                      >
-                        Delete
-                      </ion-button>
-
-                      <!-- Earnings Toggle Button -->
-                      <div
-                        class="earnings-toggle-button"
-                        (click)="toggleEarningsVisibility(hb.id)"
-                      >
-                        <ion-icon name="cash" class="dollar-icon"></ion-icon>
-                      </div>
-
-                      <ion-button
-                        fill="clear"
-                        color="tertiary"
-                        size="default"
-                        class="calendar-toggle-button"
-                        (click)="toggleHabitGrid(hb)"
-                        style="
-                          margin: 0;
-                          --padding-start: 12px;
-                          --padding-end: 12px;
-                        "
-                      >
-                        <ion-icon
-                          name="calendar-outline"
-                          slot="icon-only"
-                        ></ion-icon>
-                      </ion-button>
-                      <ion-button
-                        fill="clear"
-                        color="warning"
-                        size="default"
-                        (click)="upgradeHabitBusiness(hb)"
-                        style="
-                          margin: 0;
-                          --padding-start: 12px;
-                          --padding-end: 12px;
-                        "
-                      >
-                        <ion-icon
-                          name="trending-up"
-                          slot="icon-only"
-                        ></ion-icon>
-                      </ion-button>
-                      <ion-button
-                        fill="clear"
-                        color="tertiary"
-                        size="default"
-                        (click)="openStockOwnersModal(hb)"
-                        style="
-                          margin: 0;
-                          --padding-start: 12px;
-                          --padding-end: 12px;
-                        "
-                      >
-                        <ion-icon
-                          name="people"
-                          slot="icon-only"
-                        ></ion-icon>
-                      </ion-button>
-                      <ion-button
-                        fill="clear"
-                        size="default"
-                        (click)="editHabitBusiness(hb)"
-                        style="
-                          margin: 0;
-                          --padding-start: 12px;
-                          --padding-end: 12px;
-                          --color: #7ecfff;
-                          opacity: 1;
-                        "
-                      >
-                        <ion-icon name="create" slot="icon-only"></ion-icon>
-                      </ion-button>
-
-                      <!-- Complete/Undo buttons moved to far right -->
-                      <!-- Single transforming button: Complete -> Undo -->
-                      <div
-                        *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
-                        class="hold-complete-button"
-                        [class.is-holding]="holdingStates[hb.id]?.isHolding"
-                        [class.is-completing]="holdingStates[hb.id]?.isCompleting"
-                        [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
-                        [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
-                        (touchstart)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
-                        (touchend)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                        (touchleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                        (touchcancel)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                        (mousedown)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
-                        (mouseup)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                        (mouseleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                        (contextmenu)="$event.preventDefault()"
-                      >
-                        <!-- Complete progress bar (only visible during complete hold) -->
-                        <div
-                          class="hold-progress"
-                          [style.width.%]="holdingStates[hb.id]?.progress || 0"
-                          *ngIf="!isGoalCompleted(hb)"
-                        ></div>
-
-                        <!-- Undo progress bar (only visible during undo hold) -->
-                        <div
-                          class="undo-progress"
-                          [style.width.%]="holdingStates[hb.id]?.undoProgress || 0"
-                          *ngIf="isGoalCompleted(hb)"
-                        ></div>
-
-                        <!-- Icon changes based on mode -->
-                        <ion-icon
-                          [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
-                          class="button-icon"
-                        ></ion-icon>
-
-                        <!-- Text changes based on mode and progress -->
-                        <span class="button-text" *ngIf="isGoalCompleted(hb)">
-                          Undo
-                        </span>
-                        <span
-                          class="button-text"
-                          *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
-                        >
-                          Complete ({{ hb.current_progress || 0 }}/{{
-                          hb.goal_value }})
-                        </span>
-                        <span
-                          class="button-text"
-                          *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
-                        >
-                          Complete
-                        </span>
-                      </div>
-
-                      <!-- Tap-to-complete variant: single tap instead of holding -->
-                      <div
-                        *ngIf="tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
-                        class="hold-complete-button"
-                        [class.is-completing]="holdingStates[hb.id]?.isCompleting"
-                        [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
-                        [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
-                        (click)="isGoalCompleted(hb) ? handleUndoTap(hb, $event) : handleCompleteTap(hb, $event)"
-                      >
-                        <!-- Icon changes based on mode -->
-                        <ion-icon
-                          [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
-                          class="button-icon"
-                        ></ion-icon>
-
-                        <!-- Text changes based on mode and progress -->
-                        <span class="button-text" *ngIf="isGoalCompleted(hb)">
-                          Undo
-                        </span>
-                        <span
-                          class="button-text"
-                          *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
-                        >
-                          Complete ({{ hb.current_progress || 0 }}/{{
-                          hb.goal_value }})
-                        </span>
-                        <span
-                          class="button-text"
-                          *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
-                        >
-                          Complete
-                        </span>
-                      </div>
-
-                      <!-- Simple back button for multi-completion habits with progress -->
-                      <div
-                        *ngIf="isTodayActiveDay(hb) && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
-                        class="back-button"
-                        (click)="undoLastCompletion(hb)"
-                      >
-                        <ion-icon
-                          name="arrow-back"
-                          class="back-icon"
-                        ></ion-icon>
-                      </div>
-
-                      <!-- Show completed status if goal is fully completed but no undo available
-                           (either zero progress left to undo, or it's a rest day — rest days show
-                           in Done regardless of whether the habit was actually completed) -->
-                      <ion-button
-                        *ngIf="isGoalCompleted(hb) && ((hb.current_progress || 0) === 0 || !isTodayActiveDay(hb))"
-                        fill="outline"
-                        color="medium"
-                        size="small"
-                        disabled
-                      >
-                        <ion-icon
-                          name="checkmark-circle"
-                          slot="start"
-                        ></ion-icon>
-                        <!-- Multi-completion habit, goal actually reached -->
-                        <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) >= hb.goal_value">
-                          Goal Complete ({{ hb.current_progress }}/{{
-                          hb.goal_value }})
-                        </span>
-                        <!-- Multi-completion habit, rest day but goal not reached -->
-                        <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) < hb.goal_value">
-                          Resting ({{ hb.current_progress || 0 }}/{{
-                          hb.goal_value }})
-                        </span>
-                        <!-- Simple text for single completion habits, active day -->
-                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && isTodayActiveDay(hb)">
-                          Completed Today
-                        </span>
-                        <!-- Simple text for single completion habits, rest day, actually completed -->
-                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) > 0">
-                          Completed
-                        </span>
-                        <!-- Simple text for single completion habits, rest day, not completed -->
-                        <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) === 0">
-                          Resting
-                        </span>
-                      </ion-button>
-                    </div>
+                  <!-- Icon: largest element, front and center -->
+                  <div class="business-hero">
+                    <img
+                      *ngIf="hb.business_icon | businessIconSrc as iconSrc"
+                      [src]="iconSrc"
+                      [alt]="hb.business_name"
+                      class="business-icon business-icon-img"
+                    />
+                    <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
                   </div>
-                  <p class="habit-description">{{ hb.habit_description }}</p>
+                  <h3 class="business-name">{{ hb.business_name }}</h3>
+
+                  <!-- Description is hidden by default; tap to view it in a popup -->
+                  <button
+                    *ngIf="hb.habit_description"
+                    type="button"
+                    class="description-toggle"
+                    (click)="showHabitDescription(hb)"
+                  >
+                    <ion-icon name="information-circle-outline"></ion-icon>
+                    Description
+                  </button>
+
+                  <div class="business-action-icons">
+                    <!-- Delete button — lists this business on the Marketplace instead of an instant sale -->
+                    <ion-button
+                      fill="clear"
+                      color="danger"
+                      size="small"
+                      (click)="deleteHabitBusiness(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 10px;
+                        --padding-end: 10px;
+                      "
+                    >
+                      Delete
+                    </ion-button>
+
+                    <!-- Earnings Toggle Button -->
+                    <div
+                      class="earnings-toggle-button"
+                      (click)="toggleEarningsVisibility(hb.id)"
+                    >
+                      <ion-icon name="cash" class="dollar-icon"></ion-icon>
+                    </div>
+
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="default"
+                      class="calendar-toggle-button"
+                      (click)="toggleHabitGrid(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon
+                        name="calendar-outline"
+                        slot="icon-only"
+                      ></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="warning"
+                      size="default"
+                      (click)="upgradeHabitBusiness(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon
+                        name="trending-up"
+                        slot="icon-only"
+                      ></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="default"
+                      (click)="openStockOwnersModal(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                      "
+                    >
+                      <ion-icon
+                        name="people"
+                        slot="icon-only"
+                      ></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      size="default"
+                      (click)="editHabitBusiness(hb)"
+                      style="
+                        margin: 0;
+                        --padding-start: 12px;
+                        --padding-end: 12px;
+                        --color: #7ecfff;
+                        opacity: 1;
+                      "
+                    >
+                      <ion-icon name="create" slot="icon-only"></ion-icon>
+                    </ion-button>
+                  </div>
+
                   <div class="habit-stats">
                     <div class="stat-item">
                       <div class="stat-label">Streak</div>
