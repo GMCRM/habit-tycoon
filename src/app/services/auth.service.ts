@@ -45,7 +45,11 @@ export class AuthService {
   private getRedirectUrl(): string {
     // Check if running on mobile (Capacitor)
     if (this.isMobile()) {
-      return `io.ionic.habittycoon://auth/callback`; // Custom URL scheme for mobile
+      // Must match capacitor.config.ts's appId and the CFBundleURLSchemes /
+      // intent-filter registered natively (Info.plist, AndroidManifest.xml) —
+      // otherwise iOS/Android has nothing to hand the redirect back to and
+      // the OAuth flow dead-ends in the browser instead of returning to the app.
+      return `com.grantcross.habittycoon://auth/callback`;
     } else {
       // For PKCE flow, the redirect URL must NOT contain a hash fragment.
       // Supabase appends ?code= as a query param; if the redirect URL already

@@ -1,6 +1,8 @@
 import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import { App, URLOpenListenerEvent } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { AuthService } from './services/auth.service';
 
 // If the app was backgrounded longer than this (ms), force a full reload so
@@ -13,6 +15,12 @@ const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
   imports: [IonApp, IonRouterOutlet],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  // Guards shared between the web ?code= callback path (ngOnInit) and the
+  // native deep-link callback path (appUrlOpen) below, since both can land
+  // on the same account.
+  private navigatedToHome = false;
+  private isExchangingCode = false;
+  private appUrlOpenListener: PluginListenerHandle | null = null;
   private hiddenAt: number | null = null;
   private onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
@@ -51,6 +59,55 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.router.url || '/';
   }
 
+  private async goHome(user: any) {
+    if (this.navigatedToHome) return;
+    this.navigatedToHome = true;
+    try {
+      await this.authService.ensureUserProfileExists(user);
+    } catch (e) {
+      console.error('❌ AppComponent: Failed to ensure user profile:', e);
+    }
+    console.log('🔄 AppComponent: Navigating to home');
+    await this.router.navigate(['/home']);
+    // Strip ?code= so a hard-refresh doesn't attempt to re-exchange an
+    // already-used code (which would leave the user stuck on login).
+    if (window.location.search) {
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
+      window.history.replaceState(null, '', cleanUrl);
+    }
+  }
+
+  // Exchanges an OAuth `code` for a session. Shared by the web callback path
+  // (?code= in window.location.search, handled in ngOnInit) and the native
+  // deep-link callback path (com.grantcross.habittycoon://auth/callback?code=,
+  // handled by the appUrlOpen listener below) — Capacitor's WebView never
+  // navigates to the custom-scheme URL, so window.location never sees the
+  // code on native; it only ever arrives via the appUrlOpen event.
+  private async exchangeCodeAndGoHome(code: string) {
+    console.log('🔍 AppComponent: OAuth callback — exchanging code for session...');
+    this.isExchangingCode = true;
+    try {
+      const { data, error } = await this.authService.supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error('❌ AppComponent: Code exchange failed:', error.message);
+        this.ngZone.run(() => this.router.navigate(['/login']));
+      } else if (data.session) {
+        console.log('✅ AppComponent: Code exchange succeeded');
+        // goHome may also be triggered by the SIGNED_IN listener below;
+        // navigatedToHome guards against a double navigation.
+        await this.goHome(data.session.user);
+      } else {
+        console.error('❌ AppComponent: No session after code exchange');
+        this.ngZone.run(() => this.router.navigate(['/login']));
+      }
+    } catch (err) {
+      console.error('❌ AppComponent: Code exchange threw:', err);
+      this.ngZone.run(() => this.router.navigate(['/login']));
+    } finally {
+      this.isExchangingCode = false;
+    }
+  }
+
   async ngOnInit() {
     // --- Resume / bfcache handling ---
     window.addEventListener('pageshow', (event: PageTransitionEvent) => {
@@ -65,32 +122,30 @@ export class AppComponent implements OnInit, OnDestroy {
     const urlParams = new URLSearchParams(window.location.search);
     const isOAuthCallback = urlParams.has('code') || urlParams.has('error_code');
 
-    // Guard to prevent double-navigation if both the listener and the OAuth
-    // poller resolve a session at nearly the same time.
-    let navigatedToHome = false;
-    // True only while exchangeCodeForSession() is in-flight. Prevents a
-    // spurious SIGNED_OUT event (fired when Supabase invalidates a stale
-    // old session it finds in localStorage on startup) from racing with the
-    // new-session SIGNED_IN and sending Chrome Mac users back to /login.
-    let isExchangingCode = false;
-
-    const goHome = async (user: any) => {
-      if (navigatedToHome) return;
-      navigatedToHome = true;
-      try {
-        await this.authService.ensureUserProfileExists(user);
-      } catch (e) {
-        console.error('❌ AppComponent: Failed to ensure user profile:', e);
-      }
-      console.log('🔄 AppComponent: Navigating to home');
-      await this.router.navigate(['/home']);
-      // Strip ?code= so a hard-refresh doesn't attempt to re-exchange an
-      // already-used code (which would leave the user stuck on login).
-      if (window.location.search) {
-        const cleanUrl = window.location.origin + window.location.pathname + window.location.hash;
-        window.history.replaceState(null, '', cleanUrl);
-      }
-    };
+    // Native deep-link callback: com.grantcross.habittycoon://auth/callback?code=...
+    // Google/Supabase redirects the system browser here after sign-in; iOS/Android
+    // foreground the app via the registered URL scheme and Capacitor fires this
+    // event with the full URL. This never touches window.location, so it's the
+    // only place the code arrives on native — the ?code= branch below only fires
+    // on web.
+    // Not awaited: this must not delay the onAuthStateChange registration
+    // immediately below, which has to run before any await (see its comment).
+    App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+      this.ngZone.run(async () => {
+        console.log('🔍 AppComponent: appUrlOpen received:', event.url);
+        const callbackUrl = new URL(event.url);
+        const errorCode = callbackUrl.searchParams.get('error_code');
+        if (errorCode) {
+          console.error('❌ AppComponent: OAuth error via deep link:', callbackUrl.searchParams.get('error_description'));
+          this.router.navigate(['/login']);
+          return;
+        }
+        const code = callbackUrl.searchParams.get('code');
+        if (code) {
+          await this.exchangeCodeAndGoHome(code);
+        }
+      });
+    }).then(handle => { this.appUrlOpenListener = handle; });
 
     // CRITICAL: register the auth-state listener SYNCHRONOUSLY before any
     // await.  Supabase begins the PKCE code exchange the moment createClient()
@@ -109,18 +164,18 @@ export class AppComponent implements OnInit, OnDestroy {
           // visit. If this event arrives after SIGNED_IN the unguarded
           // router.navigate(['/login']) call would override the successful
           // exchange and boot the user back to the login screen.
-          if (isExchangingCode) {
+          if (this.isExchangingCode) {
             console.log('🔍 AppComponent: Ignoring SIGNED_OUT during OAuth code exchange');
             return;
           }
           console.log('🔄 AppComponent: User signed out, redirecting to login');
-          navigatedToHome = false; // Reset so next sign-in works
+          this.navigatedToHome = false; // Reset so next sign-in works
           this.router.navigate(['/login']);
         } else if (event === 'SIGNED_IN') {
           console.log('🔄 AppComponent: SIGNED_IN event received');
           const currentPath = this.getCurrentRoutePath();
           if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/' || isOAuthCallback) {
-            await goHome(session?.user);
+            await this.goHome(session?.user);
           }
         }
       });
@@ -172,32 +227,12 @@ export class AppComponent implements OnInit, OnDestroy {
       }
 
       const code = urlParams.get('code')!;
-      console.log('🔍 AppComponent: OAuth callback — exchanging code for session...');
-      isExchangingCode = true;
-      try {
-        const { data, error } = await this.authService.supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error('❌ AppComponent: Code exchange failed:', error.message);
-          this.ngZone.run(() => this.router.navigate(['/login']));
-        } else if (data.session) {
-          console.log('✅ AppComponent: Code exchange succeeded');
-          // goHome may also be triggered by the SIGNED_IN listener above;
-          // navigatedToHome guards against a double navigation.
-          this.ngZone.run(async () => await goHome(data.session!.user));
-        } else {
-          console.error('❌ AppComponent: No session after code exchange');
-          this.ngZone.run(() => this.router.navigate(['/login']));
-        }
-      } catch (err) {
-        console.error('❌ AppComponent: Code exchange threw:', err);
-        this.ngZone.run(() => this.router.navigate(['/login']));
-      } finally {
-        isExchangingCode = false;
-      }
+      await this.exchangeCodeAndGoHome(code);
     }
   }
 
   ngOnDestroy() {
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.appUrlOpenListener?.remove();
   }
 }
