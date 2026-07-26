@@ -135,7 +135,11 @@
               <div class="investment-info">
                 <div class="investment-name">{{ type.name }}</div>
                 <div class="investment-cost" [class.unaffordable]="userProfile?.cash < type.base_cost">
-                  ${{ type.base_cost }}
+                  ${{ type.base_cost | number }}
+                </div>
+                <div class="investment-details">
+                  <span class="revenue-amount">${{ type.base_pay | number }}</span>
+                  <span class="revenue-label">per completion</span>
                 </div>
               </div>
               <ion-icon
@@ -143,11 +147,6 @@
                 [name]="userProfile?.cash >= type.base_cost ? 'checkmark-circle' : 'lock-closed'"
                 [color]="userProfile?.cash >= type.base_cost ? 'success' : 'medium'"
               ></ion-icon>
-            </div>
-
-            <div class="investment-details">
-              <span class="revenue-amount">${{ type.base_pay }}</span>
-              <span class="revenue-label">per completion</span>
             </div>
           </div>
         </div>
@@ -176,11 +175,11 @@
           </div>
           <div class="summary-item cost">
             <span class="summary-label">Initial Cost:</span>
-            <span class="summary-value">-${{ selectedBusinessType?.base_cost }}</span>
+            <span class="summary-value">-${{ selectedBusinessType?.base_cost | number }}</span>
           </div>
           <div class="summary-item earning">
             <span class="summary-label">Revenue / Completion:</span>
-            <span class="summary-value">+${{ selectedBusinessType?.base_pay }}</span>
+            <span class="summary-value">+${{ selectedBusinessType?.base_pay | number }}</span>
           </div>
           <div class="summary-item highlight">
             <span class="summary-label">Break-even Point:</span>
@@ -194,7 +193,7 @@
           <ion-icon name="warning" color="danger"></ion-icon>
           <div class="warning-text">
             <strong>Insufficient Capital</strong><br />
-            Need ${{ selectedBusinessType?.base_cost }} but only have ${{ userProfile?.cash }}
+            Need ${{ selectedBusinessType?.base_cost | number }} but only have ${{ userProfile?.cash | number }}
           </div>
         </div>
       </div>

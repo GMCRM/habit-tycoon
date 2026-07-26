@@ -1,8 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
-import { 
+import {
   IonContent, 
   IonHeader, 
   IonTitle, 
@@ -18,15 +17,13 @@ import {
   IonIcon,
   IonToast,
   IonModal,
-  IonTextarea,
-  IonToggle
+  IonTextarea
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
-import { SettingsService } from '../services/settings.service';
 import { Router } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning, fingerPrint, logOut } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, logOut } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -52,11 +49,10 @@ import { save, person, lockClosed, logoGoogle, trash, warning, fingerPrint, logO
     IonToast,
     IonModal,
     IonTextarea,
-    IonToggle,
     BottomNavComponent
   ]
 })
-export class SettingsPage implements OnInit, OnDestroy {
+export class SettingsPage implements OnInit {
   // User profile data
   username: string = '';
   currentPassword: string = '';
@@ -83,31 +79,15 @@ export class SettingsPage implements OnInit, OnDestroy {
   currentUser: any = null;
   isGoogleUser = false; // New property to track if user signed in with Google
 
-  // Whether the habit complete/undo button responds to a single tap instead of a hold
-  tapToComplete = false;
-  private tapToCompleteSub?: Subscription;
-
   constructor(
     private authService: AuthService,
-    private settingsService: SettingsService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning,fingerPrint,logOut});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOut});
   }
 
   async ngOnInit() {
-    this.tapToCompleteSub = this.settingsService.tapToComplete$.subscribe(
-      value => (this.tapToComplete = value)
-    );
     await this.loadUserData();
-  }
-
-  ngOnDestroy() {
-    this.tapToCompleteSub?.unsubscribe();
-  }
-
-  onTapToCompleteChange(event: CustomEvent) {
-    this.settingsService.setTapToComplete(event.detail.checked);
   }
 
   async loadUserData() {
@@ -126,7 +106,6 @@ export class SettingsPage implements OnInit, OnDestroy {
         const profile = await this.authService.getUserProfile(user.user.id);
         if (profile) {
           this.username = profile.name || '';
-          this.settingsService.syncFromProfile(profile);
         }
       }
     } catch (error) {

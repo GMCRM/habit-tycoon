@@ -9,7 +9,6 @@ import {
   IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
-import { SettingsService } from '../services/settings.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { OfflineQueuedError, OfflineQueueService } from '../services/offline-queue.service';
@@ -79,7 +78,6 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private settingsService: SettingsService,
     private adminService: AdminService,
     private habitBusinessService: HabitBusinessService,
     private habitUpdateService: HabitUpdateService,
@@ -143,7 +141,6 @@ export class HomePage implements OnInit, OnDestroy {
       console.log('🔄 Refreshing user profile for ID:', this.currentUser.id);
       this.userProfile = await this.authService.getUserProfile(this.currentUser.id);
       console.log('✅ Refreshed user profile:', this.userProfile);
-      this.settingsService.syncFromProfile(this.userProfile);
     } catch (error) {
       console.error('❌ Error refreshing user profile:', error);
     }
@@ -184,8 +181,7 @@ export class HomePage implements OnInit, OnDestroy {
         console.log('Attempting to ensure profile exists for user ID:', user.id);
         this.userProfile = await this.authService.ensureUserProfileExists(user);
         console.log('User profile ensured:', this.userProfile);
-        this.settingsService.syncFromProfile(this.userProfile);
-      } catch (error) {
+        } catch (error) {
         console.error('Profile creation/loading failed:', error);
         // Initialize default profile if everything fails
         this.userProfile = {
@@ -831,29 +827,10 @@ export class HomePage implements OnInit, OnDestroy {
   showStatsHelpSection = false;
   showHabitProgressHelpSection = false;
 
-  // Hold-down button states
-  holdingStates: { [key: string]: { 
-    isHolding: boolean; 
-    progress: number; 
-    isCompleting: boolean; 
-    isUndoing: boolean;
-    undoProgress: number;
-    timer?: any; 
-    interval?: any;
-    undoTimer?: any;
-    undoInterval?: any;
-  } } = {};
-  private holdDuration = 1500; // 1.5 seconds to complete
-  private updateInterval = 50; // Update progress every 50ms
-
-  // Whether the complete/undo button responds to a single tap instead of a hold
-  tapToComplete = false;
-  private tapToCompleteSub?: Subscription;
+  // Complete/undo button in-flight states (drives the completion pop animation)
+  completeButtonStates: { [key: string]: { isCompleting: boolean; isUndoing: boolean } } = {};
 
   ngOnInit() {
-    this.tapToCompleteSub = this.settingsService.tapToComplete$.subscribe(
-      value => (this.tapToComplete = value)
-    );
     this.countdownTickService.register();
     this.tickSub = this.countdownTickService.tick$.subscribe(() => {
       this.habitBusinesses.forEach(hb => {
@@ -869,127 +846,12 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.tickSub?.unsubscribe();
-    this.tapToCompleteSub?.unsubscribe();
     this.pendingSyncSub?.unsubscribe();
     this.countdownTickService.unregister();
-    // Clean up any ongoing hold timers
-    Object.values(this.holdingStates).forEach(state => {
-      if (state.timer) clearTimeout(state.timer);
-      if (state.interval) clearInterval(state.interval);
-      if (state.undoTimer) clearTimeout(state.undoTimer);
-      if (state.undoInterval) clearInterval(state.undoInterval);
-    });
   }
 
   /**
-   * Start holding down the complete button
-   */
-  startHolding(habitBusiness: HabitBusiness, event: Event) {
-    event.preventDefault();
-    
-    // Initialize holding state if not exists
-    if (!this.holdingStates[habitBusiness.id]) {
-      this.holdingStates[habitBusiness.id] = {
-        isHolding: false,
-        progress: 0,
-        isCompleting: false,
-        isUndoing: false,
-        undoProgress: 0
-      };
-    }
-
-    const state = this.holdingStates[habitBusiness.id];
-    
-    // Don't start if already completing
-    if (state.isCompleting) return;
-
-    state.isHolding = true;
-    state.progress = 0;
-
-    // Update progress every 50ms
-    state.interval = setInterval(() => {
-      if (state.isHolding) {
-        state.progress += (this.updateInterval / this.holdDuration) * 100;
-        
-        if (state.progress >= 100) {
-          this.completeHolding(habitBusiness);
-        }
-      }
-    }, this.updateInterval);
-
-    // Failsafe timeout
-    state.timer = setTimeout(() => {
-      if (state.isHolding) {
-        this.completeHolding(habitBusiness);
-      }
-    }, this.holdDuration);
-  }
-
-  /**
-   * Stop holding down the complete button
-   */
-  stopHolding(habitBusiness: HabitBusiness, event: Event) {
-    const state = this.holdingStates[habitBusiness.id];
-    if (!state || state.isCompleting) return;
-
-    state.isHolding = false;
-    
-    // Clear timers
-    if (state.timer) {
-      clearTimeout(state.timer);
-      state.timer = undefined;
-    }
-    if (state.interval) {
-      clearInterval(state.interval);
-      state.interval = undefined;
-    }
-
-    // Reset progress if not completed
-    if (state.progress < 100) {
-      // Animate progress back to 0
-      const resetInterval = setInterval(() => {
-        state.progress -= 10;
-        if (state.progress <= 0) {
-          state.progress = 0;
-          clearInterval(resetInterval);
-        }
-      }, 20);
-    }
-  }
-
-  /**
-   * Complete the holding action
-   */
-  private async completeHolding(habitBusiness: HabitBusiness) {
-    const state = this.holdingStates[habitBusiness.id];
-    if (!state) return;
-
-    state.isCompleting = true;
-    state.progress = 100;
-    state.isHolding = false;
-
-    // Clear timers
-    if (state.timer) {
-      clearTimeout(state.timer);
-      state.timer = undefined;
-    }
-    if (state.interval) {
-      clearInterval(state.interval);
-      state.interval = undefined;
-    }
-
-    // Complete the habit after a brief success animation
-    setTimeout(async () => {
-      await this.runCompleteHabit(habitBusiness);
-
-      // Reset state after completion
-      state.isCompleting = false;
-      state.progress = 0;
-    }, 300);
-  }
-
-  /**
-   * Shared completion logic used by both the hold-to-complete and tap-to-complete flows
+   * Shared completion logic used when marking a habit complete
    */
   private async runCompleteHabit(habitBusiness: HabitBusiness) {
     // Show "missed yesterday" prompt for daily habits that weren't done yesterday
@@ -1003,22 +865,16 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Instantly complete a habit on a single tap (used when tap-to-complete is enabled)
+   * Instantly complete a habit on a single tap
    */
   async handleCompleteTap(habitBusiness: HabitBusiness, event: Event) {
     event.preventDefault();
 
-    if (!this.holdingStates[habitBusiness.id]) {
-      this.holdingStates[habitBusiness.id] = {
-        isHolding: false,
-        progress: 0,
-        isCompleting: false,
-        isUndoing: false,
-        undoProgress: 0
-      };
+    if (!this.completeButtonStates[habitBusiness.id]) {
+      this.completeButtonStates[habitBusiness.id] = { isCompleting: false, isUndoing: false };
     }
 
-    const state = this.holdingStates[habitBusiness.id];
+    const state = this.completeButtonStates[habitBusiness.id];
     if (state.isCompleting) return;
 
     state.isCompleting = true;
@@ -1036,11 +892,11 @@ export class HomePage implements OnInit, OnDestroy {
   private async showMissedYesterdayAlert(habitBusiness: HabitBusiness): Promise<void> {
     // The alert itself dismisses immediately on tap (buttons run their work
     // in the background rather than blocking the dialog), but callers
-    // (handleCompleteTap/completeHolding) rely on this promise to know when
-    // it's safe to clear their "isCompleting" guard — resolving as soon as
-    // alert.present() does (instead of waiting for the background work)
-    // would re-enable the complete button/hold gesture before the pending
-    // completion actually finishes, allowing a second, overlapping tap.
+    // (handleCompleteTap) rely on this promise to know when it's safe to
+    // clear their "isCompleting" guard — resolving as soon as alert.present()
+    // does (instead of waiting for the background work) would re-enable the
+    // complete button before the pending completion actually finishes,
+    // allowing a second, overlapping tap.
     return new Promise<void>((resolve) => {
       let resolved = false;
       const done = () => {
@@ -1110,122 +966,16 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Start holding for undo action
-   */
-  startUndoHolding(habitBusiness: HabitBusiness, event: Event) {
-    event.preventDefault();
-    
-    // Initialize holding state if not exists
-    if (!this.holdingStates[habitBusiness.id]) {
-      this.holdingStates[habitBusiness.id] = {
-        isHolding: false,
-        progress: 0,
-        isCompleting: false,
-        isUndoing: false,
-        undoProgress: 0
-      };
-    }
-
-    const state = this.holdingStates[habitBusiness.id];
-    
-    // Don't start if already undoing
-    if (state.isUndoing) return;
-
-    state.isUndoing = true;
-    state.undoProgress = 0;
-
-    // Update progress incrementally (goes from 0 to 100)
-    state.undoInterval = setInterval(() => {
-      state.undoProgress += (100 / this.holdDuration) * this.updateInterval;
-      if (state.undoProgress >= 100) {
-        state.undoProgress = 100;
-        this.completeUndoHolding(habitBusiness);
-      }
-    }, this.updateInterval);
-
-    // Set timeout to complete the undo action
-    state.undoTimer = setTimeout(() => {
-      this.completeUndoHolding(habitBusiness);
-    }, this.holdDuration);
-  }
-
-  /**
-   * Stop holding for undo action
-   */
-  stopUndoHolding(habitBusiness: HabitBusiness, event: Event) {
-    event.preventDefault();
-    
-    const state = this.holdingStates[habitBusiness.id];
-    if (!state || !state.isUndoing) return;
-
-    // Clear timers
-    if (state.undoTimer) {
-      clearTimeout(state.undoTimer);
-      state.undoTimer = undefined;
-    }
-    if (state.undoInterval) {
-      clearInterval(state.undoInterval);
-      state.undoInterval = undefined;
-    }
-
-    state.isUndoing = false;
-
-    // Reset progress gradually
-    const resetInterval = setInterval(() => {
-      state.undoProgress -= 10;
-      if (state.undoProgress <= 0) {
-        state.undoProgress = 0;
-        clearInterval(resetInterval);
-      }
-    }, 20);
-  }
-
-  /**
-   * Complete the undo holding action
-   */
-  private async completeUndoHolding(habitBusiness: HabitBusiness) {
-    const state = this.holdingStates[habitBusiness.id];
-    if (!state) return;
-
-    state.undoProgress = 100;
-    state.isUndoing = false;
-
-    // Clear timers
-    if (state.undoTimer) {
-      clearTimeout(state.undoTimer);
-      state.undoTimer = undefined;
-    }
-    if (state.undoInterval) {
-      clearInterval(state.undoInterval);
-      state.undoInterval = undefined;
-    }
-
-    // Complete the undo after a brief animation
-    setTimeout(async () => {
-      await this.undoHabitCompletion(habitBusiness);
-
-      // Reset state after undo
-      state.undoProgress = 0;
-    }, 300);
-  }
-
-  /**
-   * Instantly undo a habit completion on a single tap (used when tap-to-complete is enabled)
+   * Instantly undo a habit completion on a single tap
    */
   async handleUndoTap(habitBusiness: HabitBusiness, event: Event) {
     event.preventDefault();
 
-    if (!this.holdingStates[habitBusiness.id]) {
-      this.holdingStates[habitBusiness.id] = {
-        isHolding: false,
-        progress: 0,
-        isCompleting: false,
-        isUndoing: false,
-        undoProgress: 0
-      };
+    if (!this.completeButtonStates[habitBusiness.id]) {
+      this.completeButtonStates[habitBusiness.id] = { isCompleting: false, isUndoing: false };
     }
 
-    const state = this.holdingStates[habitBusiness.id];
+    const state = this.completeButtonStates[habitBusiness.id];
     if (state.isUndoing) return;
 
     state.isUndoing = true;

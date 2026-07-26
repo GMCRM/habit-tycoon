@@ -142,6 +142,12 @@
     ion-input, ion-textarea, ion-select {
       --color: rgba(255, 255, 255, 0.9);
       --placeholder-color: rgba(255, 255, 255, 0.5);
+      --highlight-color-focused: transparent;
+    }
+
+    ion-select::part(icon) {
+      color: rgba(255, 255, 255, 0.6);
+      opacity: 1;
     }
 
     ion-label {
@@ -252,7 +258,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 6px;
 
     .investment-icon {
       font-size: 28px;
@@ -282,9 +287,27 @@
         font-weight: 700;
         font-size: 15px;
         color: var(--ion-color-success);
+        margin-bottom: 4px;
 
         &.unaffordable {
           color: var(--ion-color-danger);
+        }
+      }
+
+      .investment-details {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+
+        .revenue-amount {
+          font-size: 15px;
+          font-weight: bold;
+          color: var(--ion-color-success);
+        }
+
+        .revenue-label {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 12px;
         }
       }
     }
@@ -292,24 +315,6 @@
     .investment-status-icon {
       font-size: 20px;
       flex-shrink: 0;
-    }
-  }
-
-  .investment-details {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    padding-left: 118px;
-
-    .revenue-amount {
-      font-size: 15px;
-      font-weight: bold;
-      color: var(--ion-color-success);
-    }
-
-    .revenue-label {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 12px;
     }
   }
 }

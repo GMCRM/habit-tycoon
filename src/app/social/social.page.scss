@@ -682,6 +682,12 @@ h2 {
     }
   }
 
+  // Match the home page's larger business icon at this breakpoint
+  .marketplace-listing-card .listing-info {
+    .listing-icon { font-size: 5.28rem; }
+    .listing-icon-img { width: 130px; height: 130px; }
+  }
+
   // Restore side-by-side pill layout for the leaderboard view toggle
   .leaderboard-view-toggle {
     flex-direction: row;
@@ -1028,16 +1034,16 @@ ion-badge {
     gap: 14px;
 
     .listing-icon {
-      font-size: 2.2rem;
+      font-size: 4.32rem;
       flex-shrink: 0;
     }
 
     .listing-icon-img {
-      width: 40px;
-      height: 40px;
+      width: 106px;
+      height: 106px;
       flex-shrink: 0;
       border-radius: 22%;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.25);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.3);
     }
 
     .listing-details {

@@ -321,6 +321,7 @@ button, span, div, ion-button {
       flex: 1;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 10px;
       padding: 10px 14px;
       background: rgba(5, 7, 12, 0.5);
@@ -336,6 +337,8 @@ button, span, div, ion-button {
       .stat-text {
         display: flex;
         flex-direction: column;
+        align-items: center;
+        text-align: center;
         min-width: 0;
       }
     }
@@ -531,7 +534,7 @@ button, span, div, ion-button {
         .business-hero {
           display: flex;
           justify-content: center;
-          margin-top: 52px;
+          margin-top: 76px; // clears the 56px glass complete/undo circle (top: 14px + height: 56px + buffer)
           margin-bottom: 6px;
         }
 
@@ -793,190 +796,6 @@ button, span, div, ion-button {
           letter-spacing: 0.5px;
         }
         
-        .checkin-action {
-          margin-top: 8px;
-          
-          // Hold-down complete button
-          .hold-complete-button {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 8px 16px;
-            background: #FFB800; // Yellow base color
-            color: #000000;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            overflow: hidden;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3);
-            min-width: 100px; // Reduced to accommodate shorter text
-            width: 100px; // Fixed width to ensure consistency
-            height: 36px;
-            
-            // Progress bar that slides from left to right (complete action)
-            .hold-progress {
-              position: absolute;
-              top: 0;
-              left: 0;
-              height: 100%;
-              background: linear-gradient(90deg, #22C55E, #16A34A); // Green gradient
-              transition: width 0.05s ease-out;
-              z-index: 1;
-            }
-            
-            // Undo progress bar that slides from right to left (undo action)
-            .undo-progress {
-              position: absolute;
-              top: 0;
-              right: 0;
-              height: 100%;
-              background: linear-gradient(270deg, #FFB800, #FF8800); // Yellow to orange gradient (right to left)
-              transition: width 0.05s ease-out;
-              z-index: 1;
-            }
-            
-            // Icon and text should be above the progress bars
-            .button-icon,
-            .button-text {
-              position: relative;
-              z-index: 2;
-              pointer-events: none;
-            }
-            
-            .button-icon {
-              font-size: 1rem;
-              color: inherit;
-            }
-            
-            .button-text {
-              font-size: inherit;
-              font-weight: inherit;
-              color: inherit;
-            }
-            
-            // Hover state (only for incomplete buttons)
-            &:hover:not(.is-holding):not(.is-completing):not(.is-undo-mode):not(.is-undoing) {
-              transform: translateY(-1px);
-              box-shadow: 0 4px 12px rgba(255, 184, 0, 0.4);
-            }
-            
-            // Active/pressing state (only for incomplete buttons)
-            &:active:not(.is-undo-mode):not(.is-undoing),
-            &.is-holding {
-              transform: translateY(0);
-              box-shadow: 0 1px 4px rgba(255, 184, 0, 0.2);
-            }
-            
-            // Completing state - full green
-            &.is-completing {
-              background: #22C55E;
-              box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
-              
-              .hold-progress {
-                width: 100% !important;
-              }
-            }
-            
-            // Undo mode - stays green like completion but different styling
-            &.is-undo-mode {
-              background: #22C55E; // Green background
-              box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
-              
-              // Different hover effect for undo mode
-              &:hover:not(.is-undoing) {
-                background: #16A34A; // Darker green on hover
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(34, 197, 94, 0.5);
-              }
-              
-              &:active:not(.is-undoing),
-              &.is-undoing {
-                transform: translateY(0);
-                background: #15803D; // Even darker green when pressed
-                box-shadow: 0 1px 4px rgba(34, 197, 94, 0.3);
-              }
-              
-              // Hide complete progress bar in undo mode
-              .hold-progress {
-                display: none;
-              }
-            }
-            
-            // Undoing state - showing yellow progress from right
-            &.is-undoing {
-              background: #22C55E; // Keep green background
-              
-              .undo-progress {
-                background: linear-gradient(270deg, #FFB800, #FF8800); // Yellow gradient from right
-              }
-            }
-            
-            // Prevent context menu on long press
-            &:focus {
-              outline: none;
-            }
-          }
-          
-          // Ensure header button styling takes precedence
-          .business-header-actions,
-          div[style*="flex"] {
-            .hold-complete-button {
-              background: #FFB800 !important; // Yellow base color - force override
-              color: #000000 !important;
-              border: none !important;
-              font-weight: 600 !important;
-              box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3) !important;
-              
-              &.is-undo-mode {
-                background: #22C55E !important; // Green background for undo
-                box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4) !important;
-              }
-              
-              &.is-completing {
-                background: #22C55E !important;
-                box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4) !important;
-              }
-            }
-          }
-          
-          // Legacy ion-button styling (for completed state)
-          ion-button {
-            --border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            
-            &[color="success"] {
-              --background: var(--earnings-color);
-              --color: #000000;
-              --box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
-            }
-          }
-          
-          .completed-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 8px;
-            color: var(--earnings-color);
-            font-size: 0.85rem;
-            font-weight: 600;
-            
-            ion-icon {
-              font-size: 1.1rem;
-            }
-          }
-        }
       }
     }
   }
@@ -1251,28 +1070,25 @@ button, span, div, ion-button {
     padding: 0 8px;
   }
 
-  // Enhanced mobile styling for hold-complete button
+  // Enhanced mobile styling for complete button
   .hold-complete-button {
-    min-width: 100px !important;
-    width: 100px !important; // Fixed width for mobile consistency
-    height: 34px !important;
-    padding: 7px 14px !important;
-    font-size: 0.75rem !important;
+    width: 48px !important;
+    height: 48px !important;
 
     .button-icon {
-      font-size: 0.95rem !important;
+      font-size: 22px !important;
     }
-    
-    // Better touch target for mobile
-    &::before {
-      content: '';
-      position: absolute;
-      top: -8px;
-      left: -8px;
-      right: -8px;
-      bottom: -8px;
-      z-index: -1;
+
+    .progress-badge {
+      font-size: 0.55rem !important;
+      height: 16px !important;
+      min-width: 18px !important;
     }
+  }
+
+  // Match the shorter 48px mobile circle (top: 14px + height: 48px + buffer)
+  .business-hero {
+    margin-top: 68px !important;
   }
   
   // Mobile styling for earnings toggle button
@@ -1387,130 +1203,162 @@ button, span, div, ion-button {
   }
 }
 
-// Global hold-complete-button styling to ensure it works everywhere
+// Liquid-glass complete/undo button — mirrors the bottom nav's .add-circle
+// treatment (blur + saturate glass, specular highlight, inset rim light) so
+// it reads as the same design language. One element transforms in place:
+// gold glass + checkmark while incomplete, green glass + undo arrow once
+// complete. A single tap triggers the transition, clipped by the circular
+// mask (overflow: hidden).
+@keyframes hold-complete-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
 .hold-complete-button {
   position: relative !important;
-  display: inline-flex !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 6px !important;
-  padding: 8px 16px !important;
-  background: #FFB800 !important; // Yellow base color
-  color: #000000 !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
+  width: 56px !important;
+  height: 56px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.24) 0%, rgba(255, 235, 150, 0.12) 55%, rgba(255, 184, 0, 0.28) 100%) !important;
+  backdrop-filter: blur(14px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  color: #FFFFFF !important;
   cursor: pointer !important;
   user-select: none !important;
   -webkit-user-select: none !important;
   -webkit-tap-highlight-color: transparent !important;
   overflow: hidden !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3) !important;
-  min-width: 100px !important;
-  width: 100px !important;
-  height: 36px !important;
-  
-  // Progress bars
-  .hold-progress {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+  box-shadow:
+    0 6px 18px rgba(255, 184, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.65),
+    inset 0 -6px 10px rgba(255, 184, 0, 0.25),
+    inset 0 0 14px rgba(255, 184, 0, 0.15) !important;
+
+  // Specular highlight arc across the top of the glass
+  &::before {
+    content: '' !important;
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    height: 100% !important;
-    background: linear-gradient(90deg, #22C55E, #16A34A) !important;
-    transition: width 0.05s ease-out !important;
-    z-index: 1 !important;
+    top: 3px !important;
+    left: 9px !important;
+    right: 9px !important;
+    height: 44% !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%) !important;
+    border-radius: 50% 50% 45% 45% / 65% 65% 35% 35% !important;
+    filter: blur(1px) !important;
+    pointer-events: none !important;
+    z-index: 3 !important;
   }
-  
-  .undo-progress {
+
+  // Faint rim light at the bottom edge for depth
+  &::after {
+    content: '' !important;
     position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 100% !important;
-    background: linear-gradient(270deg, #FFB800, #FF8800) !important;
-    transition: width 0.05s ease-out !important;
-    z-index: 1 !important;
+    inset: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: inset 0 -2px 4px rgba(255, 255, 255, 0.15) !important;
+    pointer-events: none !important;
+    z-index: 4 !important;
   }
-  
-  // Icon and text
-  .button-icon,
-  .button-text {
+
+  .button-icon {
     position: relative !important;
     z-index: 2 !important;
     pointer-events: none !important;
-    color: inherit !important;
-    list-style: none !important;
-    list-style-type: none !important;
-    
-    &::before,
-    &::after {
-      display: none !important;
-      content: none !important;
-    }
+    font-size: 26px !important;
+    color: #FFFFFF !important;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)) !important;
   }
-  
-  .button-text {
-    // Explicitly remove any list styling or pseudo-elements
-    margin: 0 !important;
-    padding: 0 !important;
-    list-style: none !important;
-    list-style-type: none !important;
-    text-indent: 0 !important;
-    
-    // Remove any potential pseudo-element bullets
-    &::before {
-      display: none !important;
-      content: none !important;
-    }
-    
-    &::after {
-      display: none !important;
-      content: none !important;
-    }
+
+  // Small count badge for multi-completion goals (e.g. "2/5")
+  .progress-badge {
+    position: absolute !important;
+    bottom: -4px !important;
+    right: -4px !important;
+    z-index: 5 !important;
+    min-width: 20px !important;
+    height: 18px !important;
+    padding: 0 5px !important;
+    border-radius: 999px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, rgba(23, 23, 51, 0.92), rgba(36, 36, 77, 0.92)) !important;
+    border: 1px solid rgba(255, 215, 0, 0.5) !important;
+    color: #FFD700 !important;
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
   }
-  
-  .button-icon {
-    font-size: 1rem !important;
-  }
-  
-  // States
+
+  // Brief success pop as the complete action lands
   &.is-completing {
-    background: #22C55E !important;
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4) !important;
-    
-    .hold-progress {
-      width: 100% !important;
+    animation: hold-complete-pop 0.3s ease !important;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.32) 0%, rgba(0, 230, 120, 0.32) 55%, rgba(0, 230, 120, 0.42) 100%) !important;
+    box-shadow:
+      0 6px 20px rgba(0, 230, 120, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.7),
+      inset 0 -6px 10px rgba(0, 230, 120, 0.35),
+      inset 0 0 14px rgba(0, 230, 120, 0.2) !important;
+
+    .button-icon {
+      filter: drop-shadow(0 0 4px rgba(0, 255, 136, 0.9)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)) !important;
     }
   }
-  
+
+  // Completed — the circle has become the undo button (green glass + undo arrow)
   &.is-undo-mode {
-    background: #22C55E !important;
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4) !important;
-    
-    .hold-progress {
-      display: none !important;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.28) 0%, rgba(0, 230, 120, 0.28) 55%, rgba(0, 230, 120, 0.35) 100%) !important;
+    box-shadow:
+      0 6px 18px rgba(0, 230, 120, 0.3),
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.55),
+      inset 0 -6px 10px rgba(0, 230, 120, 0.25),
+      inset 0 0 14px rgba(0, 230, 120, 0.15) !important;
+
+    .button-icon {
+      filter: drop-shadow(0 0 4px rgba(0, 230, 120, 0.9)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)) !important;
+    }
+
+    &:hover:not(.is-undoing) {
+      transform: scale(1.05) !important;
+      box-shadow:
+        0 8px 22px rgba(0, 230, 120, 0.4),
+        0 1px 2px rgba(0, 0, 0, 0.15),
+        inset 0 1px 1px rgba(255, 255, 255, 0.65),
+        inset 0 -6px 10px rgba(0, 230, 120, 0.3),
+        inset 0 0 16px rgba(0, 230, 120, 0.22) !important;
     }
   }
-  
+
+  // Brief pop as the undo action lands
   &.is-undoing {
-    background: #22C55E !important;
-    
-    .undo-progress {
-      background: linear-gradient(270deg, #FFB800, #FF8800) !important;
-    }
+    animation: hold-complete-pop 0.3s ease !important;
   }
-  
-  // Hover effects
-  &:hover:not(.is-holding):not(.is-completing):not(.is-undo-mode):not(.is-undoing) {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(255, 184, 0, 0.4) !important;
+
+  // Hover (incomplete, idle only)
+  &:hover:not(.is-completing):not(.is-undo-mode):not(.is-undoing) {
+    transform: scale(1.05) !important;
+    box-shadow:
+      0 8px 22px rgba(255, 184, 0, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.75),
+      inset 0 -6px 10px rgba(255, 184, 0, 0.3),
+      inset 0 0 16px rgba(255, 184, 0, 0.22) !important;
   }
-  
-  &.is-undo-mode:hover:not(.is-undoing) {
-    background: #16A34A !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.5) !important;
+
+  &:focus {
+    outline: none !important;
   }
 }
 
@@ -1553,34 +1401,42 @@ button, span, div, ion-button {
   }
 }
 
-// Simple back button for multi-completion habits
+// Step-back button for multi-completion habits — small glass circle to
+// match the .hold-complete-button family it sits beside.
 .back-button {
-  background: rgba(255, 140, 0, 0.1);
-  border: 1px solid rgba(255, 140, 0, 0.3);
-  border-radius: 6px;
-  padding: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
+  width: 36px;
   height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.22) 0%, rgba(255, 140, 0, 0.1) 100%);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow:
+    0 3px 10px rgba(255, 140, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
 
   .back-icon {
-    font-size: 1.2rem;
-    color: var(--ion-color-warning);
+    font-size: 1.1rem;
+    color: #FFFFFF;
+    filter: drop-shadow(0 0 3px rgba(255, 140, 0, 0.8));
+    pointer-events: none;
   }
 
   &:hover {
-    background: rgba(255, 140, 0, 0.2);
-    border-color: rgba(255, 140, 0, 0.5);
-    transform: translateY(-1px);
+    transform: scale(1.05);
+    box-shadow:
+      0 4px 12px rgba(255, 140, 0, 0.3),
+      inset 0 1px 1px rgba(255, 255, 255, 0.45);
   }
 
   &:active {
-    transform: translateY(0);
-    background: rgba(255, 140, 0, 0.3);
+    transform: scale(0.96);
   }
 }
 

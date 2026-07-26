@@ -5,25 +5,42 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  
+  /* Enable momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+
   /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
   &::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
   }
-  
+
   /* Hide scrollbar for Firefox */
   scrollbar-width: none;
-  
+
   /* Hide scrollbar for Internet Explorer/Edge */
   -ms-overflow-style: none;
+
+  /* iOS Safari specific scrolling fixes */
+  @supports (-webkit-touch-callout: none) {
+    height: calc(100vh - 60px); /* Adjust for header */
+    height: calc(100dvh - 60px);
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
 }
 
 .settings-content {
   padding: 20px 16px 90px 16px; /* Top, Right, Bottom (space for nav), Left */
   background: var(--ion-background-color);
   min-height: 100vh;
-  
+
+  /* iOS Safari specific viewport fixes */
+  @supports (-webkit-touch-callout: none) {
+    min-height: calc(100vh - 60px); /* Account for header */
+    min-height: calc(100dvh - 60px);
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+
   @media (min-width: 768px) {
     padding: 24px 20px 90px 20px;
     max-width: 600px;

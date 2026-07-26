@@ -347,69 +347,14 @@
 
               <!-- Complete/Undo controls (top-right corner) -->
               <div class="corner-controls corner-top-right">
-                <!-- Single transforming button: Complete -> Undo -->
+                <!-- Single transforming button: Complete -> Undo, single tap -->
                 <div
-                  *ngIf="!tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
+                  *ngIf="!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0)"
                   class="hold-complete-button"
-                  [class.is-holding]="holdingStates[hb.id]?.isHolding"
-                  [class.is-completing]="holdingStates[hb.id]?.isCompleting"
+                  [class.is-completing]="completeButtonStates[hb.id]?.isCompleting"
                   [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
-                  [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
-                  (touchstart)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
-                  (touchend)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                  (touchleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                  (touchcancel)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                  (mousedown)="isGoalCompleted(hb) ? startUndoHolding(hb, $event) : startHolding(hb, $event)"
-                  (mouseup)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                  (mouseleave)="isGoalCompleted(hb) ? stopUndoHolding(hb, $event) : stopHolding(hb, $event)"
-                  (contextmenu)="$event.preventDefault()"
-                >
-                  <!-- Complete progress bar (only visible during complete hold) -->
-                  <div
-                    class="hold-progress"
-                    [style.width.%]="holdingStates[hb.id]?.progress || 0"
-                    *ngIf="!isGoalCompleted(hb)"
-                  ></div>
-
-                  <!-- Undo progress bar (only visible during undo hold) -->
-                  <div
-                    class="undo-progress"
-                    [style.width.%]="holdingStates[hb.id]?.undoProgress || 0"
-                    *ngIf="isGoalCompleted(hb)"
-                  ></div>
-
-                  <!-- Icon changes based on mode -->
-                  <ion-icon
-                    [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
-                    class="button-icon"
-                  ></ion-icon>
-
-                  <!-- Text changes based on mode and progress -->
-                  <span class="button-text" *ngIf="isGoalCompleted(hb)">
-                    Undo
-                  </span>
-                  <span
-                    class="button-text"
-                    *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
-                  >
-                    Complete ({{ hb.current_progress || 0 }}/{{
-                    hb.goal_value }})
-                  </span>
-                  <span
-                    class="button-text"
-                    *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
-                  >
-                    Complete
-                  </span>
-                </div>
-
-                <!-- Tap-to-complete variant: single tap instead of holding -->
-                <div
-                  *ngIf="tapToComplete && (!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0))"
-                  class="hold-complete-button"
-                  [class.is-completing]="holdingStates[hb.id]?.isCompleting"
-                  [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
-                  [class.is-undoing]="holdingStates[hb.id]?.isUndoing"
+                  [class.is-undoing]="completeButtonStates[hb.id]?.isUndoing"
+                  [attr.aria-label]="isGoalCompleted(hb) ? 'Undo completion' : 'Complete'"
                   (click)="isGoalCompleted(hb) ? handleUndoTap(hb, $event) : handleCompleteTap(hb, $event)"
                 >
                   <!-- Icon changes based on mode -->
@@ -418,22 +363,9 @@
                     class="button-icon"
                   ></ion-icon>
 
-                  <!-- Text changes based on mode and progress -->
-                  <span class="button-text" *ngIf="isGoalCompleted(hb)">
-                    Undo
-                  </span>
-                  <span
-                    class="button-text"
-                    *ngIf="!isGoalCompleted(hb) && (hb.goal_value && hb.goal_value > 1)"
-                  >
-                    Complete ({{ hb.current_progress || 0 }}/{{
-                    hb.goal_value }})
-                  </span>
-                  <span
-                    class="button-text"
-                    *ngIf="!isGoalCompleted(hb) && (!hb.goal_value || hb.goal_value <= 1)"
-                  >
-                    Complete
+                  <!-- Progress count badge for multi-completion goals -->
+                  <span class="progress-badge" *ngIf="hb.goal_value && hb.goal_value > 1">
+                    {{ hb.current_progress || 0 }}/{{ hb.goal_value }}
                   </span>
                 </div>
 

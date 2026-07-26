@@ -589,7 +589,7 @@
                       <span class="listing-streak" *ngIf="listing.streak_at_listing > 0"
                         >+{{ getStreakBonusPercent(listing) }}%</span
                       >
-                      <span class="listing-reason" *ngIf="listing.reason === 'habit_deletion'"
+                      <span class="listing-reason" *ngIf="listing.reason === 'habit_deletion' && listing.is_own"
                         >Guaranteed payout</span
                       >
                     </div>
