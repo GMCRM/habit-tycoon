@@ -6,17 +6,6 @@
       *ngIf="currentUser"
       slot="end"
       fill="clear"
-      (click)="openWeeklyReceipt()"
-      class="header-action-btn icon-box-btn gold-filled receipt-btn"
-      aria-label="Weekly Receipt"
-    >
-      <span class="receipt-coin" slot="start">$</span>
-      <span class="btn-label">Receipt</span>
-    </ion-button>
-    <ion-button
-      *ngIf="currentUser"
-      slot="end"
-      fill="clear"
       routerLink="/settings"
       class="header-action-btn icon-box-btn grey-outline"
     >
@@ -530,6 +519,40 @@
           *ngIf="selectedSegment === 'marketplace'"
           class="tab-content marketplace-tab"
         >
+          <!-- Net Worth / Habit Cash — shown above both sub-tabs so it's visible from either -->
+          <div class="cash-display-bar ion-margin-bottom" *ngIf="userProfile">
+            <div class="networth-display" (click)="toggleNetWorthDisplay()">
+              <div class="networth-amount clickable">${{ getDisplayedNetWorth() }}</div>
+              <div class="networth-label">NET WORTH</div>
+            </div>
+            <div class="cash-section" (click)="toggleCashDisplay()">
+              <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
+              <div class="cash-label">HABIT CASH</div>
+            </div>
+          </div>
+
+          <!-- Marketplace / Stocks sub-tabs -->
+          <div class="stocks-view-toggle ion-margin-bottom">
+            <button
+              class="view-toggle-btn"
+              [class.active]="marketplaceSubTab === 'marketplace'"
+              (click)="selectMarketplaceSubTab('marketplace')"
+            >
+              🏪 Marketplace
+            </button>
+            <button
+              class="view-toggle-btn"
+              [class.active]="marketplaceSubTab === 'stocks'"
+              (click)="selectMarketplaceSubTab('stocks')"
+            >
+              📈 Stocks
+            </button>
+          </div>
+
+          <!-- Stocks sub-tab -->
+          <app-stocks-content *ngIf="marketplaceSubTab === 'stocks'" (profileChanged)="loadCurrentUser()"></app-stocks-content>
+
+          <ng-container *ngIf="marketplaceSubTab === 'marketplace'">
           <div class="marketplace-header">
             <h2>🏪 Marketplace</h2>
           </div>
@@ -660,13 +683,13 @@
               </p>
             </div>
           </ng-template>
+          </ng-container>
         </div>
       </div>
       <!-- End main content -->
     </div>
   </div>
-
-  <!-- Bottom Navigation -->
-  <app-bottom-nav></app-bottom-nav>
 </ion-content>
+
+<!-- Bottom Navigation -->
 <app-bottom-nav mainButton="home"></app-bottom-nav>

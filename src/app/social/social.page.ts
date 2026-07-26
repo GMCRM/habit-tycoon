@@ -19,6 +19,7 @@ import { CountdownTickService } from '../services/countdown-tick.service';
 import { OfflineQueueService } from '../services/offline-queue.service';
 import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
+import { StocksContentComponent } from '../stocks/stocks-content/stocks-content.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import {
@@ -36,7 +37,7 @@ import {
     IonCard, IonSegment, IonSegmentButton,
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
     IonAccordion, IonAccordionGroup, IonItem,
-    BottomNavComponent, CommonModule, RouterLink, BusinessIconPipe
+    BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe
   ],
 })
 export class SocialPage implements OnInit, OnDestroy {
@@ -48,6 +49,7 @@ export class SocialPage implements OnInit, OnDestroy {
   currentUser: any = null;
   userProfile: any = null;
   selectedSegment: 'friends' | 'notifications' | 'leaderboard' | 'marketplace' = 'leaderboard';
+  marketplaceSubTab: 'marketplace' | 'stocks' = 'marketplace';
 
   // Social data
   friends: Friend[] = [];
@@ -75,6 +77,10 @@ export class SocialPage implements OnInit, OnDestroy {
   // UI state
   isLoading = false;
 
+  // Toggle states for the Net Worth / Habit Cash display above the Marketplace/Stocks sub-tabs
+  showDetailedNetWorth = false;
+  showDetailedCash = false;
+
   /** Friends/leaderboard/marketplace aren't cached locally (see HabitCacheService, which only covers habit tracking), so just surface connectivity instead. */
   get isOffline(): boolean {
     return this.offlineQueueService.isOffline();
@@ -101,6 +107,11 @@ export class SocialPage implements OnInit, OnDestroy {
       this.selectedSegment = savedTab as 'friends' | 'notifications' | 'leaderboard' | 'marketplace';
     } else {
       this.selectedSegment = 'leaderboard';
+    }
+
+    const savedMarketplaceSubTab = localStorage.getItem('social-marketplace-sub-tab');
+    if (savedMarketplaceSubTab === 'marketplace' || savedMarketplaceSubTab === 'stocks') {
+      this.marketplaceSubTab = savedMarketplaceSubTab;
     }
   }
 
@@ -309,6 +320,68 @@ export class SocialPage implements OnInit, OnDestroy {
     if (this.selectedSegment === 'marketplace') {
       this.markMarketplaceListingsSeen();
     }
+  }
+
+  selectMarketplaceSubTab(tab: 'marketplace' | 'stocks') {
+    this.marketplaceSubTab = tab;
+    localStorage.setItem('social-marketplace-sub-tab', tab);
+  }
+
+  /**
+   * Format large numbers with abbreviations (K, M, B, T)
+   */
+  private formatLargeNumber(amount: number): string {
+    if (amount >= 1000000000000) {
+      const trillions = amount / 1000000000000;
+      return trillions >= 10 ? `${Math.floor(trillions)}T` : `${trillions.toFixed(1)}T`;
+    } else if (amount >= 1000000000) {
+      const billions = amount / 1000000000;
+      return billions >= 10 ? `${Math.floor(billions)}B` : `${billions.toFixed(1)}B`;
+    } else if (amount >= 1000000) {
+      const millions = amount / 1000000;
+      return millions >= 10 ? `${Math.floor(millions)}M` : `${millions.toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      const thousands = amount / 1000;
+      return thousands >= 10 ? `${Math.floor(thousands)}K` : `${thousands.toFixed(1)}K`;
+    } else {
+      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
+  /**
+   * Get displayed net worth (formatted or exact)
+   */
+  getDisplayedNetWorth(): string {
+    const netWorth = this.userProfile?.net_worth || 0;
+    if (netWorth >= 1000 && !this.showDetailedNetWorth) {
+      return this.formatLargeNumber(netWorth);
+    }
+    return netWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /**
+   * Get displayed cash amount (formatted or exact)
+   */
+  getDisplayedCash(): string {
+    const cash = this.userProfile?.cash || 0;
+    if (cash >= 1000 && !this.showDetailedCash) {
+      return this.formatLargeNumber(cash);
+    }
+    return cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /**
+   * Toggle net worth display between abbreviated and detailed
+   */
+  toggleNetWorthDisplay(): void {
+    this.showDetailedNetWorth = !this.showDetailedNetWorth;
+  }
+
+  /**
+   * Toggle cash display between abbreviated and detailed
+   */
+  toggleCashDisplay(): void {
+    this.showDetailedCash = !this.showDetailedCash;
   }
 
   /** Clears the "new listings" badge for this user and syncs the bottom-nav count. */
@@ -901,10 +974,6 @@ export class SocialPage implements OnInit, OnDestroy {
       });
       await errorAlert.present();
     }
-  }
-
-  openWeeklyReceipt() {
-    this.router.navigate(['/weekly-receipt']);
   }
 
   async loadMarketplaceData() {

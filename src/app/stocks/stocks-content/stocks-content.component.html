@@ -1,0 +1,833 @@
+  <div class="page-container">
+    <!-- Tab Switcher -->
+    <div class="stocks-view-toggle ion-margin-bottom">
+      <button
+        class="view-toggle-btn"
+        [class.active]="selectedTab === 'available'"
+        (click)="selectTab('available')"
+      >
+        Available
+      </button>
+      <button
+        class="view-toggle-btn"
+        [class.active]="selectedTab === 'portfolio'"
+        (click)="selectTab('portfolio')"
+      >
+        Portfolio
+      </button>
+    </div>
+
+    <!-- Available Stocks Section -->
+    <div
+      *ngIf="selectedTab === 'available'"
+      class="my-habit-businesses ion-margin-bottom"
+    >
+      <div class="section-header">
+        <ion-icon name="trending-up-outline"></ion-icon>
+        <h2>Available Stocks</h2>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar ion-margin-bottom">
+        <div class="filter-controls">
+          <div class="owner-filter-select">
+            <ion-icon name="funnel" aria-hidden="true"></ion-icon>
+            <ion-select
+              [(ngModel)]="selectedOwnerFilter"
+              placeholder="All Owners"
+              interface="popover"
+              (ionChange)="onOwnerFilterChange()"
+              cancelText="Cancel"
+              okText="Done"
+              aria-label="Filter by owner"
+            >
+              <ion-select-option value="">All Owners</ion-select-option>
+              <ion-select-option
+                *ngFor="let owner of getUniqueOwners()"
+                [value]="owner"
+              >
+                {{ owner }}
+              </ion-select-option>
+            </ion-select>
+          </div>
+
+          <div class="streak-sort-toggle" role="group" aria-label="Sort by streak">
+            <button
+              type="button"
+              class="streak-sort-btn"
+              [class.active]="streakSortDirection === 'asc'"
+              (click)="setStreakSort('asc')"
+              title="Sort: lowest streak first"
+              aria-label="Sort streak ascending"
+            >
+              <ion-icon name="arrow-up"></ion-icon>
+            </button>
+            <button
+              type="button"
+              class="streak-sort-btn"
+              [class.active]="streakSortDirection === 'desc'"
+              (click)="setStreakSort('desc')"
+              title="Sort: highest streak first"
+              aria-label="Sort streak descending"
+            >
+              <ion-icon name="arrow-down"></ion-icon>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="clear-filters-btn"
+            *ngIf="hasActiveFilters()"
+            (click)="clearFilters()"
+            title="Clear filters"
+            aria-label="Clear filters"
+          >
+            <ion-icon name="close-circle"></ion-icon>
+          </button>
+        </div>
+
+        <div class="filter-count" *ngIf="selectedOwnerFilter">
+          {{ getFilteredBusinesses().length }} of {{ friendBusinesses.length }} stocks
+        </div>
+      </div>
+
+      <!-- Help Icon (shows when help section is hidden) -->
+      <div
+        *ngIf="!showHelpSection"
+        class="help-icon-container ion-margin-bottom"
+      >
+        <ion-icon
+          name="help-circle"
+          color="medium"
+          (click)="toggleHelpSection()"
+        >
+        </ion-icon>
+        <span class="help-text" (click)="toggleHelpSection()"
+          >How dividends work</span
+        >
+      </div>
+
+      <!-- Dividend Explanation Card -->
+      <ion-card *ngIf="showHelpSection" class="info-card ion-margin-bottom">
+        <ion-card-content>
+          <div class="info-header">
+            <div class="info-title-section">
+              <ion-icon name="trending-up" color="success"></ion-icon>
+              <h3>How Stock Dividends Work</h3>
+            </div>
+            <ion-button
+              fill="clear"
+              size="small"
+              color="medium"
+              (click)="toggleHelpSection()"
+            >
+              <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+          <div class="info-content">
+            <div>
+              <p>
+                Dividends are paid out only when a business owner fully
+                completes their habit goal for the day. The payout depends on:
+              </p>
+              <ul>
+                <li>
+                  <strong>Shares sold:</strong> Up to 20 shares per business
+                  are available to purchase; each one sold grows the dividend
+                  pool investors split
+                </li>
+                <li>
+                  <strong>Your ownership:</strong> The pool is divided
+                  proportionally by shares owned, so more shares means a
+                  bigger cut
+                </li>
+                <li>
+                  <strong>Owner's consistency:</strong> No completion that
+                  day means no dividend — a broken streak also resets the
+                  business's stock price
+                </li>
+              </ul>
+              <p>
+                <em
+                  >Invest in owners who complete their habits consistently
+                  for the steadiest payouts.</em
+                >
+              </p>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="empty-state">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading stocks...</p>
+      </div>
+
+      <!-- Available Stocks List -->
+      <div class="stocks-list-scroll-container">
+        <div *ngIf="!isLoading && getFilteredBusinesses().length > 0">
+          <div
+            *ngFor="let business of getFilteredBusinesses()"
+            class="habit-business-item"
+          >
+            <div class="item-content">
+              <img
+                *ngIf="business.businessIcon | businessIconSrc as iconSrc"
+                [src]="iconSrc"
+                [alt]="business.businessName"
+                class="business-icon-img"
+              />
+              <div *ngIf="!(business.businessIcon | businessIconSrc)" class="business-icon">
+                {{ business.businessIcon || '🏢' }}
+              </div>
+              <div class="business-info">
+                <h3 class="business-name">{{ business.businessName }}</h3>
+                <div class="owner-section">
+                  <div class="owner-label">Business Owner:</div>
+                  <div class="owner-name">{{ business.ownerName }}</div>
+                </div>
+                <div class="habit-stats">
+                  <div class="stat-item">
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-value streak">
+                      {{ getEffectiveStreakForFriendBusiness(business) }} days
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">Available</div>
+                    <div class="stat-value">
+                      {{ business.sharesAvailable }} shares
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">Expected/Share</div>
+                    <div class="stat-value dividend-potential">
+                      ${{ business.potentialDividend?.toFixed(2) || '0.00' }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Habit Grid showing habit completion pattern -->
+                <div class="habit-grid-wrapper">
+                  <app-habit-grid
+                    [businessId]="business.id"
+                    [businessName]="business.businessName"
+                    [businessEmoji]="business.businessIcon"
+                    [businessType]="'Stock'"
+                    [isModal]="false"
+                    [showStats]="false"
+                    [useCalendarYear]="true"
+                    [size]="'medium'"
+                    [isStockView]="true"
+                  >
+                  </app-habit-grid>
+                  <app-stock-chart
+                    [businessId]="business.id"
+                    [isStockView]="true"
+                    [days]="30"
+                    [currentStreak]="getEffectiveStreakForFriendBusiness(business)"
+                  >
+                  </app-stock-chart>
+                </div>
+              </div>
+
+              <!-- Vertical separator line -->
+              <div
+                style="
+                  width: 1px;
+                  background: linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    var(--ion-color-medium-tint) 10%,
+                    var(--ion-color-medium) 50%,
+                    var(--ion-color-medium-tint) 90%,
+                    transparent 100%
+                  );
+                  margin: 0 16px;
+                  align-self: stretch;
+                "
+              ></div>
+
+              <div class="earnings-section">
+                <div class="earnings-total">
+                  <div class="total-amount">
+                    ${{ (business.stockPrice || 0) | number: '1.2-2' }}
+                  </div>
+                  <div class="earnings-label">per share</div>
+                </div>
+
+                <!-- Stockholders Action -->
+                <ion-button
+                  fill="clear"
+                  color="tertiary"
+                  size="small"
+                  (click)="openStockOwnersModal(business.businessName, business.id)"
+                  style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                >
+                  <ion-icon name="people" slot="icon-only"></ion-icon>
+                </ion-button>
+
+                <!-- Buy Action -->
+                <div class="checkin-action">
+                  <ion-button
+                    fill="solid"
+                    color="success"
+                    size="small"
+                    (click)="openBuyModal(business)"
+                    [disabled]="isLoading || !business.stockId || business.sharesAvailable <= 0"
+                  >
+                    <ion-icon name="add-circle" slot="start"></ion-icon>
+                    Buy Shares
+                  </ion-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State for Available Stocks -->
+      <div
+        *ngIf="!isLoading && getFilteredBusinesses().length === 0 && friendBusinesses.length > 0"
+        class="empty-state"
+      >
+        <ion-icon name="funnel" size="large" color="medium"></ion-icon>
+        <h3>No Stocks Match Filter</h3>
+        <p>
+          No stocks found for the selected owner. Try selecting a different
+          owner or clear the filter.
+        </p>
+        <ion-button fill="outline" color="medium" (click)="clearFilters()">
+          <ion-icon name="close-circle" slot="start"></ion-icon>
+          Clear Filter
+        </ion-button>
+      </div>
+
+      <!-- Empty State for No Stocks Available -->
+      <div
+        *ngIf="!isLoading && friendBusinesses.length === 0"
+        class="empty-state"
+      >
+        <ion-icon name="trending-up-outline" size="large"></ion-icon>
+        <h3>No Stocks Available</h3>
+        <p>
+          Your friends haven't set up any habit businesses yet, or you've
+          already invested in all available opportunities!
+        </p>
+      </div>
+    </div>
+
+    <!-- Portfolio Section -->
+    <div
+      *ngIf="selectedTab === 'portfolio'"
+      class="my-habit-businesses ion-margin-bottom"
+    >
+      <div class="section-header">
+        <ion-icon name="pie-chart-outline"></ion-icon>
+        <h2>My Portfolio</h2>
+      </div>
+
+      <div
+        *ngIf="!showPortfolioHelpSection"
+        class="help-icon-container ion-margin-bottom"
+      >
+        <ion-icon
+          name="help-circle"
+          color="medium"
+          (click)="togglePortfolioHelpSection()"
+        >
+        </ion-icon>
+        <span class="help-text" (click)="togglePortfolioHelpSection()"
+          >How portfolios work</span
+        >
+      </div>
+
+      <!-- Portfolio Explanation Card -->
+      <ion-card
+        *ngIf="showPortfolioHelpSection"
+        class="info-card ion-margin-bottom"
+      >
+        <ion-card-content>
+          <div class="info-header">
+            <div class="info-title-section">
+              <ion-icon name="pie-chart" color="primary"></ion-icon>
+              <h3>How Your Portfolio Works</h3>
+            </div>
+            <ion-button
+              fill="clear"
+              size="small"
+              color="medium"
+              (click)="togglePortfolioHelpSection()"
+            >
+              <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+          <div class="info-content">
+            <div>
+              <p>
+                Your portfolio shows all the stocks you own and tracks your
+                investment performance:
+              </p>
+              <ul>
+                <li>
+                  <strong>Portfolio Value:</strong> Total current worth of all
+                  your stocks
+                </li>
+                <li>
+                  <strong>Profit/Loss:</strong> How much you've gained or lost
+                  since buying
+                </li>
+                <li>
+                  <strong>Daily Dividends:</strong> Money earned when the
+                  friends whose businesses you've invested in complete their
+                  habits
+                </li>
+                <li>
+                  <strong>Stock Performance:</strong> Track individual stock
+                  gains and losses
+                </li>
+              </ul>
+              <p>
+                <em>Diversify your investments for steady passive income!</em>
+              </p>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Portfolio Summary Stats: all 3 cards shown together at every screen size -->
+      <div *ngIf="!isLoading && portfolio.length > 0">
+        <div class="stats-grid ion-margin-bottom">
+          <ion-card
+            class="stat-card"
+            [class.clickable-card]="isStatAbbreviated(getTotalDailyDividends())"
+            (click)="showExactStatValue('Today\'s Actual Dividends', getTotalDailyDividends(), true)"
+          >
+            <ion-card-content>
+              <div class="stat-content">
+                <div class="stat-icon-circle green">
+                  <ion-icon name="cash"></ion-icon>
+                </div>
+                <div class="stat-info">
+                  <h2>{{ formatStatCurrency(getTotalDailyDividends()) }}</h2>
+                  <p>Today's Actual Dividends</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card
+            class="stat-card gold-accent"
+            [class.clickable-card]="isStatAbbreviated(getTotalPortfolioValue())"
+            (click)="showExactStatValue('Portfolio Value', getTotalPortfolioValue(), true)"
+          >
+            <ion-card-content>
+              <div class="stat-content">
+                <div class="stat-icon-circle gold">
+                  <ion-icon name="wallet"></ion-icon>
+                </div>
+                <div class="stat-info">
+                  <h2>{{ formatStatCurrency(getTotalPortfolioValue(), 0) }}</h2>
+                  <p>Portfolio Value</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card
+            class="stat-card"
+            [class.clickable-card]="isStatAbbreviated(getTotalPortfolioProfitLoss())"
+            (click)="showExactStatValue('All-Time Gains', getTotalPortfolioProfitLoss(), true)"
+          >
+            <ion-card-content>
+              <div class="stat-content">
+                <div
+                  class="stat-icon-circle"
+                  [class.green]="getTotalPortfolioProfitLoss() >= 0"
+                  [class.red]="getTotalPortfolioProfitLoss() < 0"
+                >
+                  <ion-icon name="trending-up"></ion-icon>
+                </div>
+                <div class="stat-info">
+                  <h2
+                    [class.profit]="getTotalPortfolioProfitLoss() >= 0"
+                    [class.loss]="getTotalPortfolioProfitLoss() < 0"
+                  >
+                    {{ getTotalPortfolioProfitLoss() >= 0 ? '+' : '' }}{{
+                    formatStatCurrency(getTotalPortfolioProfitLoss(), 0) }}
+                  </h2>
+                  <p>All-Time Gains</p>
+                </div>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="empty-state">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading portfolio...</p>
+      </div>
+
+      <!-- Portfolio Holdings -->
+      <div class="stocks-list-scroll-container">
+        <div *ngIf="!isLoading && portfolio.length > 0">
+          <div *ngFor="let holding of portfolio" class="habit-business-item">
+            <div class="item-content">
+              <img
+                *ngIf="holding.businessIcon | businessIconSrc as iconSrc"
+                [src]="iconSrc"
+                [alt]="holding.businessName"
+                class="business-icon-img"
+              />
+              <div *ngIf="!(holding.businessIcon | businessIconSrc)" class="business-icon">
+                {{ holding.businessIcon || '📈' }}
+              </div>
+              <div class="business-info">
+                <h3 class="business-name">{{ holding.businessName }}</h3>
+                <div class="owner-section">
+                  <div class="owner-label">Business Owner:</div>
+                  <div class="owner-name">{{ holding.ownerName }}</div>
+                </div>
+                <div class="habit-stats">
+                  <div class="stat-item">
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-value streak">
+                      {{ getEffectiveStreakForHolding(holding) }} days
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">Owned</div>
+                    <div class="stat-value">{{ holding.sharesOwned }} shares</div>
+                  </div>
+                  <div
+                    class="stat-item"
+                    (click)="showTotalDividendsEarned(holding)"
+                    style="cursor: pointer"
+                  >
+                    <div class="stat-label">Dividends</div>
+                    <div class="stat-value dividend-potential">
+                      ${{ formatDividendsAbbreviated(holding.totalDividendsEarned || 0) }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Habit Grid showing habit completion pattern -->
+                <div class="habit-grid-wrapper">
+                  <app-habit-grid
+                    [businessId]="holding.stockId"
+                    [businessName]="holding.businessName"
+                    [businessEmoji]="holding.businessIcon"
+                    [businessType]="'Stock'"
+                    [isModal]="false"
+                    [showStats]="false"
+                    [useCalendarYear]="true"
+                    [size]="'medium'"
+                    [isStockView]="true"
+                  >
+                  </app-habit-grid>
+                  <app-stock-chart
+                    [businessId]="holding.stockId"
+                    [isStockView]="true"
+                    [days]="30"
+                    [currentStreak]="getEffectiveStreakForHolding(holding)"
+                  >
+                  </app-stock-chart>
+                </div>
+              </div>
+
+              <!-- Vertical separator line -->
+              <div
+                style="
+                  width: 1px;
+                  background: linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    var(--ion-color-medium-tint) 10%,
+                    var(--ion-color-medium) 50%,
+                    var(--ion-color-medium-tint) 90%,
+                    transparent 100%
+                  );
+                  margin: 0 16px;
+                  align-self: stretch;
+                "
+              ></div>
+
+              <div class="earnings-section">
+                <div class="earnings-total">
+                  <div
+                    class="total-amount"
+                    [class.profit]="holding.profitLoss >= 0"
+                    [class.loss]="holding.profitLoss < 0"
+                  >
+                    ${{ (holding.currentPrice || 0) | number: '1.2-2' }}
+                  </div>
+                  <div class="earnings-label">current price</div>
+                  <div
+                    class="profit-loss"
+                    [class.profit]="holding.profitLoss >= 0"
+                    [class.loss]="holding.profitLoss < 0"
+                  >
+                    {{ holding.profitLoss >= 0 ? '+' : '' }}${{
+                    holding.profitLoss.toFixed(2) }}
+                    <span class="invested-note"
+                      >(${{ holding.totalInvested }} invested)</span
+                    >
+                  </div>
+                </div>
+
+                <!-- Stockholders Action -->
+                <ion-button
+                  fill="clear"
+                  color="tertiary"
+                  size="small"
+                  (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
+                  style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                >
+                  <ion-icon name="people" slot="icon-only"></ion-icon>
+                </ion-button>
+
+                <div class="holding-actions-row">
+                  <ion-button
+                    *ngIf="canBuyMoreShares(holding)"
+                    fill="solid"
+                    color="success"
+                    size="small"
+                    (click)="openBuyModal(getBusinessForHolding(holding))"
+                    [disabled]="isLoading"
+                    class="buy-more-button"
+                  >
+                    <ion-icon name="add-circle" slot="start"></ion-icon>
+                    Buy ({{ getBusinessForHolding(holding)?.sharesAvailable }}
+                    left)
+                  </ion-button>
+                  <ion-button
+                    fill="outline"
+                    size="small"
+                    color="warning"
+                    (click)="openSellModal(holding)"
+                    class="sell-button"
+                  >
+                    <ion-icon name="trending-down" slot="start"></ion-icon>
+                    Sell
+                  </ion-button>
+                  <ion-button
+                    fill="clear"
+                    size="small"
+                    (click)="sendReminder(holding)"
+                    class="remind-button"
+                    [disabled]="isRemindButtonDisabled(holding)"
+                    [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                    [style.--color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                    [style.opacity]="isRemindButtonDisabled(holding) ? '0.5' : '1'"
+                  >
+                    <span
+                      [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                      >👉</span
+                    >
+                    <span
+                      [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
+                    >
+                      {{ hasAlreadyRemindedToday(holding.businessId) ?
+                      'Reminded' : 'Remind' }}
+                    </span>
+                  </ion-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State for Portfolio -->
+      <div *ngIf="!isLoading && portfolio.length === 0" class="empty-state">
+        <ion-icon name="pie-chart-outline" size="large"></ion-icon>
+        <h3>No Investments Yet</h3>
+        <p>
+          Start investing in your friends' habit businesses to build your
+          portfolio!
+        </p>
+        <ion-button (click)="selectTab('available')" color="primary">
+          <ion-icon name="trending-up" slot="start"></ion-icon>
+          Browse Available Stocks
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+<!-- Sell Modal -->
+<ion-modal [isOpen]="showSellModal" (didDismiss)="closeSellModal()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Sell Shares</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeSellModal()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <div *ngIf="selectedHolding" class="sell-modal-content">
+        <div class="business-info">
+          <div class="business-header">
+            <img
+              *ngIf="selectedHolding.emoji | businessIconSrc as iconSrc"
+              [src]="iconSrc"
+              [alt]="selectedHolding.businessName"
+              class="business-emoji-img"
+            />
+            <span *ngIf="!(selectedHolding.emoji | businessIconSrc)" class="business-emoji">{{ selectedHolding.emoji }}</span>
+            <div>
+              <h2>{{ selectedHolding.businessName }}</h2>
+              <p>
+                Current Share Price: ${{ selectedHolding.sharePrice.toFixed(2)
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="holdings-info" style="color: #c0c0c0">
+          <p>
+            <strong>Your Holdings:</strong> {{ selectedHolding.shares }} shares
+          </p>
+          <p>
+            <strong>Total Value:</strong> ${{ (selectedHolding.shares *
+            selectedHolding.sharePrice).toFixed(2) }}
+          </p>
+          <p>
+            <strong>Profit/Loss:</strong>
+            <span
+              [class]="(selectedHolding.shares * selectedHolding.sharePrice - selectedHolding.totalInvested) >= 0 ? 'profit' : 'loss'"
+            >
+              ${{ (selectedHolding.shares * selectedHolding.sharePrice -
+              selectedHolding.totalInvested).toFixed(2) }}
+            </span>
+          </p>
+        </div>
+
+        <div class="sell-controls">
+          <ion-item>
+            <ion-label position="stacked">Shares to Sell</ion-label>
+            <ion-select
+              [(ngModel)]="sellQuantity"
+              placeholder="Select quantity"
+              interface="popover"
+            >
+              <ion-select-option
+                *ngFor="let option of getSellOptions()"
+                [value]="option"
+              >
+                {{ option }}
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <div *ngIf="sellQuantity > 0" class="sell-preview">
+            <p>
+              <strong>Sale Amount:</strong> ${{ (sellQuantity *
+              selectedHolding.sharePrice).toFixed(2) }}
+            </p>
+          </div>
+
+          <ion-button
+            expand="block"
+            color="danger"
+            [disabled]="!sellQuantity || sellQuantity <= 0 || sellQuantity > selectedHolding.shares"
+            (click)="confirmSell()"
+          >
+            Sell {{ sellQuantity || 0 }} Shares
+          </ion-button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Buy More Modal -->
+<ion-modal [isOpen]="showBuyModal" (didDismiss)="closeBuyModal()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Buy Shares</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeBuyModal()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <div *ngIf="selectedBuyBusiness" class="sell-modal-content">
+        <div class="business-info">
+          <div class="business-header">
+            <img
+              *ngIf="selectedBuyBusiness.businessIcon | businessIconSrc as iconSrc"
+              [src]="iconSrc"
+              [alt]="selectedBuyBusiness.businessName"
+              class="business-emoji-img"
+            />
+            <span *ngIf="!(selectedBuyBusiness.businessIcon | businessIconSrc)" class="business-emoji">{{ selectedBuyBusiness.businessIcon }}</span>
+            <div>
+              <h2>{{ selectedBuyBusiness.businessName }}</h2>
+              <p>
+                Current Share Price: ${{ selectedBuyBusiness.stockPrice | number: '1.2-2' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="holdings-info" style="color: #c0c0c0">
+          <p>
+            <strong>Shares Available:</strong> {{ selectedBuyBusiness.sharesAvailable }}
+          </p>
+          <p>
+            <strong>Cash Available:</strong> ${{ (userProfile?.cash || 0).toFixed(2) }}
+          </p>
+        </div>
+
+        <div class="sell-controls">
+          <ion-item>
+            <ion-label position="stacked">Shares to Buy</ion-label>
+            <ion-select
+              [(ngModel)]="buyQuantity"
+              placeholder="Select quantity"
+              interface="popover"
+            >
+              <ion-select-option
+                *ngFor="let option of getBuyOptions()"
+                [value]="option"
+              >
+                {{ option }}
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <p *ngIf="getBuyOptions().length === 0" class="sell-preview">
+            You can't afford any shares of this stock right now.
+          </p>
+
+          <div *ngIf="buyQuantity > 0" class="sell-preview">
+            <p>
+              <strong>Total Cost:</strong> ${{ (buyQuantity *
+              selectedBuyBusiness.stockPrice) | number: '1.2-2' }}
+            </p>
+          </div>
+
+          <ion-button
+            expand="block"
+            color="success"
+            [disabled]="!buyQuantity || buyQuantity <= 0 || buyQuantity > selectedBuyBusiness.sharesAvailable || (buyQuantity * selectedBuyBusiness.stockPrice) > (userProfile?.cash || 0) || isLoading"
+            (click)="confirmBuy()"
+          >
+            Buy {{ buyQuantity || 0 }} Shares
+          </ion-button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

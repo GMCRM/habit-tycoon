@@ -26,6 +26,7 @@ import {
 } from '../services/achievements.service';
 import { AuthService } from '../services/auth.service';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
+import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
 import {
   arrowBack,
@@ -106,6 +107,7 @@ const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string;
     IonSegmentButton,
     IonLabel,
     BusinessIconPipe,
+    BottomNavComponent,
   ],
 })
 export class WeeklyReceiptPage implements OnInit {

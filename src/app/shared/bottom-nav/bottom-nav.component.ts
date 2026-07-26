@@ -5,12 +5,12 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge, ModalController, ToastController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { add, people, trendingUp, home } from 'ionicons/icons';
+import { add, people, trophy, home } from 'ionicons/icons';
 import { AuthService } from '../../services/auth.service';
 import { SocialService } from '../../services/social.service';
 import { LaunchBusinessModalComponent } from '../components/launch-business-modal/launch-business-modal.component';
 
-type NavSection = 'social' | 'center' | 'stocks';
+type NavSection = 'social' | 'center' | 'receipt';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -35,7 +35,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     private modalController: ModalController,
     private toastController: ToastController
   ) {
-    addIcons({ add, people, trendingUp, home });
+    addIcons({ add, people, trophy, home });
   }
 
   async ngOnInit() {
@@ -68,8 +68,8 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   private updateActiveSection(url: string) {
     if (url.startsWith('/social')) {
       this.activeSection = 'social';
-    } else if (url.startsWith('/stocks')) {
-      this.activeSection = 'stocks';
+    } else if (url.startsWith('/weekly-receipt')) {
+      this.activeSection = 'receipt';
     } else {
       this.activeSection = 'center';
     }
@@ -112,14 +112,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     }
   }
 
-  async openStocks() {
-    console.log('🔍 BottomNav: Stocks button clicked - DEBUGGING');
-    console.log('🔍 BottomNav: Stocks button clicked');
-    
-    // Navigate to stocks page
+  async openWeeklyReceipt() {
     try {
-      await this.router.navigate(['/stocks']);
-      console.log('✅ BottomNav: Navigated to stocks');
+      await this.router.navigate(['/weekly-receipt']);
     } catch (error) {
       console.error('❌ BottomNav: Navigation failed:', error);
     }

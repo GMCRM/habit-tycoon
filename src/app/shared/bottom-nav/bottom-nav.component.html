@@ -2,7 +2,7 @@
   <ion-tab-bar class="custom-tab-bar">
     <!-- Sliding liquid-glass indicator -->
     <div class="glass-pill" [class.pos-social]="activeSection === 'social'"
-      [class.pos-center]="activeSection === 'center'" [class.pos-stocks]="activeSection === 'stocks'">
+      [class.pos-center]="activeSection === 'center'" [class.pos-receipt]="activeSection === 'receipt'">
     </div>
 
     <!-- Social Button -->
@@ -21,10 +21,10 @@
       </div>
     </ion-tab-button>
 
-    <!-- Stocks/Leaderboard Button -->
-    <ion-tab-button class="nav-button" [class.active]="activeSection === 'stocks'" (click)="openStocks()">
-      <ion-icon name="trending-up"></ion-icon>
-      <ion-label>Stocks</ion-label>
+    <!-- Weekly Receipt / Achievements Button -->
+    <ion-tab-button class="nav-button" [class.active]="activeSection === 'receipt'" (click)="openWeeklyReceipt()">
+      <ion-icon name="trophy"></ion-icon>
+      <ion-label>Awards</ion-label>
     </ion-tab-button>
   </ion-tab-bar>
 </div>
