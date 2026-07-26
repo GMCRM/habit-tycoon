@@ -505,7 +505,7 @@
                     [class.loss]="getTotalPortfolioProfitLoss() < 0"
                   >
                     {{ getTotalPortfolioProfitLoss() >= 0 ? '+' : '' }}{{
-                    formatStatCurrency(getTotalPortfolioProfitLoss()) }}
+                    formatStatCurrency(getTotalPortfolioProfitLoss(), 0) }}
                   </h2>
                   <p>All-Time Gains</p>
                 </div>
