@@ -1575,10 +1575,30 @@ export class HabitBusinessService {
       }
 
       // Nothing queued to cancel — this completion was already synced before
-      // we went offline, so reversing it needs the real record server-side.
-      // We can't safely compute the exact reversal locally without it, so
-      // this one genuinely has to wait for reconnect.
+      // we went offline, so reversing it needs the real record server-side to
+      // get the *exact* earnings (e.g. any stock-ownership boost baked into
+      // that specific completion). We don't have that record locally, so we
+      // approximate it the same way previewCompletion() does — base pay plus
+      // the streak bonus, minus any stock boost — and apply it immediately so
+      // the card and cash don't sit in "done"/overpaid for the rest of the
+      // offline session; reconcileAfterSync() corrects the small remainder
+      // once back online.
       const cachedHabit = (await this.habitCache.getHabits()).find(h => h.id === habitBusinessId);
+      if (cachedHabit) {
+        const goalValue = cachedHabit.goal_value || 1;
+        const wasGoalCompletingTap = (cachedHabit.current_progress || 0) >= goalValue;
+        const baseEarnings = cachedHabit.earnings_per_completion;
+        const streakMultiplier = wasGoalCompletingTap && cachedHabit.streak > 1 ? Math.min((cachedHabit.streak - 1) * 0.1, 1) : 0;
+        const approxEarnings = baseEarnings + baseEarnings * streakMultiplier;
+
+        await this.habitCache.patchHabit(habitBusinessId, {
+          current_progress: Math.max(0, (cachedHabit.current_progress || 0) - 1),
+          total_completions: Math.max(0, cachedHabit.total_completions - 1),
+          total_earnings: Math.max(0, cachedHabit.total_earnings - approxEarnings),
+          streak: wasGoalCompletingTap ? Math.max(0, cachedHabit.streak - 1) : cachedHabit.streak,
+        });
+        await this.habitCache.adjustProfileCash(-approxEarnings);
+      }
       await this.offlineQueue.enqueue('undoHabitCompletion', [habitBusinessId, occurredAt], `Undo "${cachedHabit?.business_name ?? 'habit'}" completion`);
       throw new OfflineQueuedError("You're offline — this undo will sync automatically once you're back online.");
     }

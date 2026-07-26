@@ -7,6 +7,7 @@ import {
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, BusinessType } from '../../../services/habit-business.service';
 import { AuthService } from '../../../services/auth.service';
+import { HabitCacheService } from '../../../services/habit-cache.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import { rocket, close, checkmarkCircle, document, trophy, lockClosed, warning } from 'ionicons/icons';
@@ -46,7 +47,8 @@ export class LaunchBusinessModalComponent implements OnInit {
 
   constructor(
     private habitBusinessService: HabitBusinessService,
-    private authService: AuthService
+    private authService: AuthService,
+    private habitCacheService: HabitCacheService
   ) {
     addIcons({ rocket, close, checkmarkCircle, document, trophy, lockClosed, warning });
   }
@@ -67,7 +69,10 @@ export class LaunchBusinessModalComponent implements OnInit {
         } catch (profileError) {
           console.error('Error ensuring profile exists:', profileError);
           await this.showToast('Cannot connect to user profile. Please check your connection.', 'danger');
-          this.userProfile = {
+          // Most likely offline — fall back to the last synced profile snapshot
+          // instead of a hardcoded $100 starting balance (see home.page.ts).
+          const cachedProfile = await this.habitCacheService.getProfile();
+          this.userProfile = cachedProfile || {
             name: user.user_metadata?.['name'] || 'Entrepreneur',
             cash: 100.00,
             net_worth: 100.00
