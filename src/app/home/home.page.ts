@@ -75,6 +75,7 @@ export class HomePage implements OnInit, OnDestroy {
   // Actions queued while offline, waiting to sync (see OfflineQueueService)
   pendingSyncCount = 0;
   private pendingSyncSub?: Subscription;
+  private habitCreatedSub?: Subscription;
 
   constructor(
     private router: Router,
@@ -872,11 +873,20 @@ export class HomePage implements OnInit, OnDestroy {
     this.pendingSyncSub = this.offlineQueueService.pendingCount$.subscribe(
       count => (this.pendingSyncCount = count)
     );
+    // Refresh reactively when a business is launched from elsewhere (e.g. the
+    // bottom-nav "+" button while already on /home never navigates, so
+    // ionViewWillEnter won't refire — this is the only signal we get).
+    this.habitCreatedSub = this.habitUpdateService.updates$.subscribe(event => {
+      if (event?.type === 'created' && !this.isLoading) {
+        this.loadDashboardData();
+      }
+    });
   }
 
   ngOnDestroy() {
     this.tickSub?.unsubscribe();
     this.pendingSyncSub?.unsubscribe();
+    this.habitCreatedSub?.unsubscribe();
     this.countdownTickService.unregister();
   }
 

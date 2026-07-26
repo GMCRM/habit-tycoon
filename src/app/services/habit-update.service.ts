@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface HabitUpdateEvent {
-  type: 'completion' | 'undo';
+  type: 'completion' | 'undo' | 'created';
   habitBusinessId: string;
   completionDate: string;
   timestamp: number;
@@ -49,6 +49,20 @@ export class HabitUpdateService {
       type: 'undo',
       habitBusinessId,
       completionDate,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Emit a new habit-business creation event
+   */
+  emitHabitCreated(habitBusinessId: string) {
+    console.log('📡 Emitting habit created event:', { habitBusinessId });
+
+    this.updateSubject.next({
+      type: 'created',
+      habitBusinessId,
+      completionDate: this.getLocalDateString(),
       timestamp: Date.now()
     });
   }

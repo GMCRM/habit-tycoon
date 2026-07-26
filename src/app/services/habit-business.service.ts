@@ -5,6 +5,7 @@ import { HabitIntervalService } from './habit-interval.service';
 import { SupabaseService } from './supabase.service';
 import { OfflineQueueService, OfflineQueuedError } from './offline-queue.service';
 import { HabitCacheService } from './habit-cache.service';
+import { HabitUpdateService } from './habit-update.service';
 
 export interface BusinessType {
   id: number;
@@ -144,6 +145,7 @@ export class HabitBusinessService {
   private habitIntervalService = inject(HabitIntervalService);
   private offlineQueue = inject(OfflineQueueService);
   private habitCache = inject(HabitCacheService);
+  private habitUpdateService = inject(HabitUpdateService);
 
   constructor(supabaseService: SupabaseService) {
     this.supabase = supabaseService.client;
@@ -442,6 +444,7 @@ export class HabitBusinessService {
       await this.habitCache.adjustProfileCash(-businessType.base_cost);
       await this.offlineQueue.enqueue('createHabitBusiness', [request], `Create "${request.business_name}"`, tempId);
       await this.showSuccessToast(`✅ ${request.business_name} created — will sync once you're back online.`);
+      this.habitUpdateService.emitHabitCreated(placeholder.id);
       return placeholder;
     }
     try {
@@ -554,6 +557,7 @@ export class HabitBusinessService {
 
       // Success message
       await this.showSuccessToast(`✅ ${request.business_name} created successfully!`);
+      this.habitUpdateService.emitHabitCreated(newHabitBusiness.id);
 
       // Create business stock for this habit business
       try {
