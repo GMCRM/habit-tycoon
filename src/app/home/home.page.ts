@@ -25,7 +25,7 @@ import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.c
 import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, receiptOutline, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -90,7 +90,7 @@ export class HomePage implements OnInit, OnDestroy {
     private offlineQueueService: OfflineQueueService,
     private habitCacheService: HabitCacheService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline });
+    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, receiptOutline, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline });
     this.setRandomTagline();
   }
 
