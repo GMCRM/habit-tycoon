@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { 
   IonContent, 
@@ -16,7 +16,8 @@ import {
   IonIcon,
   IonSpinner,
   ToastController,
-  AlertController
+  AlertController,
+  ModalController
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, HabitBusiness, UpgradeCalculation, BusinessStock, StockHolding } from '../services/habit-business.service';
 import { OfflineQueuedError } from '../services/offline-queue.service';
@@ -24,6 +25,7 @@ import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { AuthService } from '../services/auth.service';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
+import { LaunchBusinessModalComponent } from '../shared/components/launch-business-modal/launch-business-modal.component';
 import { addIcons } from 'ionicons';
 import { 
   checkmarkCircle, 
@@ -74,7 +76,6 @@ interface StockDisplay extends StockHolding {
     IonSpinner,
     CommonModule,
     FormsModule,
-    RouterLink,
     BusinessIconPipe
   ]
 })
@@ -127,6 +128,7 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
     private router: Router,
     private toastController: ToastController,
     private alertController: AlertController,
+    private modalController: ModalController,
     private habitIntervalService: HabitIntervalService,
     private countdownTickService: CountdownTickService
   ) {
@@ -150,6 +152,25 @@ export class HabitCheckinPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.tickSub?.unsubscribe();
     this.countdownTickService.unregister();
+  }
+
+  async openLaunchBusinessModal() {
+    const modal = await this.modalController.create({
+      component: LaunchBusinessModalComponent,
+      componentProps: {
+        modalController: this.modalController,
+        toastController: this.toastController
+      },
+      cssClass: 'launch-business-modal'
+    });
+
+    await modal.present();
+
+    const { data } = await modal.onDidDismiss();
+
+    if (data?.created) {
+      await this.loadUserAndHabits();
+    }
   }
 
   private setupDate() {

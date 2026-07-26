@@ -19,12 +19,13 @@ import { CountdownTickService } from '../services/countdown-tick.service';
 import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.component';
 import { StockOwnersModalComponent } from '../shared/components/stock-owners-modal/stock-owners-modal.component';
+import { LaunchBusinessModalComponent } from '../shared/components/launch-business-modal/launch-business-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -89,7 +90,7 @@ export class HomePage implements OnInit, OnDestroy {
     private countdownTickService: CountdownTickService,
     private offlineQueueService: OfflineQueueService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people });
+    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline });
     this.setRandomTagline();
   }
 
@@ -301,9 +302,25 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
-  createNewHabitBusiness() {
+  async createNewHabitBusiness() {
     console.log('🏢 Creating new habit-business...');
-    this.router.navigate(['/create-habit-business']);
+    const modal = await this.modalController.create({
+      component: LaunchBusinessModalComponent,
+      componentProps: {
+        modalController: this.modalController,
+        toastController: this.toastController
+      },
+      cssClass: 'launch-business-modal'
+    });
+
+    await modal.present();
+
+    const { data } = await modal.onDidDismiss();
+
+    if (data?.created) {
+      await this.loadCurrentUser();
+      await this.loadDashboardData();
+    }
   }
 
   async completeHabitBusiness(habitBusiness: HabitBusiness) {

@@ -536,14 +536,14 @@ button, span, div, ion-button {
         }
 
         .business-icon {
-          font-size: 3.6rem;
+          font-size: 4.32rem;
           flex-shrink: 0;
           filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
         }
 
         .business-icon-img {
-          width: 88px;
-          height: 88px;
+          width: 106px;
+          height: 106px;
           flex-shrink: 0;
           border-radius: 22%;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.3);
@@ -574,23 +574,28 @@ button, span, div, ion-button {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 4px;
+          gap: 5px;
           width: fit-content;
-          margin: 6px auto 4px;
-          padding: 4px 6px;
-          background: transparent;
+          margin: 8px auto 4px;
+          padding: 5px 12px;
+          background: rgba(255, 215, 0, 0.08);
           border: none;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 0.78rem;
+          border-radius: 12px;
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 0.72rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
-          transition: color 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease;
 
           ion-icon {
             font-size: 0.95rem;
+            color: var(--ion-color-primary);
           }
 
           &:hover, &:active {
+            background: rgba(255, 215, 0, 0.16);
             color: var(--ion-color-primary);
           }
         }
@@ -1103,12 +1108,12 @@ button, span, div, ion-button {
   .habit-business-item {
     .item-content {
       .business-icon {
-        font-size: 4.4rem;
+        font-size: 5.28rem;
       }
 
       .business-icon-img {
-        width: 108px;
-        height: 108px;
+        width: 130px;
+        height: 130px;
       }
 
       .business-info {

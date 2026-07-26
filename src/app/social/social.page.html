@@ -7,7 +7,7 @@
       slot="end"
       fill="clear"
       (click)="openWeeklyReceipt()"
-      class="header-action-btn receipt-btn"
+      class="header-action-btn icon-box-btn gold-filled receipt-btn"
       aria-label="Weekly Receipt"
     >
       <span class="receipt-coin" slot="start">$</span>
@@ -18,8 +18,10 @@
       slot="end"
       fill="clear"
       routerLink="/settings"
+      class="header-action-btn icon-box-btn grey-outline"
     >
-      <ion-icon name="settings"></ion-icon>
+      <ion-icon name="settings" slot="start"></ion-icon>
+      <span class="btn-label">Settings</span>
     </ion-button>
   </ion-toolbar>
 </ion-header>

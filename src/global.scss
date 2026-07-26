@@ -99,6 +99,64 @@
   -ms-overflow-style: none;
 }
 
+/* Launch Business Modal */
+.launch-business-modal .modal-wrapper {
+  --height: auto;
+  --max-height: 90vh;
+  --max-width: 500px;
+  --width: 95%;
+  --border-radius: 16px;
+}
+
+.launch-business-modal .modal-wrapper .modal-shadow {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure vertical scrolling works in modal content */
+.launch-business-modal ion-content {
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  /* Hide scrollbar for WebKit browsers */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for the modal content element specifically */
+.launch-business-modal .inner-scroll {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+}
+
+/* Target Ionic's internal scroll elements */
+.launch-business-modal .scroll-content,
+.launch-business-modal .scroll-y,
+.launch-business-modal .scroll-inner {
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Global scrollbar hiding for all elements within launch business modal */
+.launch-business-modal * {
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 /* Custom Alert Styles */
 .alert-wrapper {
   --max-width: 400px;

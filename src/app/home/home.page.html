@@ -134,26 +134,35 @@
             </div>
             <div class="info-content">
               <div>
-                <p>Your dashboard shows key metrics to track your progress:</p>
+                <p>Your dashboard tracks the following metrics:</p>
                 <ul>
                   <li>
-                    <strong>Pending Habits:</strong> Number of habits you can
-                    complete today
+                    <strong>Pending Habits:</strong> Habits you still have left
+                    to complete today
                   </li>
                   <li>
-                    <strong>Today's Habit Earnings:</strong> Money earned from
-                    completing your own habits
+                    <strong>Today's Habit Earnings:</strong> Cash earned from
+                    your own habit completions, boosted by your current streak
+                    and by any shares investors hold in your business
                   </li>
                   <li>
-                    <strong>Today's Stock Dividends:</strong> Passive income
-                    from your stock investments
+                    <strong>Today's Stock Dividends:</strong> Your payout from
+                    friends' businesses you've invested in, paid whenever they
+                    complete their habit goal
                   </li>
                   <li>
-                    <strong>Net Worth & Habit Cash:</strong> Click the money
-                    cards for an explanation of each value
+                    <strong>Net Worth & Habit Cash:</strong> Habit Cash is your
+                    spendable balance; Net Worth also includes the value of
+                    the businesses you own and the stock you hold. Tap either
+                    card for the exact figure.
                   </li>
                 </ul>
-                <p><em>Complete habits daily to maximize your earnings!</em></p>
+                <p>
+                  <em
+                    >Daily completions build the streaks that drive both your
+                    earnings and your investors' dividends.</em
+                  >
+                </p>
               </div>
             </div>
           </ion-card-content>
@@ -261,31 +270,35 @@
             <div class="info-content">
               <div>
                 <p>
-                  Turn your habits into profitable businesses that generate
-                  income:
+                  Turn your habits into businesses that generate income the
+                  more consistently you run them:
                 </p>
                 <ul>
                   <li>
-                    <strong>Complete Habits:</strong> Each completion earns
-                    money and builds streaks
+                    <strong>Complete Habits:</strong> Fully meeting a habit's
+                    goal pays out cash and extends its streak by one day
                   </li>
                   <li>
-                    <strong>Habit Streaks:</strong> Longer streaks increase your
-                    earnings multiplier
+                    <strong>Habit Streaks:</strong> An unbroken streak boosts
+                    your earnings by 10% per day, up to a 100% bonus at an
+                    11-day streak
                   </li>
                   <li>
-                    <strong>Business Value:</strong> Consistent habits increase
-                    your business's stock price
+                    <strong>Business Value:</strong> Longer streaks raise your
+                    business's stock price in stages, up to 5x at a 70+ day
+                    streak — but breaking the streak resets the price
+                    immediately
                   </li>
                   <li>
-                    <strong>Stockholders:</strong> Others can invest in your
-                    habits and earn dividends
+                    <strong>Stockholders:</strong> Friends can buy a limited
+                    pool of shares in your business and earn dividends
+                    whenever you complete your habit
                   </li>
                 </ul>
                 <p>
                   <em
-                    >Consistency is the key to building a successful habit
-                    empire!</em
+                    >Consistency compounds — an unbroken streak is what
+                    builds a successful habit empire.</em
                   >
                 </p>
                 <p class="disclaimer">
@@ -496,8 +509,7 @@
                     class="description-toggle"
                     (click)="showHabitDescription(hb)"
                   >
-                    <ion-icon name="information-circle-outline"></ion-icon>
-                    Description
+                    <ion-icon name="information-circle-outline"></ion-icon>Description
                   </button>
 
                   <div class="business-action-icons">

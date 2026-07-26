@@ -1,42 +1,92 @@
 // Import the same styling patterns as homepage
 
-// Header toolbar - matches home page receipt button styling
+// Header toolbar - keep title + action buttons on one row on narrow phones
 .page-toolbar {
   .header-action-btn {
     --padding-start: 8px;
     --padding-end: 8px;
+
+    .btn-label {
+      display: none;
+    }
+  }
+
+  // Icon-only square buttons: glass boxes with a soft colored glow behind the icon
+  .icon-box-btn {
+    --border-radius: 8px;
+    --padding-start: 0;
+    --padding-end: 0;
+    --padding-top: 0;
+    --padding-bottom: 0;
+    --background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    margin-inline: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.3);
+
+    ion-icon {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+
+    &::part(native) {
+      border-radius: 8px;
+      overflow: visible;
+      width: 40px;
+      height: 40px;
+      min-height: 40px;
+    }
+
+    &.gold-outline {
+      --color: #ffd700;
+      border-color: rgba(255, 215, 0, 0.8);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 14px rgba(255, 215, 0, 0.45);
+
+      ion-icon {
+        color: #ffd700;
+        filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+      }
+    }
+
+    &.grey-outline {
+      --color: rgba(255, 255, 255, 0.8);
+    }
+
+    &.gold-filled {
+      border-color: rgba(255, 215, 0, 0.35);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 14px rgba(255, 215, 0, 0.22);
+    }
   }
 
   .receipt-coin {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    margin-inline-end: 6px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ffe985 0%, #ffd700 45%, #e6a800 100%);
-    color: #3a2a00;
+    width: 22px;
+    height: 22px;
+    color: #ffd700;
     font-size: 0.85rem;
     font-weight: 800;
     line-height: 1;
-    box-shadow:
-      0 0 6px rgba(255, 215, 0, 0.7),
-      0 0 14px rgba(255, 215, 0, 0.35),
-      inset 0 1px 1px rgba(255, 255, 255, 0.6),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.25);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+
+  // On the icon-box button this is the only content, so center it with no extra margin.
+  .icon-box-btn.gold-filled .receipt-coin {
+    margin-inline-end: 0;
+    font-size: 1.2rem;
   }
 
   .receipt-btn {
     &:hover .receipt-coin,
     &:focus-visible .receipt-coin {
       transform: scale(1.12) rotate(-6deg);
-      box-shadow:
-        0 0 10px rgba(255, 215, 0, 0.9),
-        0 0 22px rgba(255, 215, 0, 0.5),
-        inset 0 1px 1px rgba(255, 255, 255, 0.7),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.25);
+      filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.9)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.5));
     }
 
     &:active .receipt-coin {
@@ -58,6 +108,11 @@
       ion-icon {
         margin: 0;
       }
+    }
+
+    .icon-box-btn {
+      --padding-start: 0;
+      --padding-end: 0;
     }
 
     .receipt-coin {
@@ -285,10 +340,32 @@ ion-content {
   padding: 0 12px;
 
   .stat-card {
+    position: relative;
     background: var(--business-item-background);
     border: var(--business-item-border);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1);
+    overflow: hidden;
+
+    // Subtle decorative dot texture in the corner
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 56px;
+      height: 56px;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+      background-size: 8px 8px;
+      -webkit-mask-image: linear-gradient(225deg, #000 0%, transparent 70%);
+      mask-image: linear-gradient(225deg, #000 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    &.gold-accent .stat-info h2 {
+      color: #ffd700;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    }
 
     &.clickable-card {
       cursor: pointer;
@@ -309,9 +386,15 @@ ion-content {
 
       .stat-content {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
+        gap: 8px;
+
+        .stat-icon-circle {
+          margin-bottom: 2px;
+        }
 
         .stat-info {
           h2 {
@@ -330,6 +413,40 @@ ion-content {
         }
       }
     }
+  }
+}
+
+.stat-icon-circle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 1rem;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  ion-icon {
+    font-size: 1.4rem;
+  }
+
+  &.gold {
+    color: #ffd700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(255, 215, 0, 0.18);
+  }
+
+  &.green {
+    color: #00ff7f;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(0, 255, 127, 0.18);
+  }
+
+  &.red {
+    color: #f53d3d;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(245, 61, 61, 0.18);
   }
 }
 

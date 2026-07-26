@@ -1,0 +1,421 @@
+.launch-modal-content {
+  --background: var(--ion-color-light);
+  overflow: hidden;
+}
+
+.scrollable-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+
+  /* Hide scrollbar for Firefox */
+  scrollbar-width: none;
+
+  /* Hide scrollbar for Internet Explorer/Edge */
+  -ms-overflow-style: none;
+}
+
+/* Target any child scrollable elements */
+:host ::ng-deep .launch-modal-content,
+:host ::ng-deep .scroll-content,
+:host ::ng-deep .scroll-y,
+:host ::ng-deep .inner-scroll {
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--ion-color-medium);
+
+  ion-spinner {
+    margin-bottom: 16px;
+    --color: var(--ion-color-primary);
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+  }
+}
+
+.modal-body {
+  padding-bottom: 8px;
+}
+
+// Cash banner
+.cash-banner {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+  .cash-main {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .cash-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+  }
+
+  .cash-subtitle {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .cash-amount {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: var(--cash-color);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+  }
+}
+
+// Form sections
+.form-section {
+  background: var(--business-item-background);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  margin: 12px 16px;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+
+    h3 {
+      margin: 0;
+      color: var(--cash-color);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    ion-icon {
+      font-size: 1.2rem;
+      color: var(--ion-color-primary);
+      filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.4));
+    }
+  }
+
+  .section-input {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    --background: transparent;
+    --border-color: rgba(255, 215, 0, 0.3);
+
+    ion-input, ion-textarea, ion-select {
+      --color: rgba(255, 255, 255, 0.9);
+      --placeholder-color: rgba(255, 255, 255, 0.5);
+    }
+
+    ion-label {
+      color: var(--cash-color);
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+  }
+
+  .inline-row {
+    display: flex;
+    gap: 10px;
+
+    .section-input {
+      flex: 1;
+    }
+  }
+}
+
+.day-picker-section {
+  padding: 6px 0 2px;
+
+  .day-picker-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+  }
+
+  .day-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .day-chip {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+
+    &.active {
+      background: #FFD700;
+      border-color: #FFD700;
+      color: #000;
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    }
+
+    &:hover {
+      border-color: #FFD700;
+      color: #FFD700;
+    }
+  }
+
+  .day-picker-warning {
+    font-size: 0.75rem;
+    color: var(--ion-color-danger);
+    margin-top: 6px;
+    padding-left: 4px;
+  }
+}
+
+// Investment options
+.investment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.investment-option {
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
+  position: relative;
+
+  &.selected {
+    border-color: var(--ion-color-success);
+    background: rgba(var(--ion-color-success-rgb), 0.12);
+    box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.25);
+  }
+
+  &:not(.selected):not(.locked):hover {
+    border-color: var(--ion-color-primary);
+    background: rgba(var(--ion-color-primary-rgb), 0.08);
+    transform: translateY(-1px);
+  }
+
+  &.locked {
+    opacity: 0.55;
+  }
+
+  .investment-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+
+    .investment-icon {
+      font-size: 28px;
+      width: 106px;
+      text-align: center;
+      flex-shrink: 0;
+
+      .investment-icon-img {
+        width: 106px;
+        height: 106px;
+        border-radius: 22%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.2);
+      }
+    }
+
+    .investment-info {
+      flex: 1;
+      min-width: 0;
+
+      .investment-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--cash-color);
+      }
+
+      .investment-cost {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--ion-color-success);
+
+        &.unaffordable {
+          color: var(--ion-color-danger);
+        }
+      }
+    }
+
+    .investment-status-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+  }
+
+  .investment-details {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding-left: 118px;
+
+    .revenue-amount {
+      font-size: 15px;
+      font-weight: bold;
+      color: var(--ion-color-success);
+    }
+
+    .revenue-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+    }
+  }
+}
+
+// Summary section
+.summary-section {
+  border: 2px solid rgba(var(--ion-color-success-rgb), 0.5);
+  background: linear-gradient(135deg, var(--business-item-background) 0%, rgba(var(--ion-color-success-rgb), 0.1) 100%);
+}
+
+.business-summary {
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .summary-label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 13px;
+    }
+
+    .summary-value {
+      color: var(--cash-color);
+      font-weight: 600;
+      text-align: right;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+
+      .summary-icon-img {
+        width: 18px;
+        height: 18px;
+        border-radius: 22%;
+        vertical-align: middle;
+      }
+    }
+
+    &.cost .summary-value {
+      color: var(--ion-color-danger);
+    }
+
+    &.earning .summary-value {
+      color: var(--ion-color-success);
+    }
+
+    &.highlight {
+      background: rgba(var(--ion-color-primary-rgb), 0.1);
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 6px;
+
+      .summary-label, .summary-value {
+        color: var(--ion-color-primary);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Insufficient capital warning
+.insufficient-capital {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-top: 12px;
+  background: rgba(var(--ion-color-danger-rgb), 0.1);
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.3);
+  border-radius: 8px;
+
+  ion-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .warning-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    line-height: 1.4;
+
+    strong {
+      color: var(--ion-color-danger);
+    }
+  }
+}
+
+// Footer launch button
+.launch-button {
+  font-size: 17px;
+  font-weight: 600;
+  --border-radius: 10px;
+  --box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.3);
+  height: 52px;
+}
+
+// Responsive design for larger screens
+@media (min-width: 768px) {
+  .inline-row {
+    flex-direction: row;
+  }
+}

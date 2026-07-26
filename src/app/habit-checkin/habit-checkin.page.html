@@ -369,7 +369,7 @@
               <ion-icon name="business" size="large"></ion-icon>
               <h3>No habits to complete</h3>
               <p>Create your first habit-business to start earning!</p>
-              <ion-button routerLink="/create-habit-business" color="primary">
+              <ion-button (click)="openLaunchBusinessModal()" color="primary">
                 <ion-icon name="add" slot="start"></ion-icon>
                 Create Habit-Business
               </ion-button>

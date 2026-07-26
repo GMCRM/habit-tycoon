@@ -27,11 +27,6 @@ export const routes: Routes = [
     canActivate: [authGuard, adminGuard]
   },
   {
-    path: 'create-habit-business',
-    loadComponent: () => import('./create-habit-business/create-habit-business.page').then( m => m.CreateHabitBusinessPage),
-    canActivate: [authGuard],
-  },
-  {
     path: 'social',
     loadComponent: () => import('./social/social.page').then( m => m.SocialPage),
     canActivate: [authGuard],

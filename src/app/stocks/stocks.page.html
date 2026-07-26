@@ -6,7 +6,7 @@
       slot="end"
       fill="clear"
       (click)="openWeeklyReceipt()"
-      class="header-action-btn receipt-btn"
+      class="header-action-btn icon-box-btn gold-filled receipt-btn"
       aria-label="Weekly Receipt"
     >
       <span class="receipt-coin" slot="start">$</span>
@@ -17,8 +17,10 @@
       slot="end"
       fill="clear"
       routerLink="/settings"
+      class="header-action-btn icon-box-btn grey-outline"
     >
-      <ion-icon name="settings"></ion-icon>
+      <ion-icon name="settings" slot="start"></ion-icon>
+      <span class="btn-label">Settings</span>
     </ion-button>
   </ion-toolbar>
 </ion-header>
@@ -175,21 +177,32 @@
           <div class="info-content">
             <div>
               <p>
-                Each time a business owner completes their habit, stockholders
-                receive dividends! Dividend amount depends on:
+                Dividends are paid out only when a business owner fully
+                completes their habit goal for the day. The payout depends on:
               </p>
               <ul>
                 <li>
-                  <strong>Base earnings:</strong> 10% of habit completion value
+                  <strong>Shares sold:</strong> Up to 20 shares per business
+                  are available to purchase; each one sold grows the dividend
+                  pool investors split
                 </li>
                 <li>
-                  <strong>Streak bonus:</strong> +1% per day (up to 100% bonus)
+                  <strong>Your ownership:</strong> The pool is divided
+                  proportionally by shares owned, so more shares means a
+                  bigger cut
                 </li>
                 <li>
-                  <strong>Your ownership:</strong> Percentage of shares you own
+                  <strong>Owner's consistency:</strong> No completion that
+                  day means no dividend — a broken streak also resets the
+                  business's stock price
                 </li>
               </ul>
-              <p><em>Higher streaks = higher dividends!</em></p>
+              <p>
+                <em
+                  >Invest in owners who complete their habits consistently
+                  for the steadiest payouts.</em
+                >
+              </p>
             </div>
           </div>
         </ion-card-content>
@@ -416,8 +429,9 @@
                   since buying
                 </li>
                 <li>
-                  <strong>Daily Dividends:</strong> Money earned from other
-                  users completing habits
+                  <strong>Daily Dividends:</strong> Money earned when the
+                  friends whose businesses you've invested in complete their
+                  habits
                 </li>
                 <li>
                   <strong>Stock Performance:</strong> Track individual stock
@@ -442,6 +456,9 @@
           >
             <ion-card-content>
               <div class="stat-content">
+                <div class="stat-icon-circle green">
+                  <ion-icon name="cash"></ion-icon>
+                </div>
                 <div class="stat-info">
                   <h2>{{ formatStatCurrency(getTotalDailyDividends()) }}</h2>
                   <p>Today's Actual Dividends</p>
@@ -451,12 +468,15 @@
           </ion-card>
 
           <ion-card
-            class="stat-card"
+            class="stat-card gold-accent"
             [class.clickable-card]="isStatAbbreviated(getTotalPortfolioValue())"
             (click)="showExactStatValue('Portfolio Value', getTotalPortfolioValue(), true)"
           >
             <ion-card-content>
               <div class="stat-content">
+                <div class="stat-icon-circle gold">
+                  <ion-icon name="wallet"></ion-icon>
+                </div>
                 <div class="stat-info">
                   <h2>{{ formatStatCurrency(getTotalPortfolioValue()) }}</h2>
                   <p>Portfolio Value</p>
@@ -472,6 +492,13 @@
           >
             <ion-card-content>
               <div class="stat-content">
+                <div
+                  class="stat-icon-circle"
+                  [class.green]="getTotalPortfolioProfitLoss() >= 0"
+                  [class.red]="getTotalPortfolioProfitLoss() < 0"
+                >
+                  <ion-icon name="trending-up"></ion-icon>
+                </div>
                 <div class="stat-info">
                   <h2
                     [class.profit]="getTotalPortfolioProfitLoss() >= 0"

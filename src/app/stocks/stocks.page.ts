@@ -392,8 +392,11 @@ export class StocksPage implements OnInit {
     return this.portfolio.reduce((sum, item) => sum + item.dailyDividendRate, 0);
   }
 
-  // Portfolio stat numbers abbreviate (100K, 1M, 1T...) once they hit this size
-  private readonly STAT_ABBREVIATE_THRESHOLD = 100000;
+  // Portfolio stat numbers abbreviate (1K, 1M, 1T...) once they hit this size.
+  // Kept low (matching the home-page stat threshold) because the stat cards
+  // are only ~1/3 of the screen wide with overflow:hidden - an un-abbreviated
+  // value like "$75,062.03" is wider than the card and gets clipped.
+  private readonly STAT_ABBREVIATE_THRESHOLD = 1000;
 
   isStatAbbreviated(value: number): boolean {
     return Math.abs(value || 0) >= this.STAT_ABBREVIATE_THRESHOLD;
