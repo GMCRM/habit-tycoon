@@ -1109,7 +1109,9 @@ export class SocialPage implements OnInit, OnDestroy {
       if (data.mode === 'merge') {
         await this.marketplaceService.resolvePurchaseIntoExisting(this.currentUser.id, purchase.id, data.targetHabitBusinessId);
       } else {
-        const newHabitBusinessId = await this.marketplaceService.resolvePurchaseIntoNewHabit(
+        // The habit_businesses insert trigger (create_stock_on_business_creation) creates
+        // the stock listing automatically — no separate createBusinessStock call needed here.
+        await this.marketplaceService.resolvePurchaseIntoNewHabit(
           this.currentUser.id,
           purchase.id,
           data.businessName,
@@ -1118,8 +1120,6 @@ export class SocialPage implements OnInit, OnDestroy {
           data.goalValue,
           data.activeDays
         );
-        // A brand-new habit needs its own stock listing, same as any freshly created habit business
-        await this.habitBusinessService.createBusinessStock(newHabitBusinessId);
       }
 
       this.marketplaceService.clearUnresolvedPurchase();

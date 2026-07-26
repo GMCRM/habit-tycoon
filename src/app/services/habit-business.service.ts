@@ -559,14 +559,8 @@ export class HabitBusinessService {
       await this.showSuccessToast(`✅ ${request.business_name} created successfully!`);
       this.habitUpdateService.emitHabitCreated(newHabitBusiness.id);
 
-      // Create business stock for this habit business
-      try {
-        await this.createBusinessStock(newHabitBusiness.id);
-        console.log('✅ Business stock created for new habit business');
-      } catch (stockError) {
-        console.error('⚠️ Warning: Failed to create business stock:', stockError);
-        // Don't fail the entire creation for this - stock can be created later
-      }
+      // The habit_businesses insert trigger (create_stock_on_business_creation) creates
+      // the stock listing automatically — no separate createBusinessStock call needed here.
 
       return newHabitBusiness;
     } catch (error) {
@@ -3150,26 +3144,6 @@ export class HabitBusinessService {
 
     } catch (error) {
       console.error('Error in purchaseStockShares:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create business stock when a habit business is created
-   */
-  async createBusinessStock(habitBusinessId: string): Promise<string> {
-    try {
-      const { data, error } = await this.supabase
-        .rpc('create_business_stock', { habit_business_uuid: habitBusinessId });
-
-      if (error) {
-        console.error('Error creating business stock:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error in createBusinessStock:', error);
       throw error;
     }
   }
