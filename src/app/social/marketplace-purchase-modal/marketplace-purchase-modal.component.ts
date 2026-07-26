@@ -15,6 +15,7 @@ export type MarketplacePurchaseResolution =
   | { mode: 'merge'; targetHabitBusinessId: string }
   | {
       mode: 'new';
+      businessName: string;
       habitDescription: string;
       recurrenceInterval: '24h' | 'specific_days';
       goalValue: number;
@@ -39,6 +40,7 @@ export class MarketplacePurchaseModalComponent implements OnInit {
 
   view: 'choose' | 'new-habit' = 'choose';
 
+  businessName = '';
   habitDescription = '';
   recurrenceInterval: '24h' | 'specific_days' = '24h';
   goalValue = 1;
@@ -51,7 +53,9 @@ export class MarketplacePurchaseModalComponent implements OnInit {
     addIcons({ close, storefront, add, arrowBack });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.businessName = this.purchase.business_name;
+  }
 
   dismiss() {
     this.modalController.dismiss();
@@ -85,7 +89,7 @@ export class MarketplacePurchaseModalComponent implements OnInit {
 
   get isNewHabitFormValid(): boolean {
     const daysValid = this.recurrenceInterval !== 'specific_days' || this.activeDays.length > 0;
-    return !!this.habitDescription.trim() && this.goalValue > 0 && this.goalValue <= 20 && daysValid;
+    return !!this.businessName.trim() && !!this.habitDescription.trim() && this.goalValue > 0 && this.goalValue <= 20 && daysValid;
   }
 
   confirmNewHabit() {
@@ -93,6 +97,7 @@ export class MarketplacePurchaseModalComponent implements OnInit {
 
     const resolution: MarketplacePurchaseResolution = {
       mode: 'new',
+      businessName: this.businessName.trim(),
       habitDescription: this.habitDescription.trim(),
       recurrenceInterval: this.recurrenceInterval,
       goalValue: this.goalValue,

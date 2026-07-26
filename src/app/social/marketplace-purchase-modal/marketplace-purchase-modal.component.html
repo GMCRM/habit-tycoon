@@ -70,6 +70,17 @@
   <!-- New habit form -->
   <ng-container *ngIf="view === 'new-habit'">
     <ion-item lines="full">
+      <ion-label position="stacked">Business Name</ion-label>
+      <input
+        type="text"
+        [(ngModel)]="businessName"
+        placeholder="Name your business"
+        maxlength="40"
+        class="business-name-input"
+      />
+    </ion-item>
+
+    <ion-item lines="full">
       <ion-label position="stacked">Habit Description</ion-label>
       <ion-textarea
         [(ngModel)]="habitDescription"

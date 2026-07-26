@@ -106,6 +106,7 @@ export class MarketplaceService {
   async resolvePurchaseIntoNewHabit(
     buyerId: string,
     purchaseId: string,
+    businessName: string,
     habitDescription: string,
     recurrenceInterval: '24h' | 'specific_days',
     goalValue: number,
@@ -118,7 +119,8 @@ export class MarketplaceService {
       p_habit_description: habitDescription,
       p_recurrence_interval: recurrenceInterval,
       p_goal_value: goalValue,
-      p_active_days: activeDays ?? null
+      p_active_days: activeDays ?? null,
+      p_business_name: businessName
     });
     if (error) {
       console.error('Error resolving marketplace purchase into a new habit:', error);

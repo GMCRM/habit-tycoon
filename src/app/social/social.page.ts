@@ -1112,6 +1112,7 @@ export class SocialPage implements OnInit, OnDestroy {
         const newHabitBusinessId = await this.marketplaceService.resolvePurchaseIntoNewHabit(
           this.currentUser.id,
           purchase.id,
+          data.businessName,
           data.habitDescription,
           data.recurrenceInterval,
           data.goalValue,
@@ -1124,8 +1125,9 @@ export class SocialPage implements OnInit, OnDestroy {
       this.marketplaceService.clearUnresolvedPurchase();
       this.unresolvedPurchase = null;
 
+      const resolvedName = data.mode === 'new' ? data.businessName : purchase.business_name;
       const toast = await this.toastController.create({
-        message: `✅ "${purchase.business_name}" is set up and ready to go!`,
+        message: `✅ "${resolvedName}" is set up and ready to go!`,
         duration: 2500,
         position: 'top',
         color: 'success'
