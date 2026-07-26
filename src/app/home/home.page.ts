@@ -1026,8 +1026,10 @@ export class HomePage implements OnInit, OnDestroy {
   /**
    * Abbreviate a number to K/M/B/T, always rounding UP so the displayed
    * value never understates the real amount (e.g. 100,001 -> "101K").
+   * `decimals` controls precision (e.g. 1 -> "58.6K", 0 -> "59K") - lower it
+   * for cards where an extra digit (or a leading "+"/"-") would overflow.
    */
-  private abbreviateStatNumber(value: number): string {
+  private abbreviateStatNumber(value: number, decimals: number = 1): string {
     const units = ['', 'K', 'M', 'B', 'T'];
     const sign = value < 0 ? '-' : '';
     let scaled = Math.abs(value);
@@ -1036,13 +1038,14 @@ export class HomePage implements OnInit, OnDestroy {
       scaled /= 1000;
       unitIndex++;
     }
-    let rounded = Math.ceil(scaled * 10) / 10;
+    const factor = Math.pow(10, decimals);
+    let rounded = Math.ceil(scaled * factor) / factor;
     // Rounding up can push a value like 999.99K to 1000K - roll it into the next unit
     if (rounded >= 1000 && unitIndex < units.length - 1) {
-      rounded = Math.ceil((rounded / 1000) * 10) / 10;
+      rounded = Math.ceil((rounded / 1000) * factor) / factor;
       unitIndex++;
     }
-    const display = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
+    const display = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(decimals);
     return `${sign}${display}${units[unitIndex]}`;
   }
 
@@ -1050,10 +1053,10 @@ export class HomePage implements OnInit, OnDestroy {
    * Format a currency amount with thousands separators (e.g. $1,234.56),
    * abbreviating to $101K / $1.2M / $1T once it crosses the threshold.
    */
-  formatCurrency(amount: number): string {
+  formatCurrency(amount: number, decimals: number = 1): string {
     const value = amount || 0;
     if (this.isStatAbbreviated(value)) {
-      return '$' + this.abbreviateStatNumber(value);
+      return '$' + this.abbreviateStatNumber(value, decimals);
     }
     return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }

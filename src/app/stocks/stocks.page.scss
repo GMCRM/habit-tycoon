@@ -1236,7 +1236,9 @@ ion-content {
   }
 }
 
-// Medium screen optimization - 4 months display (769-1024px)
+// Tablet-width polish (769-1024px) — layered on top of the stacked mobile
+// layout below: bigger calendar cells and stat text than a phone gets, since
+// the card has more room, but still single-column like mobile.
 @media (max-width: 1024px) and (min-width: 769px) {
   .my-habit-businesses {
     .habit-business-item {
@@ -1258,25 +1260,13 @@ ion-content {
               .stat-value {
                 font-size: 0.8rem;
               }
-              
-              // Ensure adequate space for button container on iPad Safari
-              &:last-child {
-                min-width: 140px;
-                flex: 1.5;
-              }
             }
           }
           
-          // Habit grid optimization for 4 months (better readability)
+          // Bigger calendar cells than a phone gets; width/padding are still
+          // owned by the stacked mobile layout's full-width grid rules.
           app-habit-grid {
-            --grid-size: 14px; // Good size for 4 months
-
-            ::ng-deep .habit-grid-container {
-              max-width: 100% !important;
-              padding: 12px !important;
-              margin: 0 auto !important;
-              width: fit-content !important;
-            }
+            --grid-size: 14px;
 
             ::ng-deep .month-labels {
               font-size: 0.75rem !important;
@@ -1289,8 +1279,13 @@ ion-content {
   }
 }
 
-// Mobile-specific layout optimization
-@media (max-width: 768px) {
+// Stacked card layout — phones through tablets (up to 1024px).
+// Below 1025px there isn't enough width for the icon/calendar/earnings row
+// layout without squeezing the price, stockholders icon and buy/sell
+// buttons into a cramped sidebar next to an oversized calendar, so this
+// range reuses the same single-column mobile layout all the way up to the
+// 1025px breakpoint where the row layout gets real room to work with.
+@media (max-width: 1024px) {
   .my-habit-businesses {
     .habit-business-item {
       .item-content {
@@ -1473,91 +1468,6 @@ ion-content {
   }
 }
 
-// Responsive design
-@media (min-width: 768px) and (max-width: 1023px) {
-  // Tablet styles (iPad, Android tablets)
-  .stats-grid {
-    gap: 16px;
-  }
-
-  .habit-business-item {
-    .item-content {
-      gap: 16px;
-      
-      .business-icon {
-        font-size: 2.8rem;
-        min-width: 70px;
-        padding-right: 8px;
-      }
-
-      .business-icon-img {
-        width: 70px;
-        height: 70px;
-        margin-right: 8px;
-      }
-      
-      .business-info {
-        flex: 1;
-        
-        .business-name {
-          font-size: 1.2rem;
-        }
-        
-        .habit-stats {
-          gap: 8px;
-          flex-wrap: nowrap;
-          justify-content: center;
-          max-width: 100%;
-          margin: 0 auto 12px auto;
-          
-          .stat-item {
-            flex: 1;
-            min-width: 65px;
-            text-align: center;
-          }
-        }
-        
-        // Adjust habit grid for tablet
-        app-habit-grid {
-          ::ng-deep .habit-grid-container {
-            padding: 10px !important;
-            margin: 0 auto !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-
-          ::ng-deep .month-labels {
-            font-size: 9px !important;
-          }
-        }
-      }
-      
-      .earnings-section {
-        min-width: 110px;
-        flex-shrink: 0;
-        
-        .earnings-total {
-          .total-amount {
-            font-size: 1.2rem;
-          }
-          
-          .earnings-label {
-            font-size: 0.7rem;
-          }
-        }
-        
-        .checkin-action {
-          ion-button {
-            font-size: 0.8rem;
-            --padding-start: 14px;
-            --padding-end: 14px;
-          }
-        }
-      }
-    }
-  }
-}
-
 @media (min-width: 1025px) and (max-width: 1400px) {
   // Large Desktop styles (medium-large range)
   .stats-grid {
@@ -1623,7 +1533,8 @@ ion-content {
 
 // Mobile responsive stats — all 3 cards stay side-by-side at every width,
 // they just shrink progressively (matches the Daily Stats cards on Home).
-@media (max-width: 768px) {
+// Shares the same up-to-1024px range as the stacked card layout above.
+@media (max-width: 1024px) {
   .stats-grid {
     gap: 8px;
     padding: 0 12px;
