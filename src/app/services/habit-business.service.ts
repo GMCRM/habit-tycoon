@@ -4,6 +4,7 @@ import { ToastController } from '@ionic/angular/standalone';
 import { HabitIntervalService } from './habit-interval.service';
 import { SupabaseService } from './supabase.service';
 import { OfflineQueueService, OfflineQueuedError } from './offline-queue.service';
+import { HabitCacheService } from './habit-cache.service';
 
 export interface BusinessType {
   id: number;
@@ -142,6 +143,7 @@ export class HabitBusinessService {
   private toastController = inject(ToastController);
   private habitIntervalService = inject(HabitIntervalService);
   private offlineQueue = inject(OfflineQueueService);
+  private habitCache = inject(HabitCacheService);
 
   constructor(supabaseService: SupabaseService) {
     this.supabase = supabaseService.client;
@@ -149,12 +151,53 @@ export class HabitBusinessService {
     // Let the offline queue replay these mutations later by simply calling
     // the same public method again — its own validation runs fresh against
     // live server state at replay time, so a stale queued action fails the
-    // same way a manual retry would.
-    this.offlineQueue.registerHandler('completeHabit', (habitBusinessId: string) => this.completeHabit(habitBusinessId));
-    this.offlineQueue.registerHandler('completeHabitYesterday', (habitBusinessId: string) => this.completeHabitYesterday(habitBusinessId));
-    this.offlineQueue.registerHandler('undoHabitCompletion', (habitBusinessId: string) => this.undoHabitCompletion(habitBusinessId));
+    // same way a manual retry would. completeHabit/completeHabitYesterday/
+    // undoHabitCompletion/createHabitBusiness take an explicit occurredAt (or
+    // for create, a tempId) captured at the moment the user actually acted —
+    // see each method's offline branch — so a replay days later still
+    // resolves against the day it actually happened on, not the reconnect day.
+    this.offlineQueue.registerHandler('completeHabit', (habitBusinessId: string, occurredAt: string) => this.completeHabit(habitBusinessId, occurredAt));
+    this.offlineQueue.registerHandler('completeHabitYesterday', (habitBusinessId: string, occurredAt: string) => this.completeHabitYesterday(habitBusinessId, occurredAt));
+    this.offlineQueue.registerHandler('undoHabitCompletion', (habitBusinessId: string, occurredAt: string) => this.undoHabitCompletion(habitBusinessId, occurredAt));
     this.offlineQueue.registerHandler('purchaseStockShares', (stockId: string, shares: number) => this.purchaseStockShares(stockId, shares));
     this.offlineQueue.registerHandler('sellStockShares', (stockId: string, shares: number) => this.sellStockShares(stockId, shares));
+    this.offlineQueue.registerHandler('createHabitBusiness', (request: CreateHabitBusinessRequest) => this.createHabitBusiness(request));
+    this.offlineQueue.registerHandler('updateHabitBusiness', (habitBusinessId: string, updates: any) => this.updateHabitBusiness(habitBusinessId, updates));
+    this.offlineQueue.registerHandler('deleteHabitBusiness', (habitBusinessId: string) => this.deleteHabitBusiness(habitBusinessId));
+
+    // Once every queued mutation has replayed successfully, the local cache
+    // (habits, business types, profile) may be stale in ways the optimistic
+    // math couldn't predict — e.g. dividends paid in from another user's
+    // stock purchase, or server-smoothed stock price movement. Force a full
+    // refresh from the server so the UI drops the "pending sync" numbers in
+    // favor of true ones.
+    this.offlineQueue.onDrainComplete(() => this.reconcileAfterSync());
+  }
+
+  /** Full refresh of the local cache from the server, run once after a successful queue drain. */
+  private async reconcileAfterSync(): Promise<void> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) return;
+      await Promise.all([
+        this.getUserHabitBusinesses(user.id),
+        this.getBusinessTypes(),
+        this.refreshProfileCache(user.id),
+      ]);
+    } catch (error) {
+      console.error('[HabitBusinessService] reconcileAfterSync failed:', error);
+    }
+  }
+
+  private async refreshProfileCache(userId: string): Promise<void> {
+    const { data, error } = await this.supabase
+      .from('user_profiles')
+      .select('cash, net_worth, name')
+      .eq('id', userId)
+      .single();
+    if (!error && data) {
+      await this.habitCache.setProfile(data);
+    }
   }
 
   /**
@@ -288,15 +331,21 @@ export class HabitBusinessService {
         throw error;
       }
 
+      await this.habitCache.setBusinessTypes(data || []);
       return data || [];
     } catch (error) {
       console.error('Error in getBusinessTypes:', error);
+      const cached = await this.habitCache.getBusinessTypes();
+      if (cached.length > 0) return cached;
       throw error;
     }
   }
 
   /**
-   * Get user's habit-businesses ordered by display_order (for user customization)
+   * Get user's habit-businesses ordered by display_order (for user customization).
+   * Falls back to the last cached snapshot (see HabitCacheService) if the
+   * network read fails — offline, or on a flaky connection — so the habit
+   * list stays usable instead of going blank.
    */
   async getUserHabitBusinesses(userId: string): Promise<HabitBusiness[]> {
     try {
@@ -322,9 +371,12 @@ export class HabitBusinessService {
         throw error;
       }
 
+      await this.habitCache.setHabits(data || []);
       return data || [];
     } catch (error) {
       console.error('Error in getUserHabitBusinesses:', error);
+      const cached = await this.habitCache.getHabits();
+      if (cached.length > 0) return cached;
       throw error;
     }
   }
@@ -332,7 +384,66 @@ export class HabitBusinessService {
   /**
    * Create a new habit-business
    */
+  /**
+   * Offline: the real row (and its business_stocks row) can't be created
+   * without the server, so a client-generated placeholder id stands in for
+   * it until the queued create replays — see OfflineQueueService's tempId
+   * remapping. Returns normally (doesn't throw OfflineQueuedError) so the
+   * caller's existing success path (dismiss the modal, show the new habit)
+   * runs unmodified; the habit just carries a "local-" id and a pending-sync
+   * indicator until it's replaced with the synced version.
+   */
   async createHabitBusiness(request: CreateHabitBusinessRequest): Promise<HabitBusiness> {
+    if (this.offlineQueue.isOffline()) {
+      const businessType = (await this.habitCache.getBusinessTypes()).find(bt => bt.id === request.business_type_id);
+      if (!businessType) {
+        throw new Error("This business type isn't available offline yet — open the shop once while connected first.");
+      }
+      if (request.goal_value < 1 || request.goal_value > 20) {
+        throw new Error('Goal value must be between 1 and 20');
+      }
+      const profile = await this.habitCache.getProfile();
+      if (profile && profile.cash < businessType.base_cost) {
+        const errorMsg = `Insufficient funds. Need $${businessType.base_cost.toFixed(2)}, but you only have $${profile.cash.toFixed(2)}`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const tempId = `local-${crypto.randomUUID()}`;
+      const nowIso = new Date().toISOString();
+      const nextOrderValue = (await this.habitCache.getHabits()).length + 1;
+
+      const placeholder: HabitBusiness = {
+        id: tempId,
+        user_id: '',
+        business_type_id: request.business_type_id,
+        business_name: request.business_name,
+        business_icon: businessType.icon,
+        cost: businessType.base_cost,
+        habit_description: request.habit_description,
+        recurrence_interval: request.recurrence_interval,
+        active_days: request.recurrence_interval === 'specific_days' ? (request.active_days || []) : undefined,
+        goal_value: request.goal_value,
+        current_progress: 0,
+        earnings_per_completion: this.calculateReasonableEarnings(businessType.base_pay, request.goal_value),
+        streak: 0,
+        longest_streak: 0,
+        total_completions: 0,
+        total_earnings: 0,
+        is_active: true,
+        display_order: nextOrderValue,
+        user_custom_order: nextOrderValue,
+        created_at: nowIso,
+        updated_at: nowIso,
+        business_types: businessType,
+      };
+
+      await this.habitCache.upsertHabit(placeholder);
+      await this.habitCache.adjustProfileCash(-businessType.base_cost);
+      await this.offlineQueue.enqueue('createHabitBusiness', [request], `Create "${request.business_name}"`, tempId);
+      await this.showSuccessToast(`✅ ${request.business_name} created — will sync once you're back online.`);
+      return placeholder;
+    }
     try {
       // First, get the business type to determine cost and earnings
       const { data: businessType, error: businessTypeError } = await this.supabase
@@ -576,6 +687,18 @@ export class HabitBusinessService {
     goal_value?: number;
     active_days?: number[];
   }): Promise<void> {
+    if (this.offlineQueue.isOffline()) {
+      const cachedHabit = (await this.habitCache.getHabits()).find(h => h.id === habitBusinessId);
+      if (!cachedHabit) {
+        throw new Error("This habit isn't available offline yet — open it once while connected first.");
+      }
+      if (updates.goal_value !== undefined && (updates.goal_value < 1 || updates.goal_value > 99)) {
+        throw new Error('Goal value must be between 1 and 99');
+      }
+      await this.habitCache.patchHabit(habitBusinessId, { ...updates, updated_at: new Date().toISOString() });
+      await this.offlineQueue.enqueue('updateHabitBusiness', [habitBusinessId, updates], `Update "${cachedHabit.business_name}"`);
+      return;
+    }
     try {
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
@@ -626,6 +749,40 @@ export class HabitBusinessService {
    * Delete (sell) a habit-business with loss penalty to prevent exploitation
    */
   async deleteHabitBusiness(habitBusinessId: string): Promise<number> {
+    if (this.offlineQueue.isOffline()) {
+      const cachedHabits = await this.habitCache.getHabits();
+      const cachedHabit = cachedHabits.find(h => h.id === habitBusinessId);
+      if (!cachedHabit) {
+        throw new Error("This habit isn't available offline yet — open it once while connected first.");
+      }
+      if (cachedHabits.length <= 1) {
+        throw new Error('Cannot delete your only habit business! You must have at least one active business.');
+      }
+
+      const isNeverSynced = habitBusinessId.startsWith('local-');
+      if (isNeverSynced) {
+        // This habit only ever existed locally — cancel its create (and
+        // anything queued against it) out of the queue entirely rather than
+        // creating it server-side just to immediately list it for sale, and
+        // refund the cost that was optimistically deducted when it was
+        // "bought", since nothing was ever actually purchased server-side.
+        await this.offlineQueue.cancelAllForTempId(habitBusinessId);
+        await this.habitCache.adjustProfileCash(cachedHabit.cost || 0);
+        await this.habitCache.removeHabit(habitBusinessId);
+        return 0;
+      }
+
+      // A real, previously-synced habit: the actual Marketplace listing (and
+      // its server-computed price) can only be created online — this just
+      // previews the same guaranteed payout already shown in the confirm
+      // dialog (getMarketplaceListingPrice) as a provisional credit, and
+      // queues the real deletion (which creates the real listing) for replay.
+      const listingPrice = this.getMarketplaceListingPrice(cachedHabit);
+      await this.habitCache.adjustProfileCash(listingPrice);
+      await this.habitCache.removeHabit(habitBusinessId);
+      await this.offlineQueue.enqueue('deleteHabitBusiness', [habitBusinessId], `Delete "${cachedHabit.business_name}"`);
+      return listingPrice;
+    }
     try {
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
@@ -744,15 +901,102 @@ export class HabitBusinessService {
     }
   }
 
-  async completeHabit(habitBusinessId: string): Promise<{ earnings: number; streak: number }> {
+  /**
+   * Pure, cache-only replica of the progress/streak/earnings math completeHabit
+   * performs against live DB state. Used offline to (a) reject a tap the same
+   * way the server would ("goal already completed") without a network round
+   * trip, since the cache is the only copy of "today's" progress we have, and
+   * (b) compute the optimistic state to show immediately. Deliberately omits
+   * the stock-ownership boost — that depends on other users' investor data,
+   * which isn't available offline — so the provisional total can undercount
+   * slightly versus what the real server replay produces; reconcileAfterSync()
+   * corrects it once back online. Returns null if the period's goal is
+   * already met (nothing to apply).
+   */
+  private previewCompletion(habit: HabitBusiness, occurredAt: string): {
+    currentProgress: number;
+    isGoalCompleted: boolean;
+    newStreak: number;
+    totalEarnings: number;
+    completionTime: Date;
+  } | null {
+    const now = new Date(occurredAt);
+    const interval = this.habitIntervalService.resolveInterval(habit);
+    const periodStart = this.habitIntervalService.getCurrentPeriodStart(interval, now);
+
+    let currentProgress = habit.current_progress || 0;
+    if (habit.last_completed_at && new Date(habit.last_completed_at) < periodStart) {
+      currentProgress = 0;
+    }
+
+    const goalValue = habit.goal_value || 1;
+    if (currentProgress >= goalValue) return null;
+
+    currentProgress += 1;
+    const isGoalCompleted = currentProgress >= goalValue;
+
+    // getEffectiveStreak already encodes "was the previous period's goal
+    // actually met" from the fields a cached habit already carries — reuse
+    // it rather than re-deriving that from a completions table we don't have.
+    let newStreak = habit.streak;
+    if (isGoalCompleted) {
+      const effectiveStreak = this.habitIntervalService.getEffectiveStreak(habit, now);
+      newStreak = effectiveStreak > 0 ? effectiveStreak + 1 : 1;
+    }
+
+    const baseEarnings = habit.earnings_per_completion;
+    const streakMultiplier = isGoalCompleted && newStreak > 1 ? Math.min((newStreak - 1) * 0.1, 1) : 0;
+    const totalEarnings = baseEarnings + baseEarnings * streakMultiplier;
+
+    return { currentProgress, isGoalCompleted, newStreak, totalEarnings, completionTime: now };
+  }
+
+  /** Applies a previewCompletion() result to the local cache (habit + profile cash) so the UI updates immediately while offline. */
+  private async applyOptimisticCompletion(habit: HabitBusiness, preview: NonNullable<ReturnType<HabitBusinessService['previewCompletion']>>): Promise<void> {
+    await this.habitCache.patchHabit(habit.id, {
+      current_progress: preview.currentProgress,
+      streak: preview.isGoalCompleted ? preview.newStreak : habit.streak,
+      total_completions: habit.total_completions + 1,
+      total_earnings: habit.total_earnings + preview.totalEarnings,
+      last_completed_at: preview.completionTime.toISOString(),
+      updated_at: preview.completionTime.toISOString(),
+    });
+    await this.habitCache.adjustProfileCash(preview.totalEarnings);
+  }
+
+  async completeHabit(habitBusinessId: string, occurredAt: string = new Date().toISOString()): Promise<{ earnings: number; streak: number }> {
     if (this.offlineQueue.isOffline()) {
-      await this.offlineQueue.enqueue('completeHabit', [habitBusinessId], 'Complete habit');
+      const cachedHabit = (await this.habitCache.getHabits()).find(h => h.id === habitBusinessId);
+      if (!cachedHabit) {
+        throw new Error("This habit isn't available offline yet — open it once while connected first.");
+      }
+      const preview = this.previewCompletion(cachedHabit, occurredAt);
+      if (!preview) {
+        const errorMsg = `Goal already completed! ${cachedHabit.current_progress}/${cachedHabit.goal_value || 1} done.`;
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
+      }
+      await this.habitCache.pushPendingDelta(habitBusinessId, {
+        earnings: preview.totalEarnings,
+        previousStreak: cachedHabit.streak,
+        previousProgress: cachedHabit.current_progress || 0,
+        previousTotalCompletions: cachedHabit.total_completions,
+        previousTotalEarnings: cachedHabit.total_earnings,
+        previousLastCompletedAt: cachedHabit.last_completed_at || null,
+      });
+      await this.applyOptimisticCompletion(cachedHabit, preview);
+      await this.offlineQueue.enqueue('completeHabit', [habitBusinessId, occurredAt], `Complete "${cachedHabit.business_name}"`);
       throw new OfflineQueuedError("You're offline — this completion will sync automatically once you're back online.");
     }
     try {
       // Validate that we're not trying to complete a habit for a future date
       this.validateNotFutureDate();
-      
+
+      // Anchor "now" to occurredAt so a replayed (backdated) completion is
+      // bucketed into the period it actually happened in, not the period at
+      // replay time — see the class-level comment on registerHandler above.
+      const now = new Date(occurredAt);
+
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
       if (userError || !user) {
@@ -773,7 +1017,7 @@ export class HabitBusinessService {
 
       // Resolve the habit's recurrence interval
       const interval = this.habitIntervalService.resolveInterval(habitBusiness);
-      const periodStart = this.habitIntervalService.getCurrentPeriodStart(interval);
+      const periodStart = this.habitIntervalService.getCurrentPeriodStart(interval, now);
 
       let currentProgress = habitBusiness.current_progress || 0;
 
@@ -819,9 +1063,8 @@ export class HabitBusinessService {
 
       // Increment progress
       currentProgress += 1;
-      
+
       // Calculate streak only when the full goal is completed
-      const now = new Date();
       let newStreak = habitBusiness.streak;
       const isGoalCompleted = currentProgress >= goalValue;
 
@@ -830,7 +1073,7 @@ export class HabitBusinessService {
         // (wasCompletedInPreviousPeriod only looks at last_completed_at, which
         // is updated on every partial-progress tap — checking the completion
         // count against goal_value is required for multi-completion habits.)
-        const previousWindow = this.habitIntervalService.getPreviousPeriodWindow(habitBusiness);
+        const previousWindow = this.habitIntervalService.getPreviousPeriodWindow(habitBusiness, now);
         let previousPeriodGoalMet = false;
         if (previousWindow) {
           const { count: previousPeriodCount } = await this.supabase
@@ -895,14 +1138,12 @@ export class HabitBusinessService {
 
       const totalEarnings = baseTotal;
 
-      // CRITICAL FIX: Ensure completion is recorded for "today" in USER'S local timezone
-      // This prevents habits from being marked as completed "tomorrow" due to server timezone differences
-      const currentTime = new Date();
+      // Record the completion at `now` — occurredAt for a replayed offline
+      // tap, actual current time for a live one. Date-bucketing elsewhere is
+      // done via getLocalDateString(new Date(completed_at)), which is
+      // timezone-safe regardless of what time of day this is.
+      const currentTime = now;
       const localDateString = this.getLocalDateString(currentTime); // Get today as YYYY-MM-DD in USER's timezone
-
-      // Use the real completion moment. Date-bucketing elsewhere is done via
-      // getLocalDateString(new Date(completed_at)), which is timezone-safe regardless
-      // of what time of day this is, so there's no need to fake the time.
       const completionTime = currentTime;
 
       console.log('🕐 Recording completion for USER LOCAL DATE:', {
@@ -1068,9 +1309,71 @@ export class HabitBusinessService {
    * that were not completed yesterday. Pays earnings, updates streak, and
    * distributes dividends to stockholders — all at yesterday's rate.
    */
-  async completeHabitYesterday(habitBusinessId: string): Promise<void> {
+  /** Cache-only replica of completeHabitYesterday's validation + streak/earnings math (see previewCompletion for why the stock boost is omitted). */
+  private previewCompletionYesterday(habit: HabitBusiness, occurredAt: string): {
+    newStreak: number;
+    totalEarnings: number;
+    completionTime: Date;
+  } | null {
+    const now = new Date(occurredAt);
+    if (this.habitIntervalService.resolveInterval(habit) !== '24h') return null;
+
+    const yesterdayStart = this.habitIntervalService.getPreviousPeriodStart('24h', now);
+    const todayStart = this.habitIntervalService.getCurrentPeriodStart('24h', now);
+    const dayBeforeYesterdayStart = new Date(yesterdayStart.getTime() - 24 * 60 * 60 * 1000);
+
+    if (habit.last_completed_at) {
+      const lastCompleted = new Date(habit.last_completed_at);
+      if (lastCompleted >= yesterdayStart && lastCompleted < todayStart) return null; // already completed yesterday
+    }
+
+    let newStreak = 1;
+    if (habit.last_completed_at) {
+      const lastCompleted = new Date(habit.last_completed_at);
+      newStreak = (lastCompleted >= dayBeforeYesterdayStart && lastCompleted < yesterdayStart)
+        ? (habit.streak || 0) + 1
+        : 1;
+    }
+
+    const baseEarnings = habit.earnings_per_completion;
+    const streakMultiplier = newStreak > 1 ? Math.min((newStreak - 1) * 0.1, 1) : 0;
+    const totalEarnings = baseEarnings + baseEarnings * streakMultiplier;
+
+    const yesterdayDateString = this.getLocalDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+    const completionTime = new Date(`${yesterdayDateString}T18:00:00`);
+
+    return { newStreak, totalEarnings, completionTime };
+  }
+
+  async completeHabitYesterday(habitBusinessId: string, occurredAt: string = new Date().toISOString()): Promise<void> {
     if (this.offlineQueue.isOffline()) {
-      await this.offlineQueue.enqueue('completeHabitYesterday', [habitBusinessId], "Complete yesterday's habit");
+      const cachedHabit = (await this.habitCache.getHabits()).find(h => h.id === habitBusinessId);
+      if (!cachedHabit) {
+        throw new Error("This habit isn't available offline yet — open it once while connected first.");
+      }
+      const preview = this.previewCompletionYesterday(cachedHabit, occurredAt);
+      if (!preview) {
+        const errorMsg = 'This habit was already completed yesterday, or is not a daily habit!';
+        await this.showErrorToast(errorMsg);
+        throw new Error(errorMsg);
+      }
+      await this.habitCache.pushPendingDelta(habitBusinessId, {
+        earnings: preview.totalEarnings,
+        previousStreak: cachedHabit.streak,
+        previousProgress: cachedHabit.current_progress || 0,
+        previousTotalCompletions: cachedHabit.total_completions,
+        previousTotalEarnings: cachedHabit.total_earnings,
+        previousLastCompletedAt: cachedHabit.last_completed_at || null,
+      });
+      await this.habitCache.patchHabit(habitBusinessId, {
+        streak: preview.newStreak,
+        total_completions: cachedHabit.total_completions + 1,
+        total_earnings: cachedHabit.total_earnings + preview.totalEarnings,
+        last_completed_at: preview.completionTime.toISOString(),
+        updated_at: new Date(occurredAt).toISOString(),
+      });
+      await this.habitCache.adjustProfileCash(preview.totalEarnings);
+      await this.offlineQueue.enqueue('completeHabitYesterday', [habitBusinessId, occurredAt], `Complete "${cachedHabit.business_name}" for yesterday`);
       throw new OfflineQueuedError("You're offline — this will sync automatically once you're back online.");
     }
     try {
@@ -1089,7 +1392,9 @@ export class HabitBusinessService {
       const interval = this.habitIntervalService.resolveInterval(habitBusiness);
       if (interval !== '24h') throw new Error('Backdated completion only available for daily habits');
 
-      const now = new Date();
+      // Anchor "now" to occurredAt so a replayed completion resolves against
+      // the day it actually happened on, not the reconnect day.
+      const now = new Date(occurredAt);
       const yesterdayStart = this.habitIntervalService.getPreviousPeriodStart('24h', now);
       const todayStart = this.habitIntervalService.getCurrentPeriodStart('24h', now);
 
@@ -1243,9 +1548,38 @@ export class HabitBusinessService {
   /**
    * Undo a habit completion for today
    */
-  async undoHabitCompletion(habitBusinessId: string): Promise<{ earnings: number }> {
+  async undoHabitCompletion(habitBusinessId: string, occurredAt: string = new Date().toISOString()): Promise<{ earnings: number }> {
     if (this.offlineQueue.isOffline()) {
-      await this.offlineQueue.enqueue('undoHabitCompletion', [habitBusinessId], 'Undo habit completion');
+      // If the completion being undone hasn't synced yet (it's still sitting
+      // in the offline queue from earlier this session), there's nothing to
+      // reverse server-side — just cancel it out locally instead of queuing
+      // a second mutation to undo the first once both eventually replay.
+      const cancelled =
+        (await this.offlineQueue.cancelLastQueued('completeHabit', args => args[0] === habitBusinessId)) ??
+        (await this.offlineQueue.cancelLastQueued('completeHabitYesterday', args => args[0] === habitBusinessId));
+
+      if (cancelled) {
+        const delta = await this.habitCache.popPendingDelta(habitBusinessId);
+        if (delta) {
+          await this.habitCache.patchHabit(habitBusinessId, {
+            streak: delta.previousStreak,
+            current_progress: delta.previousProgress,
+            total_completions: delta.previousTotalCompletions,
+            total_earnings: delta.previousTotalEarnings,
+            last_completed_at: delta.previousLastCompletedAt ?? undefined,
+          });
+          await this.habitCache.adjustProfileCash(-delta.earnings);
+          return { earnings: delta.earnings };
+        }
+        return { earnings: 0 };
+      }
+
+      // Nothing queued to cancel — this completion was already synced before
+      // we went offline, so reversing it needs the real record server-side.
+      // We can't safely compute the exact reversal locally without it, so
+      // this one genuinely has to wait for reconnect.
+      const cachedHabit = (await this.habitCache.getHabits()).find(h => h.id === habitBusinessId);
+      await this.offlineQueue.enqueue('undoHabitCompletion', [habitBusinessId, occurredAt], `Undo "${cachedHabit?.business_name ?? 'habit'}" completion`);
       throw new OfflineQueuedError("You're offline — this undo will sync automatically once you're back online.");
     }
     try {
@@ -1267,24 +1601,26 @@ export class HabitBusinessService {
         throw new Error('Habit-business not found');
       }
 
-      // Check if there's a completion to undo for today
-      // Use local date comparison to check last_completed_at
-      const today = this.getLocalDateString();
-      const lastCompleted = habitBusiness.last_completed_at ? 
+      // Check if there's a completion to undo for the target day (occurredAt,
+      // anchored the same way completeHabit is, so a queued undo that's
+      // replayed after a day boundary still targets the right day).
+      const referenceNow = new Date(occurredAt);
+      const today = this.getLocalDateString(referenceNow);
+      const lastCompleted = habitBusiness.last_completed_at ?
         this.getLocalDateString(new Date(habitBusiness.last_completed_at)) : null;
-      
+
       console.log('📅 Checking undo eligibility - Today:', today, 'Last completed:', lastCompleted);
-      
+
       if (lastCompleted !== today) {
         throw new Error('No completion found for today to undo');
       }
 
       // Get today's completion record - use broader time range to account for timezone differences
-      const todayStart = new Date();
+      const todayStart = new Date(referenceNow);
       todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
+      const todayEnd = new Date(referenceNow);
       todayEnd.setHours(23, 59, 59, 999);
-      
+
       // Convert to ISO strings for database query
       const todayStartISO = todayStart.toISOString();
       const todayEndISO = todayEnd.toISOString();
@@ -1399,7 +1735,7 @@ export class HabitBusinessService {
   async getTodaysHabits(userId: string): Promise<HabitBusiness[]> {
     try {
       const today = this.getLocalDateString();
-      
+
       const { data, error } = await this.supabase
         .from('habit_businesses')
         .select(`
@@ -1422,9 +1758,12 @@ export class HabitBusinessService {
         throw error;
       }
 
+      await this.habitCache.setHabits(data || []);
       return data || [];
     } catch (error) {
       console.error('Error in getTodaysHabits:', error);
+      const cached = await this.habitCache.getHabits();
+      if (cached.length > 0) return cached;
       throw error;
     }
   }

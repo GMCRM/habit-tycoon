@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
 import { App } from '@capacitor/app';
+import { Network } from '@capacitor/network';
 
 const QUEUE_STORAGE_KEY = 'offline_mutation_queue_v1';
 
@@ -25,6 +26,16 @@ export interface QueuedMutation {
   description: string;
   createdAt: string;
   attempts: number;
+  /**
+   * Set on a mutation (e.g. createHabitBusiness) whose successful replay
+   * produces a real server id for something that was only known locally by
+   * a client-generated placeholder id until now. When set, drain() rewrites
+   * args[0] of every mutation still queued behind this one that references
+   * `tempId` to the real id the handler's result comes back with, before
+   * replaying them — so a habit created offline can be completed, edited,
+   * or deleted offline too, in the same session, before it's ever synced.
+   */
+  tempId?: string;
 }
 
 type MutationHandler = (...args: any[]) => Promise<any>;
@@ -50,6 +61,15 @@ type MutationHandler = (...args: any[]) => Promise<any>;
 export class OfflineQueueService {
   private handlers = new Map<string, MutationHandler>();
   private draining = false;
+  private drainCompleteCallbacks: Array<() => void | Promise<void>> = [];
+
+  // Cached synchronously so isOffline() can stay a plain boolean check (it's
+  // called inline from many synchronous branches), while the actual truth
+  // comes from the native Network plugin — navigator.onLine is unreliable in
+  // WKWebView (e.g. doesn't reflect "connected but no real internet" states).
+  // Starts from navigator.onLine as a best-effort guess until the first
+  // Network.getStatus() resolves just after construction.
+  private online = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
   private readonly pendingCountSubject = new BehaviorSubject<number>(0);
   readonly pendingCount$ = this.pendingCountSubject.asObservable();
@@ -57,14 +77,15 @@ export class OfflineQueueService {
   constructor() {
     this.refreshPendingCount();
 
-    window.addEventListener('online', () => this.drain());
+    Network.getStatus().then((status) => {
+      this.online = status.connected;
+      if (status.connected) this.drain();
+    });
+    Network.addListener('networkStatusChange', (status) => {
+      this.online = status.connected;
+      if (status.connected) this.drain();
+    });
     App.addListener('resume', () => this.drain());
-
-    if (navigator.onLine) {
-      // Catch anything left over from a previous session (app was killed
-      // while offline with items still queued).
-      this.drain();
-    }
   }
 
   /**
@@ -76,16 +97,23 @@ export class OfflineQueueService {
     this.handlers.set(type, handler);
   }
 
+  /** Registers a callback fired once after a drain() that actually replayed at least one mutation empties the queue. */
+  onDrainComplete(callback: () => void | Promise<void>): void {
+    this.drainCompleteCallbacks.push(callback);
+  }
+
   isOffline(): boolean {
-    return !navigator.onLine;
+    return !this.online;
   }
 
   /**
    * Queues a mutation for later replay. `description` is a short,
    * user-facing summary (e.g. `Complete "Morning Run"`) used for the
-   * pending-sync UI.
+   * pending-sync UI. `tempId`, if given, marks this as the mutation that
+   * will resolve a client-generated placeholder id to a real one (see
+   * QueuedMutation.tempId).
    */
-  async enqueue(type: string, args: any[], description: string): Promise<void> {
+  async enqueue(type: string, args: any[], description: string, tempId?: string): Promise<void> {
     const queue = await this.getQueue();
     queue.push({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -94,6 +122,7 @@ export class OfflineQueueService {
       description,
       createdAt: new Date().toISOString(),
       attempts: 0,
+      ...(tempId ? { tempId } : {}),
     });
     await this.saveQueue(queue);
   }
@@ -119,6 +148,41 @@ export class OfflineQueueService {
   }
 
   /**
+   * Removes and returns the most recently queued not-yet-replayed mutation
+   * of `type` whose args satisfy `matchArgs`, without ever calling its
+   * handler. Used to cancel a pending action out entirely (e.g. undoing a
+   * completion that hasn't synced yet — there's nothing to reverse
+   * server-side, so there's nothing to replay either) instead of queuing a
+   * second mutation to reverse the first once both eventually replay.
+   * Returns null if no matching mutation is queued (i.e. the thing being
+   * undone was already synced before we went offline, and does need a real
+   * replayed reversal).
+   */
+  async cancelLastQueued(type: string, matchArgs: (args: any[]) => boolean): Promise<QueuedMutation | null> {
+    const queue = await this.getQueue();
+    for (let i = queue.length - 1; i >= 0; i--) {
+      if (queue[i].type === type && matchArgs(queue[i].args)) {
+        const [removed] = queue.splice(i, 1);
+        await this.saveQueue(queue);
+        return removed;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Removes every still-queued mutation associated with a given temp id —
+   * the create itself plus anything queued against it since (completions,
+   * edits). Used when a habit created offline is also deleted offline
+   * before ever syncing: none of it needs to reach the server at all.
+   */
+  async cancelAllForTempId(tempId: string): Promise<void> {
+    const queue = await this.getQueue();
+    const filtered = queue.filter((m) => m.tempId !== tempId && m.args[0] !== tempId);
+    await this.saveQueue(filtered);
+  }
+
+  /**
    * Replays every queued mutation, in the order they were queued. Stops
    * immediately (without dropping remaining items) if a replay fails
    * because we're still offline, so the whole queue is retried as a unit
@@ -131,6 +195,7 @@ export class OfflineQueueService {
   async drain(): Promise<void> {
     if (this.draining || this.isOffline()) return;
     this.draining = true;
+    let replayedAny = false;
 
     try {
       let queue = await this.getQueue();
@@ -148,8 +213,21 @@ export class OfflineQueueService {
         }
 
         try {
-          await handler(...mutation.args);
-          queue = queue.slice(1);
+          const result = await handler(...mutation.args);
+          replayedAny = true;
+          let remaining = queue.slice(1);
+
+          // This mutation resolved a placeholder id to a real one — rewrite
+          // it everywhere it's still referenced (args[0] by convention) in
+          // whatever's left in the queue before any of it replays.
+          if (mutation.tempId && result?.id) {
+            remaining = remaining.map((m) => ({
+              ...m,
+              args: m.args.map((a, idx) => (idx === 0 && a === mutation.tempId ? result.id : a)),
+            }));
+          }
+
+          queue = remaining;
           await this.saveQueue(queue);
         } catch (error) {
           if (this.isOffline()) {
@@ -162,6 +240,16 @@ export class OfflineQueueService {
           console.warn(`[OfflineQueue] Dropping queued "${mutation.description}" — replay failed:`, error);
           queue = queue.slice(1);
           await this.saveQueue(queue);
+        }
+      }
+
+      if (replayedAny && queue.length === 0) {
+        for (const cb of this.drainCompleteCallbacks) {
+          try {
+            await cb();
+          } catch (error) {
+            console.error('[OfflineQueue] onDrainComplete callback failed:', error);
+          }
         }
       }
     } finally {

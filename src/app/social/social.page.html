@@ -37,6 +37,12 @@
 
       <!-- Main Content -->
       <div *ngIf="!isLoading">
+        <!-- Friends, notifications, leaderboard, and marketplace all need a live
+             connection — unlike habit tracking, this data isn't cached locally. -->
+        <div *ngIf="isOffline" class="offline-social-banner">
+          📡 You're offline — friends, leaderboard, and marketplace will refresh once you're back online.
+        </div>
+
         <!-- Segment Navigation -->
         <ion-segment
           [value]="selectedSegment"
@@ -527,6 +533,39 @@
           <div class="marketplace-header">
             <h2>🏪 Marketplace</h2>
           </div>
+
+          <ion-accordion-group class="marketplace-help">
+            <ion-accordion value="how-it-works">
+              <ion-item slot="header" color="none">
+                <ion-icon name="help-circle-outline" slot="start"></ion-icon>
+                <ion-label>How the Marketplace works</ion-label>
+              </ion-item>
+              <div class="ion-padding marketplace-help-content" slot="content">
+                <p>
+                  When you or a friend upgrades a business — or deletes a habit
+                  — the old business gets listed here for 24 hours. Only you
+                  and your accepted friends can see and buy each other's
+                  listings.
+                </p>
+                <p>
+                  <strong>Streak bonus:</strong> a listing's price includes a
+                  bonus based on the seller's streak when it was listed, up to
+                  +100%.
+                </p>
+                <p>
+                  <strong>Buying:</strong> tap "Buy" to purchase a listing —
+                  the price comes out of your cash. You'll then choose to
+                  merge it into one of your existing businesses or start a
+                  brand-new habit around it.
+                </p>
+                <p>
+                  <strong>Guaranteed payout:</strong> businesses listed from a
+                  deleted habit are guaranteed — if no one buys them before
+                  they expire, the seller is automatically paid out.
+                </p>
+              </div>
+            </ion-accordion>
+          </ion-accordion-group>
 
           <ion-card *ngIf="unresolvedPurchase" class="unresolved-purchase-card">
             <ion-card-content>

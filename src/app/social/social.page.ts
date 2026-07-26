@@ -5,7 +5,9 @@ import { Router, RouterLink } from '@angular/router';
 import {
   IonContent, IonHeader, IonTitle, IonToolbar,
   IonCard, IonCardContent, IonSegment, IonSegmentButton,
-  IonButton, IonIcon, IonLabel, IonBadge, IonSpinner, ToastController, AlertController, ModalController
+  IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
+  IonAccordion, IonAccordionGroup, IonItem,
+  ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
@@ -14,13 +16,15 @@ import { SocialService, Friend } from '../services/social.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { MarketplaceService, MarketplaceListing, MarketplacePurchase } from '../services/marketplace.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
+import { OfflineQueueService } from '../services/offline-queue.service';
 import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
-  notifications, checkmark, close, notificationsOutline, settings, trashOutline, storefront } from 'ionicons/icons';
+  notifications, checkmark, close, notificationsOutline, settings, trashOutline, storefront,
+  helpCircleOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-social',
@@ -31,6 +35,7 @@ import {
     IonContent, IonHeader, IonTitle, IonToolbar,
     IonCard, IonSegment, IonSegmentButton,
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
+    IonAccordion, IonAccordionGroup, IonItem,
     BottomNavComponent, CommonModule, RouterLink, BusinessIconPipe
   ],
 })
@@ -69,7 +74,13 @@ export class SocialPage implements OnInit, OnDestroy {
   
   // UI state
   isLoading = false;
-  
+
+  /** Friends/leaderboard/marketplace aren't cached locally (see HabitCacheService, which only covers habit tracking), so just surface connectivity instead. */
+  get isOffline(): boolean {
+    return this.offlineQueueService.isOffline();
+  }
+
+
   constructor(
     private router: Router,
     private authService: AuthService,
@@ -79,9 +90,10 @@ export class SocialPage implements OnInit, OnDestroy {
     private countdownTickService: CountdownTickService,
     private toastController: ToastController,
     private alertController: AlertController,
-    private modalController: ModalController
+    private modalController: ModalController,
+    private offlineQueueService: OfflineQueueService
   ) {
-    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront});
+    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline});
 
     // Restore the previously selected tab from localStorage (only if the user has explicitly chosen one)
     const savedTab = localStorage.getItem('social-selected-tab');

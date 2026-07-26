@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from './supabase.service';
+import { HabitCacheService } from './habit-cache.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +12,7 @@ import { SupabaseService } from './supabase.service';
 export class AuthService {
   public supabase: SupabaseClient;
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(private supabaseService: SupabaseService, private habitCache: HabitCacheService) {
     this.supabase = supabaseService.client;
   }
 
@@ -228,8 +229,24 @@ export class AuthService {
     }
   }
 
-  getUser() {
-    return this.supabase.auth.getUser();
+  /**
+   * supabase.auth.getUser() revalidates the JWT with a network round-trip
+   * every time — offline, that fails and would otherwise look identical to
+   * "not logged in" to every caller (home.page.ts's loadCurrentUser() would
+   * redirect straight to /login). Fall back to the session Supabase already
+   * persists locally (via CapacitorPreferencesStorage) — no network call —
+   * whenever the live check can't complete, so the user stays authenticated
+   * offline until their token actually expires.
+   */
+  async getUser() {
+    const result = await this.supabase.auth.getUser();
+    if (!result.error) return result;
+
+    const { data: { session } } = await this.supabase.auth.getSession();
+    if (session?.user) {
+      return { data: { user: session.user }, error: null };
+    }
+    return result;
   }
 
   // Get current session
@@ -300,6 +317,11 @@ export class AuthService {
       console.error('❌ Profile fetch error:', error);
       throw error;
     }
+    // Keep the offline cache warm on every successful fetch, not just after an
+    // offline-queue drain — otherwise a user who goes offline before ever
+    // queuing an action has no cached snapshot and falls back to a fresh
+    // $100 starting balance instead of their real cash/net worth.
+    await this.habitCache.setProfile({ cash: data.cash, net_worth: data.net_worth, name: data.name });
     return data;
   }
 
@@ -362,6 +384,7 @@ export class AuthService {
             }
           } else {
             console.log('✅ Profile created/updated successfully:', data);
+            await this.habitCache.setProfile({ cash: data.cash, net_worth: data.net_worth, name: data.name });
             return data;
           }
         } catch (error) {
@@ -370,7 +393,7 @@ export class AuthService {
             throw error;
           }
         }
-        
+
         retryCount++;
         console.log(`⏳ Retrying profile creation in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));

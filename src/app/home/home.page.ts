@@ -12,6 +12,7 @@ import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { OfflineQueuedError, OfflineQueueService } from '../services/offline-queue.service';
+import { HabitCacheService } from '../services/habit-cache.service';
 import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
@@ -86,7 +87,8 @@ export class HomePage implements OnInit, OnDestroy {
     private modalController: ModalController,
     private habitIntervalService: HabitIntervalService,
     private countdownTickService: CountdownTickService,
-    private offlineQueueService: OfflineQueueService
+    private offlineQueueService: OfflineQueueService,
+    private habitCacheService: HabitCacheService
   ) {
     addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline });
     this.setRandomTagline();
@@ -129,6 +131,21 @@ export class HomePage implements OnInit, OnDestroy {
       console.log('🔄 Verifying auth state before loading home data...');
       this.loadCurrentUser();
     }
+  }
+
+  /**
+   * Reflects an offline-queued action's optimistic cache update in the UI
+   * immediately, instead of leaving the screen stale until the device is
+   * back online. Safe to call while offline: getUserHabitBusinesses/
+   * getTodaysHabits fall back to the (just-updated) cache when the network
+   * call fails, so this doesn't throw.
+   */
+  private async refreshAfterOfflineQueue() {
+    const cachedProfile = await this.habitCacheService.getProfile();
+    if (cachedProfile) {
+      this.userProfile = { ...this.userProfile, ...cachedProfile };
+    }
+    await this.loadDashboardData();
   }
 
   /**
@@ -183,8 +200,11 @@ export class HomePage implements OnInit, OnDestroy {
         console.log('User profile ensured:', this.userProfile);
         } catch (error) {
         console.error('Profile creation/loading failed:', error);
-        // Initialize default profile if everything fails
-        this.userProfile = {
+        // Most likely offline — fall back to the last synced profile snapshot
+        // instead of a hardcoded $100 starting balance, so cash/net worth
+        // don't visibly reset every time the app opens without connectivity.
+        const cachedProfile = await this.habitCacheService.getProfile();
+        this.userProfile = cachedProfile || {
           name: user.user_metadata?.['name'] || 'Entrepreneur',
           cash: 100.00,
           net_worth: 100.00
@@ -356,6 +376,11 @@ export class HomePage implements OnInit, OnDestroy {
         color: isOfflineQueued ? 'warning' : 'danger'
       });
       await errorToast.present();
+
+      if (isOfflineQueued) {
+        this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+        await this.refreshAfterOfflineQueue();
+      }
     }
   }
 
@@ -466,6 +491,11 @@ export class HomePage implements OnInit, OnDestroy {
         color: isOfflineQueued ? 'warning' : 'danger'
       });
       await errorToast.present();
+
+      if (isOfflineQueued) {
+        this.habitUpdateService.emitHabitUndo(habitBusiness.id);
+        await this.refreshAfterOfflineQueue();
+      }
     }
   }
 
@@ -942,6 +972,11 @@ export class HomePage implements OnInit, OnDestroy {
                     color: isOfflineQueued ? 'warning' : 'danger'
                   });
                   await errorToast.present();
+
+                  if (isOfflineQueued) {
+                    this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+                    await this.refreshAfterOfflineQueue();
+                  }
                 } finally {
                   done();
                 }
@@ -1203,6 +1238,11 @@ export class HomePage implements OnInit, OnDestroy {
         color: isOfflineQueued ? 'warning' : 'danger'
       });
       await errorToast.present();
+
+      if (isOfflineQueued) {
+        this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+        await this.refreshAfterOfflineQueue();
+      }
     }
   }
 

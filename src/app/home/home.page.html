@@ -433,6 +433,7 @@
                     <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
                   </div>
                   <h3 class="business-name">{{ hb.business_name }}</h3>
+                  <span *ngIf="hb.id.startsWith('local-')" class="pending-sync-chip">📡 Pending sync</span>
 
                   <!-- Description is hidden by default; tap to view it in a popup -->
                   <button

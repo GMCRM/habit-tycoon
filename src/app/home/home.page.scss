@@ -47,6 +47,17 @@ button, span, div, ion-button {
   text-align: center;
 }
 
+.pending-sync-chip {
+  display: inline-block;
+  background: var(--ion-color-warning, #ffc409);
+  color: var(--ion-color-warning-contrast, #000);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin: 2px 0 6px;
+}
+
 // Header toolbar - keep title + action buttons on one row on narrow phones
 .home-toolbar {
   ion-title {
