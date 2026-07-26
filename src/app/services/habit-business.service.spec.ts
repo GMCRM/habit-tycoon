@@ -765,6 +765,7 @@ describe('HabitBusinessService', () => {
         if (table === 'user_profiles') return profileQuery;
         return makeQuery();
       });
+      mockSupabaseClient.rpc.and.resolveTo({ data: 70, error: null });
 
       const sellValue = await service.deleteHabitBusiness('h1');
 
@@ -873,27 +874,23 @@ describe('HabitBusinessService', () => {
         },
         error: null
       });
-      const marketplaceListingsQuery = makeQuery({ data: null, error: null });
-
       mockSupabaseClient.from.and.callFake((table: string) => {
         if (table === 'business_types') return businessTypesQuery;
         if (table === 'user_profiles') return userProfilesQuery;
         if (table === 'habit_businesses') return habitBusinessesQuery;
-        if (table === 'marketplace_listings') return marketplaceListingsQuery;
         return makeQuery();
       });
+      mockSupabaseClient.rpc.and.resolveTo({ data: 861, error: null });
 
       await service.upgradeHabitBusiness('habit-1', 2, 100);
 
-      expect(marketplaceListingsQuery.insert).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          seller_id: 'user-1',
-          habit_business_id: 'habit-1',
-          business_name: 'Lemonade Stand',
-          reason: 'upgrade',
-          listing_price: 861 // floor(1000*0.7)=700, streak 23 → 700*1.23
-        })
-      );
+      // marketplace_listings has no client INSERT policy — the listing is created
+      // by the create_marketplace_listing SECURITY DEFINER RPC instead.
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('create_marketplace_listing', {
+        p_user_id: 'user-1',
+        p_habit_business_id: 'habit-1',
+        p_reason: 'upgrade'
+      });
     });
 
     it('should list a deleted habit on the Marketplace instead of paying out immediately', async () => {
@@ -906,8 +903,6 @@ describe('HabitBusinessService', () => {
         },
         error: null
       });
-      const marketplaceListingsQuery = makeQuery({ data: null, error: null });
-
       let fromCallIdx = 0;
       mockSupabaseClient.from.and.callFake((table: string) => {
         if (table === 'habit_businesses') {
@@ -929,16 +924,20 @@ describe('HabitBusinessService', () => {
           }
           return habitQuery; // for the deactivate update
         }
-        if (table === 'marketplace_listings') return marketplaceListingsQuery;
         return makeQuery();
       });
+      mockSupabaseClient.rpc.and.resolveTo({ data: 861, error: null });
 
       const listingPrice = await service.deleteHabitBusiness('h1');
 
       expect(listingPrice).toBe(861); // floor(1000*0.7)=700, streak 23 → 700*1.23
-      expect(marketplaceListingsQuery.insert).toHaveBeenCalledWith(
-        jasmine.objectContaining({ reason: 'habit_deletion', listing_price: 861 })
-      );
+      // marketplace_listings has no client INSERT policy — the listing is created
+      // by the create_marketplace_listing SECURITY DEFINER RPC instead.
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('create_marketplace_listing', {
+        p_user_id: 'user-1',
+        p_habit_business_id: 'h1',
+        p_reason: 'habit_deletion'
+      });
 
       // No table in this flow should be credited cash directly — the seller is paid
       // out via the Marketplace purchase/expiry RPCs instead, not an instant payout.

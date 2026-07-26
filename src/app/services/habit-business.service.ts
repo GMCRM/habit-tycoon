@@ -211,30 +211,20 @@ export class HabitBusinessService {
     business: HabitBusiness,
     reason: 'upgrade' | 'habit_deletion'
   ): Promise<number> {
-    const baseSellValue = this.getBaseSellValue(business);
-    const listingPrice = this.calculateMarketplaceListingPrice(baseSellValue, business.streak || 0);
-
-    const { error } = await this.supabase
-      .from('marketplace_listings')
-      .insert({
-        seller_id: userId,
-        habit_business_id: business.id,
-        business_type_id: business.business_type_id,
-        business_name: business.business_name,
-        business_icon: business.business_icon,
-        base_cost: business.cost,
-        earnings_per_completion: business.earnings_per_completion,
-        base_sell_value: baseSellValue,
-        streak_at_listing: business.streak || 0,
-        listing_price: listingPrice,
-        reason
-      });
+    // marketplace_listings has no client-facing INSERT policy — the listing
+    // (and its frozen price) is created server-side by this SECURITY DEFINER
+    // RPC so a player can't fabricate an inflated sell price.
+    const { data, error } = await this.supabase.rpc('create_marketplace_listing', {
+      p_user_id: userId,
+      p_habit_business_id: business.id,
+      p_reason: reason
+    });
 
     if (error) {
       throw error;
     }
 
-    return listingPrice;
+    return Number(data);
   }
 
   /**
