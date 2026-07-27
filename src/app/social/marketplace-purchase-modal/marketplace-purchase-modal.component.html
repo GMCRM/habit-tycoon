@@ -25,7 +25,7 @@
     <div *ngIf="!(purchase.business_icon | businessIconSrc)" class="business-icon">{{ purchase.business_icon }}</div>
     <div class="business-details">
       <h2>{{ purchase.business_name }}</h2>
-      <p>Pays ${{ purchase.earnings_per_completion | number:'1.2-2' }} per completion</p>
+      <p>Pays ${{ boostedEarningsPerCompletion | number:'1.2-2' }} per completion</p>
     </div>
   </div>
 

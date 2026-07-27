@@ -39,6 +39,7 @@ export interface MarketplacePurchase {
   base_cost: number;
   earnings_per_completion: number;
   purchase_price: number;
+  streak_at_purchase: number;
   resolved: boolean;
   resolved_habit_business_id: string | null;
   created_at: string;

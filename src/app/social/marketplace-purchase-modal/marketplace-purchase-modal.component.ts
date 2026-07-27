@@ -57,6 +57,14 @@ export class MarketplacePurchaseModalComponent implements OnInit {
     this.businessName = this.purchase.business_name;
   }
 
+  /** Actual per-completion pay the buyer's business will carry — the raw earnings
+   * value plus the same capped streak bonus baked into the purchase price
+   * (see resolve_marketplace_purchase()'s v_new_earnings). */
+  get boostedEarningsPerCompletion(): number {
+    const bonusPercent = Math.min(Math.max(this.purchase.streak_at_purchase, 0), 100);
+    return this.purchase.earnings_per_completion * (1 + bonusPercent * 0.01);
+  }
+
   dismiss() {
     this.modalController.dismiss();
   }
