@@ -1015,12 +1015,12 @@ export class SocialPage implements OnInit, OnDestroy {
     return Math.min(Math.max(listing.streak_at_listing, 0), 100);
   }
 
-  /** Live "Xh Ym Zs" countdown to a listing's expiry; ticks every second via marketplaceTick. */
-  getListingCountdown(listing: MarketplaceListing, _tick = this.marketplaceTick): string {
-    const msRemaining = new Date(listing.expires_at).getTime() - Date.now();
-    if (msRemaining <= 0) return 'Expired';
+  /** Only a seller's own not-yet-live listing carries a future listed_at — friends never receive these rows at all. */
+  isListingPending(listing: MarketplaceListing): boolean {
+    return new Date(listing.listed_at).getTime() > Date.now();
+  }
 
-    const totalSeconds = Math.floor(msRemaining / 1000);
+  private formatDuration(totalSeconds: number): string {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -1028,6 +1028,25 @@ export class SocialPage implements OnInit, OnDestroy {
     if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
     if (minutes > 0) return `${minutes}m ${seconds}s`;
     return `${seconds}s`;
+  }
+
+  /**
+   * Live countdown shown on a listing card; ticks every second via marketplaceTick.
+   * At most 2 of a seller's listings are ever live at once (staggered >=12h
+   * apart — see create_marketplace_listing()), so a seller's own listing here
+   * may still be queued and not yet visible to friends: show "Lists in..."
+   * counting down to listed_at instead of the usual expiry countdown.
+   */
+  getListingCountdown(listing: MarketplaceListing, _tick = this.marketplaceTick): string {
+    if (this.isListingPending(listing)) {
+      const msUntilListed = new Date(listing.listed_at).getTime() - Date.now();
+      return `Lists in ${this.formatDuration(Math.floor(msUntilListed / 1000))}`;
+    }
+
+    const msRemaining = new Date(listing.expires_at).getTime() - Date.now();
+    if (msRemaining <= 0) return 'Expired';
+
+    return `${this.formatDuration(Math.floor(msRemaining / 1000))} left`;
   }
 
   async buyListing(listing: MarketplaceListing) {

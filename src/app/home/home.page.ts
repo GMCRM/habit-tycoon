@@ -612,11 +612,16 @@ export class HomePage implements OnInit, OnDestroy {
   async performUpgrade(habitBusiness: HabitBusiness, newBusinessType: any, upgradeCost: number) {
     try {
       // Call the upgrade service method
-      await this.habitBusinessService.upgradeHabitBusiness(habitBusiness.id, newBusinessType.id, upgradeCost);
-      
-      // Show success toast
+      const { listedAt } = await this.habitBusinessService.upgradeHabitBusiness(habitBusiness.id, newBusinessType.id, upgradeCost);
+
+      // Show success toast. The old business's Marketplace listing may be
+      // queued behind the seller's other recent listings (see
+      // create_marketplace_listing()) rather than appearing immediately.
+      const isQueued = listedAt ? new Date(listedAt).getTime() > Date.now() + 60000 : false;
       const successToast = await this.toastController.create({
-        message: `🎉 Upgraded to ${newBusinessType.icon} ${newBusinessType.name}! Your old "${habitBusiness.business_name}" is now listed on the Marketplace for friends to buy.`,
+        message: isQueued
+          ? `🎉 Upgraded to ${newBusinessType.icon} ${newBusinessType.name}! Your old "${habitBusiness.business_name}" is queued for the Marketplace${this.describeListingDelay(new Date(listedAt!))}.`
+          : `🎉 Upgraded to ${newBusinessType.icon} ${newBusinessType.name}! Your old "${habitBusiness.business_name}" is now listed on the Marketplace for friends to buy.`,
         duration: 4500,
         position: 'top',
         color: 'success'
@@ -708,6 +713,27 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
+   * A seller can only have a couple of Marketplace listings live at once
+   * (see create_marketplace_listing() — new listings queue >=12h apart
+   * behind the seller's other recent ones). Returns "" when a new listing
+   * would appear immediately, or a parenthetical like
+   * " (queued — appears in ~12h)" to embed in a sentence otherwise.
+   */
+  private describeListingDelay(listedAt: Date): string {
+    const msRemaining = listedAt.getTime() - Date.now();
+    if (msRemaining <= 60000) {
+      return '';
+    }
+    const totalMinutes = Math.round(msRemaining / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const parts: string[] = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    return ` (queued — appears in ~${parts.join(' ')})`;
+  }
+
+  /**
    * Delete (sell) a habit business with loss penalty
    */
   async deleteHabitBusiness(habitBusiness: HabitBusiness) {
@@ -729,10 +755,18 @@ export class HomePage implements OnInit, OnDestroy {
       // Preview the exact price this business will list for on the Marketplace
       const listingPrice = this.habitBusinessService.getMarketplaceListingPrice(habitBusiness);
 
+      // Best-effort preview of whether this listing will be queued behind the
+      // seller's other recent listings (at most 2 of their listings are ever
+      // live at once, staggered >=12h apart — see create_marketplace_listing()).
+      const previewListedAt = this.currentUser
+        ? await this.habitBusinessService.previewNextListingTime(this.currentUser.id)
+        : new Date();
+      const queueNotice = this.describeListingDelay(previewListedAt);
+
       // Show modern confirmation alert
       const alert = await this.alertController.create({
         header: '🗑️ Delete Habit',
-        message: `Are you sure you want to delete "${habitBusiness.business_name}"?\n\n🏪 It will be listed on the Marketplace for $${listingPrice.toFixed(2)} for 24 hours so a friend can buy it.\n💰 You're guaranteed that $${listingPrice.toFixed(2)} either way — sooner if a friend buys it, otherwise automatically once the listing expires.\n\nThis action cannot be undone.`,
+        message: `Are you sure you want to delete "${habitBusiness.business_name}"?\n\n🏪 It will be listed on the Marketplace for $${listingPrice.toFixed(2)} for 24 hours so a friend can buy it${queueNotice}.\n💰 You're guaranteed that $${listingPrice.toFixed(2)} either way — sooner if a friend buys it, otherwise automatically 24 hours after it lands on the Marketplace.\n\nThis action cannot be undone.`,
         buttons: [
           {
             text: 'Cancel',
@@ -744,11 +778,14 @@ export class HomePage implements OnInit, OnDestroy {
             handler: async () => {
               try {
                 // Call the delete service method
-                const listingPrice = await this.habitBusinessService.deleteHabitBusiness(habitBusiness.id);
+                const { listingPrice, listedAt } = await this.habitBusinessService.deleteHabitBusiness(habitBusiness.id);
 
                 // Show success toast
+                const isQueued = listedAt ? new Date(listedAt).getTime() > Date.now() + 60000 : false;
                 const successToast = await this.toastController.create({
-                  message: `🏪 "${habitBusiness.business_name}" is listed on the Marketplace for $${listingPrice.toFixed(2)}!`,
+                  message: isQueued
+                    ? `📦 "${habitBusiness.business_name}" is queued — it'll hit the Marketplace for $${listingPrice.toFixed(2)}${this.describeListingDelay(new Date(listedAt!))}.`
+                    : `🏪 "${habitBusiness.business_name}" is listed on the Marketplace for $${listingPrice.toFixed(2)}!`,
                   duration: 4000,
                   position: 'top',
                   color: 'success'

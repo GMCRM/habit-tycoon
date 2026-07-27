@@ -248,17 +248,51 @@ export class HabitBusinessService {
   }
 
   /**
+   * Best-effort preview of when a new listing would actually land on the
+   * Marketplace, for a confirmation dialog shown *before* the delete/upgrade
+   * that creates it. Mirrors the server-side queueing in
+   * create_marketplace_listing(): at most 2 of this seller's listings are
+   * ever live at once, each new one staggered >=12h after their last
+   * scheduled listing. This can race with a concurrent action and isn't
+   * authoritative — the RPC computes the real value at creation time.
+   */
+  async previewNextListingTime(userId: string): Promise<Date> {
+    const { data, error } = await this.supabase
+      .from('marketplace_listings')
+      .select('listed_at')
+      .eq('seller_id', userId)
+      .order('listed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error previewing next listing time:', error);
+      return new Date();
+    }
+
+    const now = new Date();
+    if (!data?.listed_at) {
+      return now;
+    }
+    const candidate = new Date(new Date(data.listed_at).getTime() + 12 * 60 * 60 * 1000);
+    return candidate > now ? candidate : now;
+  }
+
+  /**
    * Snapshot a business onto the Marketplace before it's overwritten (upgrade)
-   * or deactivated (habit deletion). Returns the frozen listing price.
+   * or deactivated (habit deletion). Returns the frozen listing price and the
+   * time it's actually scheduled to appear (may be queued up to ~24h+ out if
+   * the seller has other recent listings — see create_marketplace_listing()).
    */
   private async createMarketplaceListing(
     userId: string,
     business: HabitBusiness,
     reason: 'upgrade' | 'habit_deletion'
-  ): Promise<number> {
+  ): Promise<{ listingPrice: number; listedAt: string }> {
     // marketplace_listings has no client-facing INSERT policy — the listing
-    // (and its frozen price) is created server-side by this SECURITY DEFINER
-    // RPC so a player can't fabricate an inflated sell price.
+    // (and its frozen price/scheduled time) is created server-side by this
+    // SECURITY DEFINER RPC so a player can't fabricate an inflated sell price
+    // or jump the queue.
     const { data, error } = await this.supabase.rpc('create_marketplace_listing', {
       p_user_id: userId,
       p_habit_business_id: business.id,
@@ -269,7 +303,7 @@ export class HabitBusinessService {
       throw error;
     }
 
-    return Number(data);
+    return { listingPrice: Number(data.listing_price), listedAt: data.listed_at };
   }
 
   /**
@@ -576,7 +610,8 @@ export class HabitBusinessService {
   /**
    * Upgrade an existing habit-business to a new business type
    */
-  async upgradeHabitBusiness(habitBusinessId: string, newBusinessTypeId: number, upgradeCost: number): Promise<void> {
+  async upgradeHabitBusiness(habitBusinessId: string, newBusinessTypeId: number, upgradeCost: number): Promise<{ listedAt: string | null }> {
+    let listedAt: string | null = null;
     try {
       // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
@@ -628,7 +663,8 @@ export class HabitBusinessService {
       // The upgrade itself always proceeds regardless of whether this insert
       // succeeds or whether the listing ever sells.
       try {
-        await this.createMarketplaceListing(user.id, oldBusiness, 'upgrade');
+        const listing = await this.createMarketplaceListing(user.id, oldBusiness, 'upgrade');
+        listedAt = listing.listedAt;
       } catch (listingError) {
         console.error('Error creating marketplace listing for upgraded business:', listingError);
       }
@@ -669,6 +705,7 @@ export class HabitBusinessService {
       }
 
       console.log('✅ Successfully upgraded habit business');
+      return { listedAt };
     } catch (error) {
       console.error('Error in upgradeHabitBusiness:', error);
       throw error;
@@ -746,7 +783,7 @@ export class HabitBusinessService {
   /**
    * Delete (sell) a habit-business with loss penalty to prevent exploitation
    */
-  async deleteHabitBusiness(habitBusinessId: string): Promise<number> {
+  async deleteHabitBusiness(habitBusinessId: string): Promise<{ listingPrice: number; listedAt: string | null }> {
     if (this.offlineQueue.isOffline()) {
       const cachedHabits = await this.habitCache.getHabits();
       const cachedHabit = cachedHabits.find(h => h.id === habitBusinessId);
@@ -767,19 +804,20 @@ export class HabitBusinessService {
         await this.offlineQueue.cancelAllForTempId(habitBusinessId);
         await this.habitCache.adjustProfileCash(cachedHabit.cost || 0);
         await this.habitCache.removeHabit(habitBusinessId);
-        return 0;
+        return { listingPrice: 0, listedAt: null };
       }
 
       // A real, previously-synced habit: the actual Marketplace listing (and
-      // its server-computed price) can only be created online — this just
-      // previews the same guaranteed payout already shown in the confirm
-      // dialog (getMarketplaceListingPrice) as a provisional credit, and
-      // queues the real deletion (which creates the real listing) for replay.
+      // its server-computed price/queued listing time) can only be created
+      // online — this just previews the same guaranteed payout already shown
+      // in the confirm dialog (getMarketplaceListingPrice) as a provisional
+      // credit, and queues the real deletion (which creates the real
+      // listing) for replay. listedAt is unknowable until that replay runs.
       const listingPrice = this.getMarketplaceListingPrice(cachedHabit);
       await this.habitCache.adjustProfileCash(listingPrice);
       await this.habitCache.removeHabit(habitBusinessId);
       await this.offlineQueue.enqueue('deleteHabitBusiness', [habitBusinessId], `Delete "${cachedHabit.business_name}"`);
-      return listingPrice;
+      return { listingPrice, listedAt: null };
     }
     try {
       // Get current user
@@ -827,7 +865,7 @@ export class HabitBusinessService {
       // price, or (since this listing exists because the player is walking away
       // from the habit entirely, not upgrading) the seller is guaranteed the
       // payout automatically once the listing expires unsold.
-      const listingPrice = await this.createMarketplaceListing(user.id, habitBusiness, 'habit_deletion');
+      const { listingPrice, listedAt } = await this.createMarketplaceListing(user.id, habitBusiness, 'habit_deletion');
 
       // Deactivate the habit-business (soft delete to preserve history)
       // Note: Database trigger will automatically refund all stockholders at current stock price
@@ -850,7 +888,7 @@ export class HabitBusinessService {
       // resolve_expired_marketplace_listings), whichever pays the seller first.
       await this.recalculateNetWorth(user.id);
 
-      return listingPrice;
+      return { listingPrice, listedAt };
     } catch (error) {
       console.error('Error in deleteHabitBusiness:', error);
       throw error;

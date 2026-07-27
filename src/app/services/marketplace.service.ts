@@ -17,6 +17,7 @@ export interface MarketplaceListing {
   listing_price: number;
   reason: 'upgrade' | 'habit_deletion';
   created_at: string;
+  listed_at: string;
   expires_at: string;
   is_own: boolean;
 }

@@ -114,8 +114,11 @@ ion-content {
   
   /* iOS Safari specific scrolling fixes */
   @supports (-webkit-touch-callout: none) {
-    height: calc(100vh - 60px); /* Adjust for header */
-    height: calc(100dvh - 60px);
+    /* ion-content is already sized correctly below the header by flexbox;
+       re-subtracting a hardcoded header height here made this taller than
+       the real visible area on notched devices, pushing the last bit of
+       scrolled content behind the fixed bottom nav. */
+    height: 100%;
     overflow-y: scroll !important;
     -webkit-overflow-scrolling: touch !important;
   }
@@ -1162,6 +1165,10 @@ ion-badge {
     opacity: 0.85;
   }
 
+  &.pending-listing {
+    opacity: 0.65;
+  }
+
   ion-card-content {
     padding: 16px 20px;
   }
@@ -1229,6 +1236,11 @@ ion-badge {
           background: rgba(255, 255, 255, 0.08);
           padding: 2px 6px;
           border-radius: 6px;
+        }
+
+        .listing-pending-badge {
+          color: var(--ion-color-warning);
+          background: rgba(var(--ion-color-warning-rgb), 0.15);
         }
       }
 

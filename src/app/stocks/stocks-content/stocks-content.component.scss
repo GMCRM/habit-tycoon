@@ -14,8 +14,11 @@
   
   /* iOS Safari specific scrolling fixes */
   @supports (-webkit-touch-callout: none) {
-    height: calc(100vh - 60px); /* Adjust for header */
-    height: calc(100dvh - 60px);
+    /* ion-content is already sized correctly below the header by flexbox;
+       re-subtracting a hardcoded header height here made this taller than
+       the real visible area on notched devices, pushing the last bit of
+       scrolled content behind the fixed bottom nav. */
+    height: 100%;
     overflow-y: scroll !important;
     -webkit-overflow-scrolling: touch !important;
   }

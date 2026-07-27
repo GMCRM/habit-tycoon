@@ -765,9 +765,9 @@ describe('HabitBusinessService', () => {
         if (table === 'user_profiles') return profileQuery;
         return makeQuery();
       });
-      mockSupabaseClient.rpc.and.resolveTo({ data: 70, error: null });
+      mockSupabaseClient.rpc.and.resolveTo({ data: { listing_price: 70, listed_at: new Date().toISOString() }, error: null });
 
-      const sellValue = await service.deleteHabitBusiness('h1');
+      const { listingPrice: sellValue } = await service.deleteHabitBusiness('h1');
 
       expect(sellValue).toBe(70); // floor(100 * 0.7)
     });
@@ -880,7 +880,7 @@ describe('HabitBusinessService', () => {
         if (table === 'habit_businesses') return habitBusinessesQuery;
         return makeQuery();
       });
-      mockSupabaseClient.rpc.and.resolveTo({ data: 861, error: null });
+      mockSupabaseClient.rpc.and.resolveTo({ data: { listing_price: 861, listed_at: new Date().toISOString() }, error: null });
 
       await service.upgradeHabitBusiness('habit-1', 2, 100);
 
@@ -926,9 +926,9 @@ describe('HabitBusinessService', () => {
         }
         return makeQuery();
       });
-      mockSupabaseClient.rpc.and.resolveTo({ data: 861, error: null });
+      mockSupabaseClient.rpc.and.resolveTo({ data: { listing_price: 861, listed_at: new Date().toISOString() }, error: null });
 
-      const listingPrice = await service.deleteHabitBusiness('h1');
+      const { listingPrice } = await service.deleteHabitBusiness('h1');
 
       expect(listingPrice).toBe(861); // floor(1000*0.7)=700, streak 23 → 700*1.23
       // marketplace_listings has no client INSERT policy — the listing is created

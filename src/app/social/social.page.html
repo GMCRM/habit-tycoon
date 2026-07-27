@@ -631,6 +631,7 @@
               *ngFor="let listing of marketplaceListings"
               class="marketplace-listing-card"
               [class.own-listing]="listing.is_own"
+              [class.pending-listing]="isListingPending(listing)"
             >
               <ion-card-content>
                 <div class="listing-info">
@@ -654,9 +655,12 @@
                       <span class="listing-reason" *ngIf="listing.reason === 'habit_deletion' && listing.is_own"
                         >Guaranteed payout</span
                       >
+                      <span class="listing-reason listing-pending-badge" *ngIf="isListingPending(listing)"
+                        >Queued</span
+                      >
                     </div>
                     <p class="listing-countdown">
-                      ⏱️ {{ getListingCountdown(listing) }} left
+                      ⏱️ {{ getListingCountdown(listing) }}
                     </p>
                   </div>
                   <ion-button
