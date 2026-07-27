@@ -4,6 +4,7 @@ import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { AuthService } from './services/auth.service';
+import { WidgetBridge } from './services/widget-bridge.plugin';
 
 // If the app was backgrounded longer than this (ms), force a full reload so
 // Angular, Supabase auth, and all subscriptions start fresh.
@@ -50,6 +51,23 @@ export class AppComponent implements OnInit, OnDestroy {
     private router: Router,
     private ngZone: NgZone
   ) {}
+
+  // Keeps the iOS widget's copy of the Supabase session current — its own
+  // sync point (independent of HabitCacheService's habit-snapshot sync)
+  // since the widget extension authenticates its own network calls and
+  // needs a refresh_token, not habit data. Called from every
+  // onAuthStateChange event that carries a session (SIGNED_IN,
+  // TOKEN_REFRESHED, INITIAL_SESSION, ...) plus the startup getSession()
+  // check below, so a signed-in widget stays current without extra polling.
+  private syncWidgetAuthSession(session: any): void {
+    if (!session?.access_token || !session?.refresh_token || !session?.user?.id) return;
+    void WidgetBridge.syncAuthSession({
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+      expiresAt: session.expires_at ?? Math.floor(Date.now() / 1000) + 3600,
+      userId: session.user.id,
+    });
+  }
 
   private getCurrentRoutePath(): string {
     const hashPath = window.location.hash?.replace(/^#/, '') || '';
@@ -157,6 +175,14 @@ export class AppComponent implements OnInit, OnDestroy {
       this.ngZone.run(async () => {
         console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
 
+        // Covers every event that carries a session (SIGNED_IN,
+        // TOKEN_REFRESHED, INITIAL_SESSION, ...), not just the two branched
+        // on below — the widget needs a current token independent of the
+        // app's own navigation concerns.
+        if (session) {
+          this.syncWidgetAuthSession(session);
+        }
+
         if (event === 'SIGNED_OUT') {
           // Ignore SIGNED_OUT while the OAuth code exchange is in-flight.
           // On Chrome (desktop) Supabase fires SIGNED_OUT when it finds and
@@ -170,6 +196,7 @@ export class AppComponent implements OnInit, OnDestroy {
           }
           console.log('🔄 AppComponent: User signed out, redirecting to login');
           this.navigatedToHome = false; // Reset so next sign-in works
+          void WidgetBridge.clearAuthSession();
           this.router.navigate(['/login']);
         } else if (event === 'SIGNED_IN') {
           console.log('🔄 AppComponent: SIGNED_IN event received');
@@ -195,6 +222,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const { data: { session } } = await this.authService.getSession();
         if (session) {
           console.log('✅ AppComponent: User session found');
+          this.syncWidgetAuthSession(session);
           const currentPath = this.getCurrentRoutePath();
           if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
             this.router.navigate(['/home']);

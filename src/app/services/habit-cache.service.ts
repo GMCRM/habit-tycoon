@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { HabitBusiness, BusinessType } from './habit-business.service';
+import { WidgetBridge } from './widget-bridge.plugin';
 
 const CACHE_KEY = 'habit_cache_snapshot_v1';
 
@@ -76,6 +77,31 @@ export class HabitCacheService {
   private async save(snapshot: HabitCacheSnapshot): Promise<void> {
     this.snapshot = snapshot;
     await Preferences.set({ key: CACHE_KEY, value: JSON.stringify(snapshot) });
+    // Fire-and-forget: every cache mutation (habit list load, completion,
+    // undo, offline patch...) is a single choke point through save(), so
+    // this is the one place the iOS widget's snapshot needs to be kept
+    // current from. Never awaited — widget sync must never block or fail
+    // a cache write (WidgetBridge itself swallows all errors too).
+    this.syncWidget(snapshot.habits);
+  }
+
+  private syncWidget(habits: HabitBusiness[]): void {
+    const activeHabits = habits
+      .filter(h => h.is_active)
+      .map(h => ({
+        id: h.id,
+        business_name: h.business_name,
+        business_icon: h.business_icon,
+        current_progress: h.current_progress,
+        goal_value: h.goal_value,
+        streak: h.streak,
+        last_completed_at: h.last_completed_at ?? null,
+        recurrence_interval: h.recurrence_interval,
+        active_days: h.active_days ?? null,
+        display_order: h.display_order,
+        is_active: h.is_active,
+      }));
+    void WidgetBridge.syncHabits({ habits: activeHabits });
   }
 
   async getHabits(): Promise<HabitBusiness[]> {
