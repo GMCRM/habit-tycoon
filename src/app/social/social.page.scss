@@ -133,13 +133,13 @@ ion-content {
 .page-container {
   background: var(--ion-background-color);
   min-height: 100vh;
-  padding: 16px 16px 90px 16px; /* Top, Right, Bottom (space for nav), Left */
-  
+  padding: 16px 16px 140px 16px; /* Top, Right, Bottom (space for floating nav), Left */
+
   /* iOS Safari specific viewport fixes */
   @supports (-webkit-touch-callout: none) {
     min-height: calc(100vh - 60px); /* Account for header */
     min-height: calc(100dvh - 60px);
-    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
   }
 }
 
