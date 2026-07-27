@@ -891,10 +891,6 @@ export class HomePage implements OnInit, OnDestroy {
   // Stock ownership pay-boost percentage per habit business (1% per share purchased by investors)
   stockBoostByBusinessId: { [habitBusinessId: string]: number } = {};
 
-  // Help section visibility
-  showStatsHelpSection = false;
-  showHabitProgressHelpSection = false;
-
   // Complete/undo button in-flight states (drives the completion pop animation)
   completeButtonStates: { [key: string]: { isCompleting: boolean; isUndoing: boolean } } = {};
 
@@ -1224,20 +1220,6 @@ export class HomePage implements OnInit, OnDestroy {
       buttons: ['OK'],
     });
     await alert.present();
-  }
-
-  /**
-   * Toggle stats help section
-   */
-  toggleStatsHelpSection() {
-    this.showStatsHelpSection = !this.showStatsHelpSection;
-  }
-
-  /**
-   * Toggle habit progress help section
-   */
-  toggleHabitProgressHelpSection() {
-    this.showHabitProgressHelpSection = !this.showHabitProgressHelpSection;
   }
 
   /**
