@@ -79,6 +79,25 @@
       </ion-card>
     </div>
 
+    <!-- Onboarding Flow Preview -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>🚀 Onboarding Flow</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>
+          Opens the first-run onboarding flow on your own account, regardless
+          of the <code>app_config.onboarding_enabled</code> flag or whether
+          you've completed it before. Uses your real habits/cash — it's the
+          real flow, not a sandboxed copy.
+        </p>
+        <ion-button expand="full" color="primary" (click)="previewOnboarding()">
+          <ion-icon name="rocket" slot="start"></ion-icon>
+          Preview Onboarding
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
     <h1>🧪 Database Connection Tests</h1>
     <p>
       Use these tests to verify your Supabase database is working correctly:

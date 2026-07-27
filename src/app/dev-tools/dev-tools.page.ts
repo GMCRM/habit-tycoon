@@ -5,7 +5,7 @@ import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCar
 import { AuthService } from '../services/auth.service';
 import { HabitBusinessService } from '../services/habit-business.service';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, logOut, home, cash, cafe, wallet } from 'ionicons/icons';
+import { checkmarkCircle, alertCircle, refresh, logOut, home, cash, cafe, wallet, rocket } from 'ionicons/icons';
 
 @Component({
   selector: 'app-dev-tools',
@@ -33,7 +33,7 @@ export class DevToolsPage {
     private router: Router,
     private toastController: ToastController
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, home, cash, cafe, wallet });
+    addIcons({ checkmarkCircle, alertCircle, refresh, logOut, home, cash, cafe, wallet, rocket });
     this.loadCurrentUser();
   }
 
@@ -101,6 +101,10 @@ export class DevToolsPage {
   async runAllTests() {
     await this.testDatabaseConnection();
     await this.testAuthSystem();
+  }
+
+  previewOnboarding() {
+    this.router.navigate(['/onboarding'], { queryParams: { preview: '1' } });
   }
 
   async logout() {
