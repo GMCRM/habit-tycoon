@@ -1,0 +1,23 @@
+<div class="step-body">
+  <div class="step-icon">📈</div>
+  <h1 class="step-title">How businesses make money</h1>
+  <p class="step-subtitle">
+    That ${{ result.earnings.toFixed(2) }} was the base payout for
+    "{{ habit.business_name }}" — here's how it grows from here.
+  </p>
+
+  <div class="info-card">
+    <p><strong>🔥 Streak bonus</strong> — every consecutive day you check in adds +10% to your payout, up to double at an 11-day streak. Miss a day and it resets.</p>
+  </div>
+
+  <div class="info-card">
+    <p><strong>📊 Stock &amp; dividends</strong> — friends can buy stock in your business. Every time you complete it, they earn a dividend — and you'll earn dividends too on businesses you invest in.</p>
+  </div>
+</div>
+
+<div class="step-footer">
+  <ion-button expand="block" color="primary" class="step-cta" (click)="next.emit()">
+    <ion-icon slot="start" name="trending-up"></ion-icon>
+    Got it, what else?
+  </ion-button>
+</div>

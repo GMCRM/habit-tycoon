@@ -301,6 +301,20 @@ export class AuthService {
     }
   }
 
+  // Marks the current user as having finished the first-run onboarding flow,
+  // so the onboarding guard never routes them back into it again.
+  async markOnboardingComplete(userId: string) {
+    const { error } = await this.supabase
+      .from('user_profiles')
+      .update({ onboarding_completed_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('❌ Failed to mark onboarding complete:', error);
+      throw error;
+    }
+  }
+
   async getUserProfile(userId: string) {
     const { data, error } = await this.supabase
       .from('user_profiles')

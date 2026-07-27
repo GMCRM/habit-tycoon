@@ -1,0 +1,50 @@
+<ion-content [fullscreen]="true" class="onboarding-content">
+  <div class="progress-dots">
+    <span *ngFor="let i of [0,1,2,3,4,5,6,7]" class="dot" [class.active]="i <= stepIndex"></span>
+  </div>
+
+  <div class="step-host">
+    <app-welcome-step
+      *ngIf="stepIndex === 0"
+      (next)="goToStep(1)"
+    ></app-welcome-step>
+
+    <app-create-habit-step
+      *ngIf="stepIndex === 1"
+      (habitCreated)="onHabitCreated($event)"
+    ></app-create-habit-step>
+
+    <app-first-checkin-step
+      *ngIf="stepIndex === 2 && habit"
+      [habit]="habit"
+      (completed)="onCheckinCompleted($event)"
+    ></app-first-checkin-step>
+
+    <app-income-explainer-step
+      *ngIf="stepIndex === 3 && habit && checkinResult"
+      [habit]="habit"
+      [result]="checkinResult"
+      (next)="goToStep(4)"
+    ></app-income-explainer-step>
+
+    <app-shop-preview-step
+      *ngIf="stepIndex === 4"
+      (next)="goToStep(5)"
+    ></app-shop-preview-step>
+
+    <app-social-preview-step
+      *ngIf="stepIndex === 5"
+      (next)="goToStep(6)"
+    ></app-social-preview-step>
+
+    <app-streaks-achievements-step
+      *ngIf="stepIndex === 6"
+      (next)="goToStep(7)"
+    ></app-streaks-achievements-step>
+
+    <app-paywall-step
+      *ngIf="stepIndex === 7"
+      (completed)="onPaywallCompleted()"
+    ></app-paywall-step>
+  </div>
+</ion-content>

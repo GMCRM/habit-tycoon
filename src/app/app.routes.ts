@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
+import { onboardingRequiredGuard, onboardingDoneGuard } from './guards/onboarding.guard';
 
 export const routes: Routes = [
   {
@@ -9,9 +10,14 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'onboarding',
+    loadComponent: () => import('./onboarding/onboarding.page').then((m) => m.OnboardingPage),
+    canActivate: [authGuard, onboardingDoneGuard],
+  },
+  {
     path: 'home',
     loadComponent: () => import('./home/home.page').then((m) => m.HomePage),
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
     path: 'login',
@@ -29,12 +35,12 @@ export const routes: Routes = [
   {
     path: 'social',
     loadComponent: () => import('./social/social.page').then( m => m.SocialPage),
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
     path: 'stocks',
     loadComponent: () => import('./stocks/stocks.page').then( m => m.StocksPage),
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
     path: 'reset-password',
@@ -43,12 +49,12 @@ export const routes: Routes = [
   {
     path: 'settings',
     loadComponent: () => import('./settings/settings.page').then( m => m.SettingsPage),
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
     path: 'weekly-receipt',
     loadComponent: () => import('./weekly-receipt/weekly-receipt.page').then( m => m.WeeklyReceiptPage),
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
     path: '**',

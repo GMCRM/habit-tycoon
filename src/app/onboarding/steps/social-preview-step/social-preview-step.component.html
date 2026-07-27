@@ -1,0 +1,30 @@
+<div class="step-body">
+  <div class="step-icon">🧑‍🤝‍🧑</div>
+  <h1 class="step-title">You're not playing alone</h1>
+  <p class="step-subtitle">
+    The Social tab has a friends leaderboard, and a friends-only Marketplace
+    where you can buy and sell businesses with people you know.
+  </p>
+
+  <div class="info-card" *ngIf="!loading && leaderboard.length > 1">
+    <p><strong><ion-icon name="trophy"></ion-icon> Leaderboard preview</strong></p>
+    <div *ngFor="let entry of leaderboard; let i = index" class="leaderboard-row">
+      <span>#{{ i + 1 }} {{ entry.name }}</span>
+      <span>${{ entry.net_worth | number:'1.0-0' }}</span>
+    </div>
+  </div>
+
+  <div class="info-card" *ngIf="!loading && leaderboard.length <= 1">
+    <p><ion-icon name="people"></ion-icon> Add friends later to start a leaderboard and trade businesses on the Marketplace.</p>
+  </div>
+
+  <div class="info-card">
+    <p><ion-icon name="storefront"></ion-icon> <strong>Marketplace</strong> — when a friend upgrades or sells a business, it can show up here for you to buy.</p>
+  </div>
+</div>
+
+<div class="step-footer">
+  <ion-button expand="block" color="primary" class="step-cta" (click)="next.emit()">
+    Continue
+  </ion-button>
+</div>

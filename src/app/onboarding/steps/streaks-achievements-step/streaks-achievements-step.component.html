@@ -1,0 +1,24 @@
+<div class="step-body">
+  <div class="step-icon">🏆</div>
+  <h1 class="step-title">Streaks &amp; achievements</h1>
+  <p class="step-subtitle">
+    Every day you keep a habit alive, your streak (and its payout bonus)
+    grows — miss a day and it resets. Along the way you'll unlock badges,
+    visible in the Awards tab.
+  </p>
+
+  <div class="info-card">
+    <p *ngFor="let m of sampleMilestones">{{ m.emoji }} <strong>{{ m.label }}</strong> — {{ m.description }}</p>
+  </div>
+
+  <div class="info-card">
+    <p *ngFor="let a of sampleAchievements">{{ a.emoji }} <strong>{{ a.label }}</strong> — {{ a.description }}</p>
+  </div>
+</div>
+
+<div class="step-footer">
+  <ion-button expand="block" color="primary" class="step-cta" (click)="next.emit()">
+    <ion-icon slot="start" name="trophy"></ion-icon>
+    Last step
+  </ion-button>
+</div>

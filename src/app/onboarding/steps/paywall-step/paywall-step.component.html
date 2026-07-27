@@ -1,0 +1,56 @@
+<div class="step-body">
+  <div class="step-icon">🔑</div>
+  <h1 class="step-title">Start your free trial</h1>
+
+  <ng-container *ngIf="loading">
+    <ion-spinner name="crescent"></ion-spinner>
+  </ng-container>
+
+  <ng-container *ngIf="!loading && primaryPackage">
+    <p class="step-subtitle" *ngIf="hasFreeTrial">
+      Try Habit Tycoon free for {{ trialUnitLabel }}, then
+      {{ primaryPackage.product.priceString }}/{{ primaryPackage.product.subscriptionPeriod }}.
+      Cancel anytime.
+    </p>
+    <p class="step-subtitle" *ngIf="!hasFreeTrial">
+      Subscribe for {{ primaryPackage.product.priceString }}/{{ primaryPackage.product.subscriptionPeriod }}.
+      Cancel anytime.
+    </p>
+  </ng-container>
+
+  <p class="step-subtitle error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="legal-links" *ngIf="termsUrl || privacyUrl">
+    <a *ngIf="termsUrl" [href]="termsUrl" target="_blank" rel="noopener">Terms of Use</a>
+    <span *ngIf="termsUrl && privacyUrl"> · </span>
+    <a *ngIf="privacyUrl" [href]="privacyUrl" target="_blank" rel="noopener">Privacy Policy</a>
+  </div>
+</div>
+
+<div class="step-footer">
+  <ion-button
+    expand="block"
+    color="primary"
+    class="step-cta"
+    [disabled]="!primaryPackage || purchasing || restoring"
+    (click)="startTrial()"
+  >
+    <ion-spinner *ngIf="purchasing" name="crescent"></ion-spinner>
+    <ng-container *ngIf="!purchasing">
+      <ion-icon slot="start" name="lock-closed"></ion-icon>
+      {{ hasFreeTrial ? 'Start Free Trial' : 'Subscribe' }}
+    </ng-container>
+  </ion-button>
+
+  <ion-button
+    expand="block"
+    fill="clear"
+    color="medium"
+    [disabled]="purchasing || restoring"
+    (click)="restore()"
+  >
+    <ion-spinner *ngIf="restoring" name="crescent"></ion-spinner>
+    <ion-icon *ngIf="!restoring" slot="start" name="refresh"></ion-icon>
+    Restore Purchases
+  </ion-button>
+</div>

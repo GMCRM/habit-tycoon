@@ -1,0 +1,56 @@
+// Shared layout for every onboarding step component.
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+  padding: 24px 20px 32px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.step-icon {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.step-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--ion-color-primary);
+}
+
+.step-subtitle {
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 24px;
+}
+
+.step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.step-footer {
+  margin-top: 24px;
+}
+
+.step-cta {
+  --border-radius: 14px;
+  font-weight: 700;
+  height: 52px;
+}
+
+.info-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: left;
+}

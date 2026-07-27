@@ -1,0 +1,19 @@
+<div class="step-body">
+  <div class="step-icon">🏢</div>
+  <h1 class="step-title">Create your first business</h1>
+  <p class="step-subtitle">
+    Pick a real habit you want to build and give it a business to run.
+    Your $100 starting cash covers the cheapest business type, so this
+    one's free.
+  </p>
+  <p class="step-subtitle" *ngIf="attempted">
+    Finish launching a business to continue — it's the one you'll check off next.
+  </p>
+</div>
+
+<div class="step-footer">
+  <ion-button expand="block" color="primary" class="step-cta" (click)="openLaunchModal()">
+    <ion-icon slot="start" name="business"></ion-icon>
+    Launch my first business
+  </ion-button>
+</div>

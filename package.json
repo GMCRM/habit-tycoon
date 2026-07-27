@@ -31,6 +31,7 @@
     "@capacitor/preferences": "^7.0.4",
     "@capacitor/status-bar": "7.0.2",
     "@ionic/angular": "^8.7.2",
+    "@revenuecat/purchases-capacitor": "^11.3.2",
     "@supabase/supabase-js": "^2.55.0",
     "chart.js": "^4.5.0",
     "ionicons": "^7.4.0",

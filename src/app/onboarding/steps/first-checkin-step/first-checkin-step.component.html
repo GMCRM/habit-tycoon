@@ -1,0 +1,43 @@
+<div class="step-body">
+  <ng-container *ngIf="!result">
+    <div class="step-icon">{{ habit.business_icon }}</div>
+    <h1 class="step-title">Do your first check-in</h1>
+    <p class="step-subtitle">
+      "{{ habit.business_name }}" is live. Tap the button once you've
+      actually done it — this is a real check-in and it pays out real
+      Habit Cash.
+    </p>
+    <p class="step-subtitle" *ngIf="errorMessage">{{ errorMessage }}</p>
+  </ng-container>
+
+  <ng-container *ngIf="result">
+    <div class="step-icon">🎉</div>
+    <h1 class="step-title">Nice work!</h1>
+    <p class="step-subtitle">
+      You earned <strong>${{ result.earnings.toFixed(2) }}</strong> and
+      started a <strong>{{ result.streak }}-day streak</strong> on
+      "{{ habit.business_name }}".
+    </p>
+  </ng-container>
+</div>
+
+<div class="step-footer">
+  <ion-button
+    *ngIf="!result"
+    expand="block"
+    color="success"
+    class="step-cta"
+    [disabled]="completing"
+    (click)="completeNow()"
+  >
+    <ion-spinner *ngIf="completing" name="crescent"></ion-spinner>
+    <ng-container *ngIf="!completing">
+      <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+      I did it — complete habit
+    </ng-container>
+  </ion-button>
+
+  <ion-button *ngIf="result" expand="block" color="primary" class="step-cta" (click)="continue()">
+    Continue
+  </ion-button>
+</div>
