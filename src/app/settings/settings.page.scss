@@ -282,7 +282,11 @@ ion-header {
 // Mobile responsive
 @media (max-width: 768px) {
   .settings-content {
-    padding: 16px 12px;
+    padding: 16px 12px 140px 12px;
+
+    @supports (-webkit-touch-callout: none) {
+      padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    }
   }
   
   ion-card {
