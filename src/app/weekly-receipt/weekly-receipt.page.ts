@@ -1,12 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import {
   IonContent,
   IonHeader,
   IonTitle,
   IonToolbar,
-  IonButton,
   IonIcon,
   IonSpinner,
   IonModal,
@@ -29,7 +27,6 @@ import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
 import {
-  arrowBack,
   chevronBack,
   chevronForward,
   receiptOutline,
@@ -99,7 +96,6 @@ const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string;
     IonHeader,
     IonTitle,
     IonToolbar,
-    IonButton,
     IonIcon,
     IonSpinner,
     IonModal,
@@ -142,11 +138,9 @@ export class WeeklyReceiptPage implements OnInit {
     private receiptService: WeeklyReceiptService,
     private habitBusinessService: HabitBusinessService,
     private achievementsService: AchievementsService,
-    private authService: AuthService,
-    private router: Router
+    private authService: AuthService
   ) {
     addIcons({
-      arrowBack,
       chevronBack,
       chevronForward,
       receiptOutline,
@@ -445,7 +439,4 @@ export class WeeklyReceiptPage implements OnInit {
     return (amount === 0 ? 0 : amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  goHome() {
-    this.router.navigate(['/home']);
-  }
 }

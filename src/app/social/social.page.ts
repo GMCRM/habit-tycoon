@@ -855,8 +855,8 @@ export class SocialPage implements OnInit, OnDestroy {
           id: this.currentUser.id,
           email: this.currentUser.email,
           name: this.currentUser.user_metadata?.['name'] || this.currentUser.email?.split('@')[0] || 'User',
-          cash: 100, // Starting cash
-          net_worth: 100
+          cash: 99, // Starting cash
+          net_worth: 99
         });
       
       if (error) {

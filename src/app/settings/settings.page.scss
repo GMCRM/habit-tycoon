@@ -30,7 +30,7 @@
 }
 
 .settings-content {
-  padding: 20px 16px 90px 16px; /* Top, Right, Bottom (space for nav), Left */
+  padding: 20px 16px 140px 16px; /* Top, Right, Bottom (space for nav), Left */
   background: var(--ion-background-color);
   min-height: 100vh;
 
@@ -38,11 +38,11 @@
   @supports (-webkit-touch-callout: none) {
     min-height: calc(100vh - 60px); /* Account for header */
     min-height: calc(100dvh - 60px);
-    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
   }
 
   @media (min-width: 768px) {
-    padding: 24px 20px 90px 20px;
+    padding: 24px 20px 140px 20px;
     max-width: 600px;
     margin: 0 auto;
   }
@@ -105,34 +105,33 @@ ion-card {
 
 // Form items styling
 ion-item {
-  --background: rgba(0, 0, 0, 0.2);
+  --background: transparent;
   --color: #ffffff;
-  --border-color: rgba(255, 215, 0, 0.3);
-  --inner-padding-end: 16px;
-  --padding-start: 16px;
-  border-radius: 8px;
+  --inner-padding-end: 0;
+  --padding-start: 0;
+  --border-color: transparent;
+  --border-width: 0;
   margin-bottom: 16px;
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  
+
   ion-label {
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
     font-size: 0.95rem;
     margin-bottom: 8px;
   }
-  
+
   ion-input {
-    --background: rgba(30, 30, 63, 0.6);
+    --background: rgba(0, 0, 0, 0.2);
     --color: #ffffff;
     --placeholder-color: rgba(255, 255, 255, 0.5);
     --padding-start: 12px;
     --padding-end: 12px;
     --padding-top: 12px;
     --padding-bottom: 12px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
     font-size: 1rem;
-    
+
     &:focus-within {
       --border-color: var(--ion-color-primary);
       box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
@@ -258,13 +257,9 @@ ion-header {
   margin-bottom: 20px;
   
   &.has-error {
-    ion-item {
+    ion-item ion-input {
       --border-color: var(--ion-color-danger);
       border-color: var(--ion-color-danger);
-      
-      ion-input {
-        --border-color: var(--ion-color-danger);
-      }
     }
   }
 }

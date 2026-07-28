@@ -275,8 +275,8 @@ export class AuthService {
             id: userId,
             email: email,
             name: name || email.split('@')[0],
-            cash: 100.00,
-            net_worth: 100.00
+            cash: 99.00,
+            net_worth: 99.00
           }
         ])
         .select()
@@ -383,8 +383,8 @@ export class AuthService {
               id: user.id,
               email: user.email!,
               name: user.user_metadata?.['full_name'] || user.user_metadata?.['name'] || user.email!.split('@')[0],
-              cash: 100.00,
-              net_worth: 100.00
+              cash: 99.00,
+              net_worth: 99.00
             }, {
               onConflict: 'id'
             })
@@ -442,8 +442,8 @@ export class AuthService {
           id: user.id,
           email: user.email!,
           name: user.user_metadata?.['full_name'] || user.user_metadata?.['name'] || user.email!.split('@')[0],
-          cash: 100.00,
-          net_worth: 100.00
+          cash: 99.00,
+          net_worth: 99.00
         }, {
           onConflict: 'id'
         })
@@ -653,8 +653,8 @@ export class AuthService {
     const { error: resetProfileError } = await this.supabase
       .from('user_profiles')
       .update({
-        cash: 100.00,
-        net_worth: 100.00,
+        cash: 99.00,
+        net_worth: 99.00,
         updated_at: nowIso
       })
       .eq('id', user.id);

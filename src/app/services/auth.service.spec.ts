@@ -194,10 +194,10 @@ describe('AuthService', () => {
 
   // --- User Profile Creation ---
 
-  // Signing up should create an auth user and a profile with $100 starting cash
-  it('should create a user profile with $100 starting cash', async () => {
+  // Signing up should create an auth user and a profile with $99 starting cash
+  it('should create a user profile with $99 starting cash', async () => {
     userProfilesQuery.single.and.resolveTo({
-      data: { id: 'u1', cash: 100, net_worth: 100 },
+      data: { id: 'u1', cash: 99, net_worth: 99 },
       error: null
     });
 
@@ -208,11 +208,11 @@ describe('AuthService', () => {
         id: 'u1',
         email: 'test@example.com',
         name: 'Tester',
-        cash: 100.00,
-        net_worth: 100.00
+        cash: 99.00,
+        net_worth: 99.00
       })
     ]);
-    expect(profile.cash).toBe(100);
+    expect(profile.cash).toBe(99);
   });
 
   // If no display name is given, use the part before @ in the email
