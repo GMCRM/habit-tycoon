@@ -1,6 +1,6 @@
 <ion-content [fullscreen]="true" class="onboarding-content">
   <div class="progress-dots">
-    <span *ngFor="let i of [0,1,2,3,4,5,6,7]" class="dot" [class.active]="i <= stepIndex"></span>
+    <span *ngFor="let i of [0,1,2,3,4,5,6]" class="dot" [class.active]="i <= stepIndex"></span>
   </div>
 
   <div class="step-host">
@@ -39,12 +39,7 @@
 
     <app-streaks-achievements-step
       *ngIf="stepIndex === 6"
-      (next)="goToStep(7)"
+      (next)="onOnboardingFinished()"
     ></app-streaks-achievements-step>
-
-    <app-paywall-step
-      *ngIf="stepIndex === 7"
-      (completed)="onPaywallCompleted()"
-    ></app-paywall-step>
   </div>
 </ion-content>

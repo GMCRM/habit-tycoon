@@ -418,6 +418,27 @@ export class HabitBusinessService {
   }
 
   /**
+   * Count-only check for whether a user has ever created a habit — used by
+   * the onboarding guards to distinguish a genuinely first-time user from
+   * one who simply hasn't set `onboarding_completed_at` (e.g. an existing
+   * user from before the flow was enabled).
+   */
+  async getUserHabitCount(userId: string): Promise<number> {
+    const { count, error } = await this.supabase
+      .from('habit_businesses')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error counting habit businesses:', error);
+      throw error;
+    }
+
+    return count ?? 0;
+  }
+
+  /**
    * Create a new habit-business
    */
   /**
