@@ -40,6 +40,7 @@ export interface HabitBusiness {
   user_custom_order: number; // User's original custom order (for resetting)
   last_upgraded_at?: string; // Last tier-upgrade timestamp; upgrades are rate-limited to once/24h
   marketplace_base_value?: number | null; // 70% of Marketplace purchase price, when this business was bought via the Marketplace; overrides cost*0.7 for future sell/listing value
+  marketplace_bonus_percent?: number | null; // Streak bonus % (0-100) baked into earnings_per_completion when this business was bought via the Marketplace; shown as a "+X%" badge on the habit card icon
   created_at: string;
   updated_at: string;
   business_types?: BusinessType;
@@ -698,6 +699,7 @@ export class HabitBusinessService {
           business_icon: newBusinessType.icon,
           cost: newBusinessType.base_cost,
           earnings_per_completion: this.calculateReasonableEarnings(newBusinessType.base_pay, 1), // Use reasonable earnings calculation
+          marketplace_bonus_percent: null, // Earnings are fully recalculated by this upgrade, so any prior Marketplace bonus badge no longer applies
           updated_at: new Date().toISOString()
         })
         .eq('id', habitBusinessId)

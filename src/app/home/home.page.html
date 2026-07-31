@@ -250,13 +250,21 @@
                 <div class="business-info">
                   <!-- Icon: largest element, front and center -->
                   <div class="business-hero">
-                    <img
-                      *ngIf="hb.business_icon | businessIconSrc as iconSrc"
-                      [src]="iconSrc"
-                      [alt]="hb.business_name"
-                      class="business-icon business-icon-img"
-                    />
-                    <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
+                    <div class="business-icon-wrap">
+                      <img
+                        *ngIf="hb.business_icon | businessIconSrc as iconSrc"
+                        [src]="iconSrc"
+                        [alt]="hb.business_name"
+                        class="business-icon business-icon-img"
+                      />
+                      <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
+                      <!-- Marketplace bonus badge: streak bonus % baked into this business's
+                           base pay when it was bought from the Marketplace -->
+                      <span
+                        *ngIf="hb.marketplace_bonus_percent && hb.marketplace_bonus_percent > 0"
+                        class="market-bonus-badge"
+                      >+{{ hb.marketplace_bonus_percent }}%</span>
+                    </div>
                   </div>
                   <h3 class="business-name">{{ hb.business_name }}</h3>
                   <span *ngIf="hb.id.startsWith('local-')" class="pending-sync-chip">📡 Pending sync</span>
