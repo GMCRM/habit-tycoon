@@ -61,19 +61,27 @@ button, span, div, ion-button {
 // Header toolbar - keep title + action buttons on one row on narrow phones
 .home-toolbar {
   ion-title {
-    padding-inline-start: 12px;
+    padding-inline-start: 0;
+  }
 
-    .app-logo {
-      height: 22px;
-      width: 22px;
-      vertical-align: middle;
-      margin-right: 6px;
-      margin-bottom: 3px;
-      filter:
-        drop-shadow(0 0 3px rgba(255, 215, 0, 0.8))
-        drop-shadow(0 0 8px rgba(255, 215, 0, 0.55))
-        drop-shadow(0 0 14px rgba(255, 215, 0, 0.35));
-    }
+  // Sits in the toolbar's "start" slot, alongside (not inside) ion-title,
+  // so its glow isn't clipped by ion-title's shadow-DOM overflow:hidden
+  // (used internally for text-ellipsis truncation).
+  .app-logo-wrap {
+    display: flex;
+    align-items: center;
+    padding-inline-start: 12px;
+    padding-inline-end: 6px;
+  }
+
+  .app-logo {
+    height: 22px;
+    width: 22px;
+    border-radius: 22%;
+    filter:
+      drop-shadow(0 0 3px rgba(255, 215, 0, 0.8))
+      drop-shadow(0 0 8px rgba(255, 215, 0, 0.55))
+      drop-shadow(0 0 14px rgba(255, 215, 0, 0.35));
   }
 
   .header-action-btn {
@@ -141,7 +149,12 @@ button, span, div, ion-button {
   .home-toolbar {
     ion-title {
       font-size: 1rem;
+      padding-inline-start: 0;
+    }
+
+    .app-logo-wrap {
       padding-inline-start: 8px;
+      padding-inline-end: 4px;
     }
 
     .header-action-btn {

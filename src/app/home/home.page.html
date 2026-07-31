@@ -1,9 +1,9 @@
 <ion-header [translucent]="true">
   <ion-toolbar class="home-toolbar">
-    <ion-title>
+    <div slot="start" class="app-logo-wrap">
       <img src="assets/icon/logo.png" alt="" class="app-logo" />
-      Habit Tycoon
-    </ion-title>
+    </div>
+    <ion-title>Habit Tycoon</ion-title>
     <ion-button
       *ngIf="isAdmin"
       slot="end"
