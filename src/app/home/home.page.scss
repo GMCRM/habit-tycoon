@@ -62,6 +62,14 @@ button, span, div, ion-button {
 .home-toolbar {
   ion-title {
     padding-inline-start: 12px;
+
+    .app-logo {
+      height: 22px;
+      width: 22px;
+      vertical-align: middle;
+      margin-right: 6px;
+      margin-bottom: 3px;
+    }
   }
 
   .header-action-btn {
