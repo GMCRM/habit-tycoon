@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { 
-  IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, 
-  IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon, 
+import {
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonCard, IonCardContent,
+  IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon,
   IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
@@ -31,7 +31,7 @@ import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, 
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, StockChartComponent, BusinessIconPipe],
+  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, StockChartComponent, BusinessIconPipe],
 })
 export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;

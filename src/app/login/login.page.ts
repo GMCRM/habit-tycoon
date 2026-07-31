@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonCard, IonCardContent, IonIcon, ToastController, AlertController } from '@ionic/angular/standalone';
+import { IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonInput, IonButton, IonItem, IonLabel, IonCard, IonCardContent, IonIcon, ToastController, AlertController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logoGoogle } from 'ionicons/icons';
 import { AuthService } from '../services/auth.service';
@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
   standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonCard, IonCardContent, IonIcon, CommonModule, FormsModule, RouterLink]
+  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonInput, IonButton, IonItem, IonLabel, IonCard, IonCardContent, IonIcon, CommonModule, FormsModule, RouterLink]
 })
 export class LoginPage implements OnInit {
 

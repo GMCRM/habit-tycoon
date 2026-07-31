@@ -1,4 +1,19 @@
 // Login page styling to match homepage dark theme
+.app-logo-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.app-logo {
+  height: 22px;
+  width: 22px;
+  border-radius: 22%;
+  filter:
+    drop-shadow(0 0 3px rgba(255, 215, 0, 0.8))
+    drop-shadow(0 0 8px rgba(255, 215, 0, 0.55))
+    drop-shadow(0 0 14px rgba(255, 215, 0, 0.35));
+}
+
 .login-container {
   padding-top: 40px;
   max-width: 400px;
