@@ -50,7 +50,12 @@
         />
         <div *ngIf="!(hb.business_icon | businessIconSrc)" class="option-icon">{{ hb.business_icon }}</div>
         <div class="option-details">
-          <h3>{{ hb.business_name }}</h3>
+          <h3>
+            {{ hb.business_name }}
+            <span *ngIf="hb.marketplace_bonus_percent && hb.marketplace_bonus_percent > 0" class="option-bonus-badge"
+              >+{{ hb.marketplace_bonus_percent }}%</span
+            >
+          </h3>
           <p>Replace this business &middot; {{ hb.streak }} day streak stays with the habit</p>
         </div>
         <ion-icon name="arrow-back" class="option-arrow"></ion-icon>

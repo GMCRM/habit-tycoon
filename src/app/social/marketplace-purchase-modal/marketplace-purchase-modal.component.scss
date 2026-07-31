@@ -96,6 +96,15 @@
       font-size: 1rem;
     }
 
+    // Current Marketplace bonus % already baked into this habit's earnings,
+    // shown so a buyer can see what they'd be overwriting.
+    .option-bonus-badge {
+      margin-left: 6px;
+      color: var(--ion-color-success, #2dd36f);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
     p {
       margin: 0;
       font-size: 0.8rem;
