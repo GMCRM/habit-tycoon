@@ -1,0 +1,163 @@
+-- Fix Marketplace resale price decay.
+--
+-- resolve_marketplace_purchase() set the buyer's new marketplace_base_value
+-- to 70% of whatever they *paid* (ROUND(purchase_price * 0.7, 2)). Since that
+-- value becomes the floor for the business's *next* Marketplace listing, every
+-- resale compounded the discount: 100,000 -> 70,000 -> 49,000 -> 34,300 -> ...
+-- After enough flips a business could list for a few percent of its tier
+-- value even though its earnings_per_completion never dropped (it only ever
+-- goes up via the streak bonus baked in on each purchase) — a business could
+-- be laundered down to pocket change while getting objectively better.
+--
+-- The fix: base_sell_value should always be 70% of the business's *tier*
+-- price (business_types.base_cost, i.e. v_purchase.base_cost — the same
+-- figure a never-marketplace-sourced business already floors to via
+-- getBaseSellValue()'s cost*0.7 fallback), not 70% of the last sale price.
+-- cost/base_cost is always kept in sync with business_types.base_cost on
+-- every purchase/upgrade/merge path, so this is the same formula used
+-- everywhere else in the app — just no longer overridden with a decaying one.
+
+-- ─── resolve_marketplace_purchase: base future resale value on tier price, not sale price ───
+DROP FUNCTION IF EXISTS resolve_marketplace_purchase(UUID, UUID, UUID, TEXT, TEXT, INTEGER, INTEGER[], TEXT);
+CREATE OR REPLACE FUNCTION resolve_marketplace_purchase(
+    p_buyer_id UUID,
+    p_purchase_id UUID,
+    p_target_habit_business_id UUID DEFAULT NULL,
+    p_habit_description TEXT DEFAULT NULL,
+    p_recurrence_interval TEXT DEFAULT NULL,
+    p_goal_value INTEGER DEFAULT NULL,
+    p_active_days INTEGER[] DEFAULT NULL,
+    p_business_name TEXT DEFAULT NULL
+) RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    v_purchase marketplace_purchases%ROWTYPE;
+    v_target_base_cost NUMERIC;
+    v_new_base_value NUMERIC;
+    v_new_earnings NUMERIC;
+    v_bonus_percent SMALLINT;
+    v_next_order INTEGER;
+    v_result_id UUID;
+BEGIN
+    IF p_buyer_id IS DISTINCT FROM auth.uid() THEN
+        RAISE EXCEPTION 'Not authorized';
+    END IF;
+
+    SELECT * INTO v_purchase FROM marketplace_purchases
+    WHERE id = p_purchase_id AND buyer_id = p_buyer_id AND resolved = false
+    FOR UPDATE;
+
+    IF v_purchase.id IS NULL THEN
+        RAISE EXCEPTION 'Purchase not found or already resolved';
+    END IF;
+
+    -- 70% of the business's tier price (never decays), not 70% of the sale
+    -- price (would compound the discount on every resale).
+    v_new_base_value := FLOOR(v_purchase.base_cost * 0.7);
+
+    -- Same capped streak-bonus formula as the listing price
+    -- (calculateMarketplaceListingPrice() / create_marketplace_listing()) — the
+    -- buyer paid for this bonus, so it now becomes their business's base pay.
+    v_bonus_percent := LEAST(GREATEST(v_purchase.streak_at_purchase, 0), 100);
+    v_new_earnings := ROUND(
+        v_purchase.earnings_per_completion * (1 + v_bonus_percent * 0.01),
+        2
+    );
+
+    IF p_target_habit_business_id IS NOT NULL THEN
+        SELECT bt.base_cost INTO v_target_base_cost
+        FROM habit_businesses hb
+        JOIN business_types bt ON bt.id = hb.business_type_id
+        WHERE hb.id = p_target_habit_business_id
+          AND hb.user_id = p_buyer_id
+          AND hb.is_active = true;
+
+        IF v_target_base_cost IS NULL THEN
+            RAISE EXCEPTION 'Target business not found';
+        END IF;
+        IF v_target_base_cost > v_purchase.base_cost THEN
+            RAISE EXCEPTION 'Target business is a higher level than the purchased business';
+        END IF;
+
+        -- business_name/habit_description are the habit's own identity and are
+        -- deliberately left untouched here — only the underlying business
+        -- (type/icon/cost/earnings) is being swapped out.
+        UPDATE habit_businesses
+        SET business_type_id = v_purchase.business_type_id,
+            business_icon = v_purchase.business_icon,
+            cost = v_purchase.base_cost,
+            earnings_per_completion = v_new_earnings,
+            marketplace_base_value = v_new_base_value,
+            marketplace_bonus_percent = NULLIF(v_bonus_percent, 0),
+            updated_at = NOW()
+        WHERE id = p_target_habit_business_id;
+
+        v_result_id := p_target_habit_business_id;
+    ELSE
+        IF p_habit_description IS NULL OR p_recurrence_interval IS NULL OR p_goal_value IS NULL THEN
+            RAISE EXCEPTION 'habit_description, recurrence_interval, and goal_value are required to start a new habit';
+        END IF;
+        IF p_goal_value < 1 OR p_goal_value > 20 THEN
+            RAISE EXCEPTION 'Goal value must be between 1 and 20';
+        END IF;
+
+        SELECT COALESCE(COUNT(*), 0) + 1 INTO v_next_order
+        FROM habit_businesses WHERE user_id = p_buyer_id AND is_active = true;
+
+        INSERT INTO habit_businesses (
+            user_id, business_type_id, business_name, business_icon, cost,
+            habit_description, recurrence_interval, frequency, active_days, goal_value,
+            current_progress, earnings_per_completion, streak, total_completions, total_earnings,
+            display_order, user_custom_order, is_active, marketplace_base_value, marketplace_bonus_percent
+        ) VALUES (
+            p_buyer_id, v_purchase.business_type_id,
+            COALESCE(NULLIF(TRIM(p_business_name), ''), v_purchase.business_name),
+            v_purchase.business_icon, v_purchase.base_cost,
+            p_habit_description, p_recurrence_interval, 'daily',
+            CASE WHEN p_recurrence_interval = 'specific_days' THEN COALESCE(p_active_days, ARRAY[]::INTEGER[]) ELSE NULL END,
+            p_goal_value,
+            0, v_new_earnings, 0, 0, 0,
+            v_next_order, v_next_order, true, v_new_base_value, NULLIF(v_bonus_percent, 0)
+        ) RETURNING id INTO v_result_id;
+    END IF;
+
+    UPDATE marketplace_purchases
+    SET resolved = true, resolved_habit_business_id = v_result_id
+    WHERE id = p_purchase_id;
+
+    PERFORM recalculate_net_worth(p_buyer_id);
+
+    RETURN v_result_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION resolve_marketplace_purchase(UUID, UUID, UUID, TEXT, TEXT, INTEGER, INTEGER[], TEXT) TO authenticated;
+
+-- ─── Backfill: raise (never lower) already-decayed marketplace_base_value on
+-- existing businesses, so their *next* listing prices correctly. A business
+-- that was for some reason already at or above the 70%-of-tier floor is left
+-- alone — this only corrects the bad (too-cheap) case. ───
+UPDATE habit_businesses hb
+SET marketplace_base_value = FLOOR(bt.base_cost * 0.7)
+FROM business_types bt
+WHERE hb.business_type_id = bt.id
+  AND hb.is_active = true
+  AND hb.marketplace_base_value IS NOT NULL
+  AND hb.marketplace_base_value < FLOOR(bt.base_cost * 0.7);
+
+-- ─── Backfill: also fix already-frozen active listings that are still on the
+-- Marketplace right now (not yet sold/expired) and are underpriced for the
+-- same reason — otherwise this exact bug would still sell at the old,
+-- decayed price for up to another 24h. Re-derive listing_price with the same
+-- capped streak-bonus multiplier already frozen on the row. ───
+UPDATE marketplace_listings ml
+SET base_sell_value = FLOOR(bt.base_cost * 0.7),
+    listing_price = ROUND(
+        FLOOR(bt.base_cost * 0.7) * (1 + LEAST(GREATEST(ml.streak_at_listing, 0), 100) * 0.01),
+        2
+    )
+FROM business_types bt
+WHERE ml.business_type_id = bt.id
+  AND ml.status = 'active'
+  AND ml.expires_at > NOW()
+  AND ml.base_sell_value < FLOOR(bt.base_cost * 0.7);
+
+NOTIFY pgrst, 'reload schema';

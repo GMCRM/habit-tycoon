@@ -39,7 +39,7 @@ export interface HabitBusiness {
   display_order: number; // User's preferred order for display
   user_custom_order: number; // User's original custom order (for resetting)
   last_upgraded_at?: string; // Last tier-upgrade timestamp; upgrades are rate-limited to once/24h
-  marketplace_base_value?: number | null; // 70% of Marketplace purchase price, when this business was bought via the Marketplace; overrides cost*0.7 for future sell/listing value
+  marketplace_base_value?: number | null; // 70% of the business's tier price (business_types.base_cost), when this business was bought via the Marketplace; same figure as the cost*0.7 fallback below, just persisted so a Marketplace-sourced business doesn't need a business_types join to compute it
   marketplace_bonus_percent?: number | null; // Streak bonus % (0-100) baked into earnings_per_completion when this business was bought via the Marketplace; shown as a "+X%" badge on the habit card icon
   created_at: string;
   updated_at: string;
@@ -215,10 +215,12 @@ export class HabitBusinessService {
   }
 
   /**
-   * A business's base sell value (before the streak bonus): 70% of the price
-   * it was last acquired for. Marketplace-sourced businesses use
-   * marketplace_base_value (70% of the purchase price); everything else
-   * falls back to 70% of its business-type cost. This is the floor that
+   * A business's base sell value (before the streak bonus): 70% of its
+   * business-type (tier) cost — never 70% of whatever it last sold for on
+   * the Marketplace, which would compound the discount on every resale.
+   * Marketplace-sourced businesses persist this as marketplace_base_value
+   * (set server-side by resolve_marketplace_purchase()); everything else
+   * computes it here from cost*0.7. This is the floor that
    * getMarketplaceListingPrice() falls back to once a streak breaks (resets
    * to 0), and what a fresh (never-upgraded, streak-0) business sells for.
    */
