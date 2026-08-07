@@ -7,7 +7,8 @@ export type ReceiptItemType =
   | 'stock_purchase'
   | 'stock_sale'
   | 'stock_refund'
-  | 'business_sale';
+  | 'business_sale'
+  | 'marketplace_purchase';
 
 export interface ReceiptLineItem {
   id: string;
@@ -132,6 +133,11 @@ export class WeeklyReceiptService {
         title = `Sold business — ${row.primary_label}`;
         subtitle = row.secondary_label;
         icon = '💰';
+        break;
+      case 'marketplace_purchase':
+        title = `Bought — ${row.primary_label}`;
+        subtitle = `Marketplace · ${row.secondary_label}`;
+        icon = row.icon || '🛒';
         break;
     }
 
