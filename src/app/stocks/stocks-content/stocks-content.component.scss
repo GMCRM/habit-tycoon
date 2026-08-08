@@ -391,7 +391,13 @@
     
     .item-content {
       display: flex;
-      align-items: center;
+      // flex-start, not center: business-info now holds the calendar grid
+      // *and* the stock-performance chart underneath it, so it's much
+      // taller than the icon/earnings columns. Centering vertically caused
+      // the icon and price panel to float in the middle of the card instead
+      // of lining up with the title — most visible in the row layout used
+      // from tablet-landscape widths up (e.g. iPad Pro in landscape).
+      align-items: flex-start;
       gap: 20px;
       position: relative;
       min-width: 0; // flex item must be allowed to shrink below its content's natural width, or the whole card (buttons, calendar) drags off-screen on mobile
