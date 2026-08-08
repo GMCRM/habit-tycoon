@@ -1,0 +1,60 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="people-circle" color="tertiary"></ion-icon>
+        Choose Friends
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="friend-picker-content">
+  <p class="picker-subtitle">Everyone selected will be invited to co-found this business — the cost splits evenly between all of you.</p>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div *ngIf="!isLoading && friends.length === 0" class="empty-state">
+    <ion-icon name="person-add-outline"></ion-icon>
+    <h3>No friends yet</h3>
+    <p>Add friends from the Social page first, then come back to start a joint venture.</p>
+  </div>
+
+  <div *ngIf="!isLoading && friends.length > 0" class="friends-list">
+    <div class="friend-row" *ngFor="let friend of friends" (click)="toggle(friend.friend_profile.id)">
+      <div class="friend-info">
+        <ion-icon name="person-circle" class="friend-avatar"></ion-icon>
+        <span class="friend-name">{{ friend.friend_profile?.name || 'Friend' }}</span>
+      </div>
+      <ion-toggle
+        [checked]="isSelected(friend.friend_profile.id)"
+        (ionChange)="toggle(friend.friend_profile.id)"
+        (click)="$event.stopPropagation()"
+      ></ion-toggle>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer *ngIf="!isLoading && friends.length > 0">
+  <ion-toolbar>
+    <div class="footer-content">
+      <ion-button
+        expand="block"
+        fill="solid"
+        color="tertiary"
+        [disabled]="selectedCount === 0"
+        (click)="confirm()"
+      >
+        <ion-icon name="people-circle" slot="start"></ion-icon>
+        Invite {{ selectedCount }} {{ selectedCount === 1 ? 'Friend' : 'Friends' }}
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

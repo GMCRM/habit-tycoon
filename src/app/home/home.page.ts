@@ -11,6 +11,7 @@ import {
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
+import { JointVentureService, JointVentureStatusRow } from '../services/joint-venture.service';
 import { OfflineQueuedError, OfflineQueueService } from '../services/offline-queue.service';
 import { HabitCacheService } from '../services/habit-cache.service';
 import { HabitUpdateService } from '../services/habit-update.service';
@@ -46,6 +47,10 @@ export class HomePage implements OnInit, OnDestroy {
   pendingHabitsCount = 0;
   habitBusinesses: HabitBusiness[] = [];
   todaysHabits: any[] = [];
+
+  // Joint venture: today's per-co-owner check-in roster, keyed by habit_business_id.
+  // Drives the "waiting on Bob, Carol" strip and the check-in button's checked state.
+  jvStatusByBusinessId: Record<string, JointVentureStatusRow[]> = {};
   
   // Habit grid data
   primaryHabitBusiness: HabitBusiness | null = null;
@@ -89,7 +94,8 @@ export class HomePage implements OnInit, OnDestroy {
     private habitIntervalService: HabitIntervalService,
     private countdownTickService: CountdownTickService,
     private offlineQueueService: OfflineQueueService,
-    private habitCacheService: HabitCacheService
+    private habitCacheService: HabitCacheService,
+    private jointVentureService: JointVentureService
   ) {
     addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, receiptOutline, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline });
     this.setRandomTagline();
@@ -258,8 +264,48 @@ export class HomePage implements OnInit, OnDestroy {
           console.warn('⚠️ Non-critical error resetting outdated habits:', resetError);
         }
         
-        // Load actual habit-business data
-        this.habitBusinesses = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
+        // Settle any of this user's own joint-venture invites/upgrades/deletion
+        // votes that passed their 24h window since the last visit (no cron in
+        // this app — expiry always resolves lazily like the existing
+        // Marketplace listing expiry does). Awaited first so a just-expired
+        // proposal doesn't still show as a live business below.
+        try {
+          await this.jointVentureService.resolveAllExpired(this.currentUser.id);
+        } catch (jvResolveError) {
+          console.warn('⚠️ Non-critical error resolving expired joint ventures:', jvResolveError);
+        }
+
+        // Load actual habit-business data. getUserHabitBusinesses() is left
+        // completely unmodified (still every non-JV business, plus any JV
+        // business where this user happens to be the creator, since its row's
+        // user_id is always the creator) — joint ventures this user co-owns
+        // but didn't create are fetched separately and merged in, so the
+        // heavily-used base query's own risk profile never changes.
+        const [ownBusinesses, jvBusinesses] = await Promise.all([
+          this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id),
+          this.jointVentureService.getJointVentureBusinessesForCoOwner(this.currentUser.id)
+        ]);
+        const seenIds = new Set(ownBusinesses.map(hb => hb.id));
+        this.habitBusinesses = [...ownBusinesses, ...jvBusinesses.filter(hb => !seenIds.has(hb.id))];
+
+        // Today's per-co-owner check-in roster for every joint venture on this
+        // dashboard — drives the "waiting on Bob, Carol" status strip.
+        const jvIds = this.habitBusinesses.filter(hb => hb.is_joint_venture).map(hb => hb.id);
+        if (jvIds.length > 0) {
+          try {
+            const statusRows = await this.jointVentureService.getStatus(jvIds);
+            const grouped: Record<string, JointVentureStatusRow[]> = {};
+            for (const row of statusRows) {
+              (grouped[row.habit_business_id] ||= []).push(row);
+            }
+            this.jvStatusByBusinessId = grouped;
+          } catch (jvStatusError) {
+            console.error('❌ Error loading joint venture status (non-critical):', jvStatusError);
+            this.jvStatusByBusinessId = {};
+          }
+        } else {
+          this.jvStatusByBusinessId = {};
+        }
 
         // Load each business's stock ownership pay boost (1% per share purchased by investors)
         try {
@@ -422,6 +468,42 @@ export class HomePage implements OnInit, OnDestroy {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
   }
 
+  // ─── Joint venture home-card helpers ───
+  // current_progress/goal_value are never used for a joint venture business
+  // (goal_value is pinned at 1, current_progress stays 0 — see
+  // complete_joint_venture_checkin) — isGoalCompleted() above would always
+  // read as "not completed" for one, so these read jvStatusByBusinessId
+  // (populated in loadDashboardData) instead.
+
+  private jvStatusRows(habitBusiness: HabitBusiness): JointVentureStatusRow[] {
+    return this.jvStatusByBusinessId[habitBusiness.id] || [];
+  }
+
+  isJvCheckedInToday(habitBusiness: HabitBusiness): boolean {
+    const mine = this.jvStatusRows(habitBusiness).find(r => r.co_owner_id === this.currentUser?.id);
+    return !!mine?.checked_in_today;
+  }
+
+  jvCheckedInCount(habitBusiness: HabitBusiness): number {
+    return this.jvStatusRows(habitBusiness).filter(r => r.checked_in_today).length;
+  }
+
+  jvTotalCoOwners(habitBusiness: HabitBusiness): number {
+    return this.jvStatusRows(habitBusiness).length;
+  }
+
+  /** Display names of co-owners who haven't checked in yet today (excluding this user). */
+  jvWaitingOnNames(habitBusiness: HabitBusiness): string {
+    const names = this.jvStatusRows(habitBusiness)
+      .filter(r => !r.checked_in_today && r.co_owner_id !== this.currentUser?.id)
+      .map(r => r.co_owner_name);
+    return names.join(', ');
+  }
+
+  isJvCreator(habitBusiness: HabitBusiness): boolean {
+    return habitBusiness.user_id === this.currentUser?.id;
+  }
+
   /** Habit-businesses not yet completed for the current period, in display order. */
   get todoHabitBusinesses(): HabitBusiness[] {
     return this.habitBusinesses.filter(hb => !this.isGoalCompleted(hb));
@@ -518,6 +600,138 @@ export class HomePage implements OnInit, OnDestroy {
     this.expandedGrids[habitBusiness.id] = !currentState;
     
     console.log('Grid expanded state for', habitBusiness.business_name, ':', this.expandedGrids[habitBusiness.id]);
+  }
+
+  /** Routes the upgrade button to the group-payment flow for a joint venture, or the existing single-owner flow otherwise. */
+  async onUpgradeClick(habitBusiness: HabitBusiness) {
+    if (habitBusiness.is_joint_venture) {
+      await this.proposeJvUpgrade(habitBusiness);
+    } else {
+      await this.upgradeHabitBusiness(habitBusiness);
+    }
+  }
+
+  /** Routes the delete button to the majority-vote flow for a joint venture, or the existing single-owner Marketplace-listing flow otherwise. */
+  async onDeleteClick(habitBusiness: HabitBusiness) {
+    if (habitBusiness.is_joint_venture) {
+      await this.initiateJvDeletion(habitBusiness);
+    } else {
+      await this.deleteHabitBusiness(habitBusiness);
+    }
+  }
+
+  /**
+   * Joint venture upgrade: reuses the same UpgradeModalComponent tier-picker
+   * UI (with costDivisor set so it shows/gates on this co-owner's own share,
+   * not the full cost) — only what happens after a tier is picked differs:
+   * a group-payment proposal instead of an immediate in-place mutation.
+   */
+  async proposeJvUpgrade(habitBusiness: HabitBusiness) {
+    const UPGRADE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    if (habitBusiness.last_upgraded_at) {
+      const msRemaining = UPGRADE_COOLDOWN_MS - (Date.now() - new Date(habitBusiness.last_upgraded_at).getTime());
+      if (msRemaining > 0) {
+        const toast = await this.toastController.create({
+          message: `⏳ This business was just upgraded — you can upgrade it again in ${Math.ceil(msRemaining / (60 * 60 * 1000))}h.`,
+          duration: 3000, position: 'top', color: 'warning'
+        });
+        await toast.present();
+        return;
+      }
+    }
+
+    try {
+      const businessTypes = await this.habitBusinessService.getBusinessTypes();
+      const upgradeOptions = businessTypes.filter(bt => bt.base_cost > (habitBusiness.cost || 0) && bt.id !== habitBusiness.business_type_id);
+      if (upgradeOptions.length === 0) {
+        const toast = await this.toastController.create({ message: '🎉 You already have the best business type available!', duration: 3000, position: 'top', color: 'success' });
+        await toast.present();
+        return;
+      }
+
+      const costDivisor = this.jvTotalCoOwners(habitBusiness) || 1;
+      const modal = await this.modalController.create({
+        component: UpgradeModalComponent,
+        componentProps: {
+          habitBusiness,
+          upgradeOptions,
+          userCash: this.userProfile?.cash || 0,
+          currentBusinessValue: 0, // no trade-in credit for a joint venture — see propose_joint_venture_upgrade
+          costDivisor,
+          isJointVenture: true,
+          modalController: this.modalController,
+          toastController: this.toastController
+        },
+        cssClass: 'upgrade-modal'
+      });
+      await modal.present();
+      const { data } = await modal.onDidDismiss();
+      if (!data?.selectedBusinessType) return;
+
+      const { data: { user } } = await this.authService.getUser();
+      if (!user) return;
+
+      const result = await this.jointVentureService.proposeUpgrade(user.id, habitBusiness.id, data.selectedBusinessType.id);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to propose upgrade');
+      }
+
+      const toast = await this.toastController.create({
+        message: `🤝 Upgrade proposed! Your $${(result.initiator_share || 0).toFixed(2)} share is paid — waiting on the other co-owners.`,
+        duration: 4000, position: 'top', color: 'success'
+      });
+      await toast.present();
+      await this.loadCurrentUser();
+      await this.loadDashboardData();
+    } catch (error: any) {
+      const errorToast = await this.toastController.create({
+        message: `❌ ${error?.message || 'Failed to propose upgrade'}`,
+        duration: 3000, position: 'top', color: 'danger'
+      });
+      await errorToast.present();
+    }
+  }
+
+  /** Joint venture deletion: any co-owner can start a majority vote; their own click auto-counts as a "yes" ballot. */
+  async initiateJvDeletion(habitBusiness: HabitBusiness) {
+    const totalCoOwners = this.jvTotalCoOwners(habitBusiness);
+    const alert = await this.alertController.create({
+      header: 'Start a Deletion Vote?',
+      message: `"${habitBusiness.business_name}" is co-owned by ${totalCoOwners || 'several'} people. More than half must agree within 24 hours, or the vote expires and nothing changes. Your own vote counts as a "yes".`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Start Vote',
+          role: 'destructive',
+          handler: () => {
+            (async () => {
+              try {
+                const { data: { user } } = await this.authService.getUser();
+                if (!user) return;
+                const result = await this.jointVentureService.initiateDeletionVote(user.id, habitBusiness.id);
+                if (!result.success) {
+                  throw new Error(result.error || 'Failed to start deletion vote');
+                }
+                const message = result.executed
+                  ? `🗑️ "${habitBusiness.business_name}" has been deleted — it's on the Marketplace, and proceeds will split evenly.`
+                  : `🗳️ Deletion vote started (1/${result.total_co_owners}) — waiting on the other co-owners.`;
+                const toast = await this.toastController.create({ message, duration: 4000, position: 'top', color: 'success' });
+                await toast.present();
+                await this.loadCurrentUser();
+                await this.loadDashboardData();
+              } catch (error: any) {
+                const errorToast = await this.toastController.create({
+                  message: `❌ ${error?.message || 'Failed to start deletion vote'}`,
+                  duration: 3000, position: 'top', color: 'danger'
+                });
+                await errorToast.present();
+              }
+            })();
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   /**
@@ -847,8 +1061,17 @@ export class HomePage implements OnInit, OnDestroy {
     const boostedBaseEarnings = baseEarnings + stockBoost;
 
     // Day 1: $1.00 (0x bonus), Day 2: $1.10 (0.1x bonus), Day 3: $1.20 (0.2x bonus), ...
-    // capped at +100% (2x total pay) so long streaks don't run away unbounded
-    const streakMultiplier = nextStreak === 1 ? 0 : Math.min((nextStreak - 1) * 0.1, 1);
+    // capped at +100% (2x total pay) so long streaks don't run away unbounded.
+    // Joint ventures earn DOUBLE the multiplier rate (20%/day, capped at
+    // +200%) — see complete_joint_venture_checkin — and this preview only
+    // reflects the streak-bonus top-up that lands once every co-owner has
+    // checked in for the day, not the base pay every check-in earns
+    // regardless of group state.
+    const streakMultiplier = nextStreak === 1
+      ? 0
+      : habitBusiness.is_joint_venture
+        ? Math.min((nextStreak - 1) * 0.2, 2)
+        : Math.min((nextStreak - 1) * 0.1, 1);
     const baseTotal = boostedBaseEarnings + (boostedBaseEarnings * streakMultiplier);
     const streakBonus = baseTotal - boostedBaseEarnings; // The bonus amount
 
@@ -898,6 +1121,14 @@ export class HomePage implements OnInit, OnDestroy {
     this.countdownTickService.register();
     this.tickSub = this.countdownTickService.tick$.subscribe(() => {
       this.habitBusinesses.forEach(hb => {
+        if (hb.is_joint_venture) {
+          // A joint venture's "today" is fixed to the creator's timezone
+          // (captured at funding time), not each viewer's own device
+          // timezone — see joint_venture_timezone / complete_joint_venture_checkin.
+          const secs = this.jointVentureService.getJvSecondsUntilReset(hb.joint_venture_timezone || 'UTC');
+          this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, '24h');
+          return;
+        }
         const interval = this.habitIntervalService.resolveInterval(hb);
         const secs = this.habitIntervalService.getSecondsUntilReset(interval, new Date(), hb.active_days);
         this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
@@ -927,6 +1158,14 @@ export class HomePage implements OnInit, OnDestroy {
    * Shared completion logic used when marking a habit complete
    */
   private async runCompleteHabit(habitBusiness: HabitBusiness) {
+    if (habitBusiness.is_joint_venture) {
+      // No "missed yesterday" backdating for joint ventures — retroactively
+      // flipping whether a past day was "full attendance" for a shared
+      // streak is a correctness minefield with unclear UX value, so this
+      // option simply isn't offered for a JV card.
+      await this.runJointVentureCheckIn(habitBusiness);
+      return;
+    }
     // Show "missed yesterday" prompt for daily habits that weren't done yesterday
     const missedYesterday = this.habitIntervalService.didMissYesterday(habitBusiness);
     console.log('[runCompleteHabit] habit:', habitBusiness.business_name, '| recurrence_interval:', habitBusiness.recurrence_interval, '| goal_value:', habitBusiness.goal_value, '| created_at:', habitBusiness.created_at, '| last_completed_at:', habitBusiness.last_completed_at, '| didMissYesterday:', missedYesterday);
@@ -934,6 +1173,36 @@ export class HomePage implements OnInit, OnDestroy {
       await this.showMissedYesterdayAlert(habitBusiness);
     } else {
       await this.completeHabitBusiness(habitBusiness);
+    }
+  }
+
+  private async runJointVentureCheckIn(habitBusiness: HabitBusiness) {
+    try {
+      const result = await this.jointVentureService.checkIn(habitBusiness.id);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to check in');
+      }
+
+      const earnings = (result.earnings || 0).toFixed(2);
+      const remaining = (result.total || 0) - (result.checked_in || 0);
+      const message = result.finalized
+        ? `🎉 Everyone checked in! +$${earnings} earned — streak now ${result.streak} day${result.streak === 1 ? '' : 's'}!`
+        : `✅ You're in! +$${earnings} earned — waiting on ${remaining} more co-owner${remaining === 1 ? '' : 's'} for today's streak bonus.`;
+
+      const toast = await this.toastController.create({ message, duration: 4000, position: 'top', color: 'success' });
+      await toast.present();
+
+      this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+      await this.loadCurrentUser();
+      await this.loadDashboardData();
+    } catch (error: any) {
+      const errorToast = await this.toastController.create({
+        message: `❌ ${error?.message || 'Failed to check in'}`,
+        duration: 3000,
+        position: 'top',
+        color: 'danger'
+      });
+      await errorToast.present();
     }
   }
 

@@ -209,8 +209,18 @@
             *ngIf="notifications.length > 0; else noNotifications"
             class="notifications-list"
           >
+            <ng-container *ngFor="let notification of notifications">
+              <!-- Joint venture notifications (invite, upgrade request, deletion vote,
+                   resolution) use the home-card visual style: icon large and centered,
+                   name, then message underneath — not this row layout. -->
+              <app-joint-venture-notification-card
+                *ngIf="isJointVentureNotification(notification)"
+                [notification]="notification"
+                (resolved)="onJointVentureNotificationResolved()"
+              ></app-joint-venture-notification-card>
+
             <ion-card
-              *ngFor="let notification of notifications"
+              *ngIf="!isJointVentureNotification(notification)"
               class="notification-card"
               [class.unread]="!notification.is_read"
             >
@@ -294,6 +304,7 @@
                 </div>
               </ion-card-content>
             </ion-card>
+            </ng-container>
           </div>
 
           <ng-template #noNotifications>

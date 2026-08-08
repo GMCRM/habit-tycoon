@@ -18,6 +18,9 @@ export class UpgradeModalComponent implements OnInit {
   @Input() upgradeOptions: any[] = [];
   @Input() userCash: number = 0;
   @Input() currentBusinessValue: number = 0;
+  /** Joint venture: the cost splits evenly N ways with no trade-in credit — shows/gates on this user's own share instead of the full amount. 1 for a normal single-owner upgrade. */
+  @Input() costDivisor: number = 1;
+  @Input() isJointVenture: boolean = false;
   @Input() modalController: any;
   @Input() toastController: any;
 
@@ -30,22 +33,26 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   selectUpgrade(businessType: any) {
-    const upgradeCost = businessType.base_cost - this.currentBusinessValue;
+    const upgradeCost = this.getUpgradeCost(businessType);
     const canAfford = this.userCash >= upgradeCost;
-    
+
     if (!canAfford) {
-      this.showErrorToast(`You need $${upgradeCost - this.userCash} more to afford this upgrade.`);
+      this.showErrorToast(`You need $${(upgradeCost - this.userCash).toFixed(2)} more to afford ${this.isJointVenture ? 'your share of' : ''} this upgrade.`);
       return;
     }
 
     this.modalController.dismiss({
       selectedBusinessType: businessType,
-      upgradeCost: upgradeCost
+      // Full-cost preview only — the joint-venture RPC recomputes the real
+      // per-owner share itself (full new-tier cost, no trade-in credit, see
+      // propose_joint_venture_upgrade) and ignores this value entirely.
+      upgradeCost: businessType.base_cost - this.currentBusinessValue
     });
   }
 
   getUpgradeCost(businessType: any): number {
-    return businessType.base_cost - this.currentBusinessValue;
+    const fullCost = businessType.base_cost - this.currentBusinessValue;
+    return this.costDivisor > 1 ? Math.round((fullCost / this.costDivisor) * 100) / 100 : fullCost;
   }
 
   canAffordUpgrade(businessType: any): boolean {

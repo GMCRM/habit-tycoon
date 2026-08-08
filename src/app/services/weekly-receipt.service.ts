@@ -8,7 +8,9 @@ export type ReceiptItemType =
   | 'stock_sale'
   | 'stock_refund'
   | 'business_sale'
-  | 'marketplace_purchase';
+  | 'marketplace_purchase'
+  | 'joint_venture_investment'
+  | 'joint_venture_refund';
 
 export interface ReceiptLineItem {
   id: string;
@@ -138,6 +140,17 @@ export class WeeklyReceiptService {
         title = `Bought — ${row.primary_label}`;
         subtitle = `Marketplace · ${row.secondary_label}`;
         icon = row.icon || '🛒';
+        break;
+      case 'joint_venture_investment':
+        // primary = the habit name, secondary = context ("New joint venture" / "Upgrade payment")
+        title = `${row.secondary_label} — ${row.primary_label}`;
+        subtitle = 'Your share';
+        icon = row.icon || '🤝';
+        break;
+      case 'joint_venture_refund':
+        title = `Refund — ${row.primary_label}`;
+        subtitle = row.secondary_label;
+        icon = '↩️';
         break;
     }
 

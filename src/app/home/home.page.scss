@@ -58,6 +58,24 @@ button, span, div, ion-button {
   margin: 2px 0 6px;
 }
 
+.jv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(var(--ion-color-tertiary-rgb), 0.18);
+  color: var(--ion-color-tertiary);
+  border: 1px solid rgba(var(--ion-color-tertiary-rgb), 0.4);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin: 2px 0 6px;
+
+  ion-icon {
+    font-size: 0.8rem;
+  }
+}
+
 // Header toolbar - keep title + action buttons on one row on narrow phones
 .home-toolbar {
   ion-title {
@@ -665,6 +683,17 @@ button, span, div, ion-button {
           .period-progress {
             font-weight: 600;
             color: rgba(255, 255, 255, 0.75);
+          }
+
+          &.jv-status {
+            flex-wrap: wrap;
+
+            .jv-waiting-on {
+              flex-basis: 100%;
+              color: var(--ion-color-tertiary);
+              font-weight: 500;
+              margin-top: 2px;
+            }
           }
         }
 

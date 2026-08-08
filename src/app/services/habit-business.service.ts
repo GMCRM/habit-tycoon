@@ -41,6 +41,8 @@ export interface HabitBusiness {
   last_upgraded_at?: string; // Last tier-upgrade timestamp; upgrades are rate-limited to once/24h
   marketplace_base_value?: number | null; // 70% of the business's tier price (business_types.base_cost), when this business was bought via the Marketplace; same figure as the cost*0.7 fallback below, just persisted so a Marketplace-sourced business doesn't need a business_types join to compute it
   marketplace_bonus_percent?: number | null; // Streak bonus % (0-100) baked into earnings_per_completion when this business was bought via the Marketplace; shown as a "+X%" badge on the habit card icon
+  is_joint_venture?: boolean; // Co-owned by multiple friends (see JointVentureService) — always false for a single-owner business
+  joint_venture_timezone?: string | null; // IANA tz captured from the creator at funding time; fixed for the business's lifetime, defines "today" for every co-owner's check-in. Null unless is_joint_venture.
   created_at: string;
   updated_at: string;
   business_types?: BusinessType;
@@ -667,6 +669,13 @@ export class HabitBusinessService {
       if (oldBusinessError || !oldBusiness) {
         throw new Error('Habit-business not found or you do not have permission to upgrade it');
       }
+      if (oldBusiness.is_joint_venture) {
+        // Joint ventures upgrade via JointVentureService.proposeUpgrade() — a
+        // group-payment flow, not this single-owner in-place mutation. This
+        // guard is defense-in-depth (the RLS UPDATE policy already blocks the
+        // write below for a JV row) against a stale code path reaching here.
+        throw new Error('This is a joint venture — use the group upgrade flow instead.');
+      }
 
       // Check if user has enough cash for the upgrade
       const { data: profile, error: profileError } = await this.supabase
@@ -868,6 +877,13 @@ export class HabitBusinessService {
 
       if (habitError || !habitBusiness) {
         throw new Error('Habit-business not found or you do not have permission to delete it');
+      }
+      if (habitBusiness.is_joint_venture) {
+        // Joint ventures delete via JointVentureService.initiateDeletionVote()
+        // — a majority-vote flow, not this single-owner instant listing. This
+        // guard is defense-in-depth (the RLS UPDATE policy already blocks the
+        // write below for a JV row) against a stale code path reaching here.
+        throw new Error('This is a joint venture — use the group deletion vote instead.');
       }
 
       // Check how many active habit businesses the user has
@@ -2121,31 +2137,41 @@ export class HabitBusinessService {
    */
   async getAvailableStocks(userId: string): Promise<BusinessStock[]> {
     try {
-      const { data, error } = await this.supabase
-        .from('business_stocks')
-        .select(`
-          *,
-          habit_businesses (
-            id,
-            business_name,
-            business_icon,
-            streak,
-            user_id,
-            business_types (
-              name,
-              icon
+      const [{ data, error }, { data: coOwnedRows }] = await Promise.all([
+        this.supabase
+          .from('business_stocks')
+          .select(`
+            *,
+            habit_businesses (
+              id,
+              business_name,
+              business_icon,
+              streak,
+              user_id,
+              is_joint_venture,
+              business_types (
+                name,
+                icon
+              )
             )
-          )
-        `)
-        .gt('shares_available', 0)
-        .neq('business_owner_id', userId); // Don't show user's own stocks
+          `)
+          .gt('shares_available', 0)
+          .neq('business_owner_id', userId), // Don't show user's own stocks
+        // Joint ventures: business_owner_id is always the creator, so a
+        // non-creator co-owner isn't caught by the .neq() above — exclude
+        // any business this user co-owns too. (Server-side, purchase_stock_shares
+        // hard-blocks this regardless — this is just so the UI doesn't offer
+        // a purchase that would be rejected.)
+        this.supabase.from('business_co_owners').select('habit_business_id').eq('user_id', userId)
+      ]);
 
       if (error) {
         console.error('Error fetching available stocks:', error);
         throw error;
       }
 
-      return data || [];
+      const ownCoOwnedIds = new Set((coOwnedRows || []).map((r: any) => r.habit_business_id));
+      return (data || []).filter((stock: any) => !ownCoOwnedIds.has(stock.habit_businesses?.id));
     } catch (error) {
       console.error('Error in getAvailableStocks:', error);
       throw error;

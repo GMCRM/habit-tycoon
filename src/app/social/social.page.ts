@@ -15,12 +15,14 @@ import { AuthService } from '../services/auth.service';
 import { SocialService, Friend } from '../services/social.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { MarketplaceService, MarketplaceListing, MarketplacePurchase } from '../services/marketplace.service';
+import { JointVentureService } from '../services/joint-venture.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { OfflineQueueService } from '../services/offline-queue.service';
 import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { StocksContentComponent } from '../stocks/stocks-content/stocks-content.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
+import { JointVentureNotificationCardComponent } from '../shared/components/joint-venture-notification-card/joint-venture-notification-card.component';
 import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
@@ -37,7 +39,8 @@ import {
     IonCard, IonSegment, IonSegmentButton,
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
     IonAccordion, IonAccordionGroup, IonItem,
-    BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe
+    BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe,
+    JointVentureNotificationCardComponent
   ],
 })
 export class SocialPage implements OnInit, OnDestroy {
@@ -97,7 +100,8 @@ export class SocialPage implements OnInit, OnDestroy {
     private toastController: ToastController,
     private alertController: AlertController,
     private modalController: ModalController,
-    private offlineQueueService: OfflineQueueService
+    private offlineQueueService: OfflineQueueService,
+    private jointVentureService: JointVentureService
   ) {
     addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline});
 
@@ -235,8 +239,16 @@ export class SocialPage implements OnInit, OnDestroy {
     }
     
     console.log('Loading social data for user:', this.currentUser.id);
-    
+
     try {
+      // Settle any of this user's own joint-venture invites/upgrades/deletion
+      // votes that passed their 24h window since the last visit — there's no
+      // cron in this app, so expiry is always resolved lazily like this,
+      // mirroring the existing Marketplace listing expiry pattern below.
+      // Awaited before loading notifications so any resulting "expired"
+      // resolution notification shows up in this same load.
+      await this.jointVentureService.resolveAllExpired(this.currentUser.id);
+
       // Load friends, notifications, friend requests, and leaderboard data
       // Handle each request separately to avoid one failure breaking everything
       const [friends, notifications, pendingRequests, sentRequests, leaderboard] = await Promise.allSettled([
@@ -649,6 +661,19 @@ export class SocialPage implements OnInit, OnDestroy {
     } else {
       return postDate.toLocaleDateString();
     }
+  }
+
+  private readonly jointVentureNotificationTypes = new Set([
+    'joint_venture_invite', 'joint_venture_upgrade_request', 'joint_venture_deletion_vote', 'joint_venture_resolved'
+  ]);
+
+  isJointVentureNotification(notification: any): boolean {
+    return this.jointVentureNotificationTypes.has(notification?.type);
+  }
+
+  /** Called after a joint-venture notification card's Accept/Decline/Pay/Vote action resolves. */
+  async onJointVentureNotificationResolved() {
+    await this.loadSocialData();
   }
 
   async markNotificationAsRead(notificationId: string) {

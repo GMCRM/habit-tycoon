@@ -1,0 +1,67 @@
+<div class="jv-notification-card" [class.unread]="!notification.is_read">
+  <ion-badge *ngIf="!notification.is_read" color="primary" class="new-badge">New</ion-badge>
+
+  <!-- Icon: largest element, front and center — mirrors the home-screen habit-business card -->
+  <div class="jv-hero">
+    <div class="jv-icon-wrap">
+      <img
+        *ngIf="icon | businessIconSrc as iconSrc"
+        [src]="iconSrc"
+        [alt]="businessName"
+        class="jv-icon jv-icon-img"
+      />
+      <span *ngIf="!(icon | businessIconSrc)" class="jv-icon">{{ icon }}</span>
+    </div>
+  </div>
+
+  <h3 class="jv-business-name">{{ businessName }}</h3>
+
+  <p class="jv-message">{{ notification.message }}</p>
+
+  <p *ngIf="isActionable && expiresInLabel" class="jv-expiry">
+    <ion-icon name="time-outline"></ion-icon>{{ expiresInLabel }}
+  </p>
+
+  <p *ngIf="!isActionable" class="jv-outcome">{{ resolvedOutcomeLabel }}</p>
+
+  <!-- Invite: Accept & Pay / Decline -->
+  <div *ngIf="notification.type === 'joint_venture_invite'" class="jv-actions">
+    <ion-button expand="block" fill="solid" color="success" [disabled]="acting" (click)="onAcceptInvite()">
+      <ion-spinner *ngIf="acting" name="crescent" slot="start"></ion-spinner>
+      <ion-icon *ngIf="!acting" name="checkmark-circle" slot="start"></ion-icon>
+      Accept &amp; Pay ${{ metadata.share_amount | number:'1.2-2' }}
+    </ion-button>
+    <ion-button expand="block" fill="clear" color="medium" [disabled]="acting" (click)="onDeclineInvite()">
+      <ion-icon name="close-circle" slot="start"></ion-icon>
+      Decline
+    </ion-button>
+  </div>
+
+  <!-- Upgrade payment request: Pay Now / Decline -->
+  <div *ngIf="notification.type === 'joint_venture_upgrade_request'" class="jv-actions">
+    <ion-button expand="block" fill="solid" color="warning" [disabled]="acting" (click)="onPayUpgrade()">
+      <ion-spinner *ngIf="acting" name="crescent" slot="start"></ion-spinner>
+      <ion-icon *ngIf="!acting" name="cash-outline" slot="start"></ion-icon>
+      Pay Now ${{ metadata.share_amount | number:'1.2-2' }}
+    </ion-button>
+    <ion-button expand="block" fill="clear" color="medium" [disabled]="acting" (click)="onDeclineUpgrade()">
+      <ion-icon name="close-circle" slot="start"></ion-icon>
+      Decline
+    </ion-button>
+  </div>
+
+  <!-- Deletion vote: Affirm / Decline -->
+  <div *ngIf="notification.type === 'joint_venture_deletion_vote'" class="jv-actions">
+    <ion-button expand="block" fill="solid" color="danger" [disabled]="acting" (click)="onAffirmDeletion()">
+      <ion-spinner *ngIf="acting" name="crescent" slot="start"></ion-spinner>
+      <ion-icon *ngIf="!acting" name="trash-outline" slot="start"></ion-icon>
+      Affirm Delete
+    </ion-button>
+    <ion-button expand="block" fill="clear" color="medium" [disabled]="acting" (click)="onDeclineDeletion()">
+      <ion-icon name="close-circle" slot="start"></ion-icon>
+      Keep It
+    </ion-button>
+  </div>
+
+  <p class="jv-timestamp">{{ notification.created_at | date:'short' }}</p>
+</div>

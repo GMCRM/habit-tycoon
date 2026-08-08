@@ -32,7 +32,7 @@
       </div>
 
       <div class="financial-info">
-        <div class="info-card">
+        <div class="info-card" *ngIf="!isJointVenture">
           <ion-icon name="cash" color="success"></ion-icon>
           <div class="info-content">
             <div class="info-label">Sell Value</div>
@@ -51,8 +51,11 @@
 
     <div class="upgrade-options">
       <h3>Choose Your Upgrade</h3>
-      <p class="upgrade-subtitle">
+      <p class="upgrade-subtitle" *ngIf="!isJointVenture">
         Select a better business type to upgrade to:
+      </p>
+      <p class="upgrade-subtitle" *ngIf="isJointVenture">
+        The full cost splits evenly across all {{ costDivisor }} co-owners — this shows your own share. Everyone must pay before the upgrade applies.
       </p>
 
       <div class="options-grid">
@@ -80,9 +83,9 @@
               [class.affordable-text]="canAffordUpgrade(businessType)"
               [class.expensive-text]="!canAffordUpgrade(businessType)"
             >
-              <span class="cost-label">Upgrade Cost:</span>
+              <span class="cost-label">{{ isJointVenture ? 'Your Share:' : 'Upgrade Cost:' }}</span>
               <span class="cost-amount"
-                >${{ getUpgradeCost(businessType) }}</span
+                >${{ getUpgradeCost(businessType) | number:'1.2-2' }}</span
               >
             </div>
 
