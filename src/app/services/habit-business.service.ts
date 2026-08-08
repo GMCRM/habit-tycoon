@@ -1091,10 +1091,11 @@ export class HabitBusinessService {
   }
 
   /**
-   * Complete a daily habit for YESTERDAY (backdated one day).
-   * Only available for daily habits (recurrence_interval === '24h', goal_value === 1)
-   * that were not completed yesterday. Pays earnings, updates streak, and
-   * distributes dividends to stockholders — all at yesterday's rate.
+   * Complete a habit for YESTERDAY (backdated one day).
+   * Available for '24h' habits, and for 'specific_days' habits when yesterday
+   * was one of their scheduled days — in both cases only when goal_value === 1
+   * and it wasn't already completed yesterday. Pays earnings, updates streak,
+   * and distributes dividends to stockholders — all at yesterday's rate.
    */
   /** Cache-only replica of completeHabitYesterday's validation + streak/earnings math (see previewCompletion for why the stock boost is omitted). */
   private previewCompletionYesterday(habit: HabitBusiness, occurredAt: string): {
@@ -1103,21 +1104,32 @@ export class HabitBusinessService {
     completionTime: Date;
   } | null {
     const now = new Date(occurredAt);
-    if (this.habitIntervalService.resolveInterval(habit) !== '24h') return null;
+    const interval = this.habitIntervalService.resolveInterval(habit);
 
     const yesterdayStart = this.habitIntervalService.getPreviousPeriodStart('24h', now);
     const todayStart = this.habitIntervalService.getCurrentPeriodStart('24h', now);
     const dayBeforeYesterdayStart = new Date(yesterdayStart.getTime() - 24 * 60 * 60 * 1000);
+
+    if (interval === 'specific_days') {
+      const activeDays = habit.active_days || [];
+      if (!activeDays.includes(yesterdayStart.getDay())) return null; // yesterday wasn't a scheduled day
+    } else if (interval !== '24h') {
+      return null;
+    }
 
     if (habit.last_completed_at) {
       const lastCompleted = new Date(habit.last_completed_at);
       if (lastCompleted >= yesterdayStart && lastCompleted < todayStart) return null; // already completed yesterday
     }
 
+    const previousPeriodStart = interval === 'specific_days'
+      ? this.habitIntervalService.getPreviousActiveDayStart(habit.active_days || [], yesterdayStart)
+      : dayBeforeYesterdayStart;
+
     let newStreak = 1;
     if (habit.last_completed_at) {
       const lastCompleted = new Date(habit.last_completed_at);
-      newStreak = (lastCompleted >= dayBeforeYesterdayStart && lastCompleted < yesterdayStart)
+      newStreak = (lastCompleted >= previousPeriodStart && lastCompleted < yesterdayStart)
         ? (habit.streak || 0) + 1
         : 1;
     }
@@ -1177,13 +1189,22 @@ export class HabitBusinessService {
       if (habitError || !habitBusiness) throw new Error('Habit-business not found');
 
       const interval = this.habitIntervalService.resolveInterval(habitBusiness);
-      if (interval !== '24h') throw new Error('Backdated completion only available for daily habits');
+      if (interval !== '24h' && interval !== 'specific_days') {
+        throw new Error('Backdated completion only available for daily or specific-day habits');
+      }
 
       // Anchor "now" to occurredAt so a replayed completion resolves against
       // the day it actually happened on, not the reconnect day.
       const now = new Date(occurredAt);
       const yesterdayStart = this.habitIntervalService.getPreviousPeriodStart('24h', now);
       const todayStart = this.habitIntervalService.getCurrentPeriodStart('24h', now);
+
+      if (interval === 'specific_days') {
+        const activeDays = habitBusiness.active_days || [];
+        if (!activeDays.includes(yesterdayStart.getDay())) {
+          throw new Error('Yesterday was not a scheduled day for this habit');
+        }
+      }
 
       // Guard: check if already completed yesterday
       const { data: yesterdayCompletions } = await this.supabase
@@ -1199,12 +1220,17 @@ export class HabitBusinessService {
         throw new Error('This habit was already completed yesterday');
       }
 
-      // Streak: was the habit completed the day before yesterday?
+      // Streak: was the habit completed on the previous due day (the day
+      // before yesterday for '24h', or the most recent active day before
+      // yesterday for 'specific_days')?
       const dayBeforeYesterdayStart = new Date(yesterdayStart.getTime() - 24 * 60 * 60 * 1000);
+      const previousPeriodStart = interval === 'specific_days'
+        ? this.habitIntervalService.getPreviousActiveDayStart(habitBusiness.active_days || [], yesterdayStart)
+        : dayBeforeYesterdayStart;
       let newStreak = 1;
       if (habitBusiness.last_completed_at) {
         const lastCompleted = new Date(habitBusiness.last_completed_at);
-        if (lastCompleted >= dayBeforeYesterdayStart && lastCompleted < yesterdayStart) {
+        if (lastCompleted >= previousPeriodStart && lastCompleted < yesterdayStart) {
           newStreak = (habitBusiness.streak || 0) + 1; // Consecutive — streak continues
         } else {
           newStreak = 1; // Gap — streak resets
