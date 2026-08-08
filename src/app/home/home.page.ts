@@ -1248,66 +1248,75 @@ export class HomePage implements OnInit, OnDestroy {
         }
       };
 
+      // "Today" only makes sense as an option if today is actually a due day —
+      // for a specific_days habit resting today, there's nothing to complete today.
+      const showTodayOption = this.isTodayActiveDay(habitBusiness);
+
+      const buttons: any[] = [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => done()
+        },
+        {
+          text: 'Yesterday',
+          handler: () => {
+            // Run async in background so the alert closes immediately
+            (async () => {
+              try {
+                await this.habitBusinessService.completeHabitYesterday(habitBusiness.id);
+                const toast = await this.toastController.create({
+                  message: `✅ "${habitBusiness.business_name}" marked complete for yesterday! Earnings added.`,
+                  duration: 3000,
+                  position: 'top',
+                  color: 'success'
+                });
+                await toast.present();
+                this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+                await this.loadCurrentUser();
+                await this.loadDashboardData();
+              } catch (error) {
+                const isOfflineQueued = error instanceof OfflineQueuedError;
+                const errorMessage = (error as any)?.message || 'Unknown error occurred';
+                const errorToast = await this.toastController.create({
+                  message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed: ${errorMessage}`,
+                  duration: 3000,
+                  position: 'top',
+                  color: isOfflineQueued ? 'warning' : 'danger'
+                });
+                await errorToast.present();
+
+                if (isOfflineQueued) {
+                  this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
+                  await this.refreshAfterOfflineQueue();
+                }
+              } finally {
+                done();
+              }
+            })();
+          }
+        }
+      ];
+
+      if (showTodayOption) {
+        buttons.push({
+          text: 'Today',
+          handler: () => {
+            (async () => {
+              try {
+                await this.completeHabitBusiness(habitBusiness);
+              } finally {
+                done();
+              }
+            })();
+          }
+        });
+      }
+
       this.alertController.create({
         header: '⏰ Forgot to mark your habit yesterday?',
         message: 'You missed marking this habit yesterday. Did you complete it? You can still mark it as complete.\n\nSelect which day to complete:',
-        buttons: [
-          {
-            text: 'Cancel',
-            role: 'cancel',
-            handler: () => done()
-          },
-          {
-            text: 'Yesterday',
-            handler: () => {
-              // Run async in background so the alert closes immediately
-              (async () => {
-                try {
-                  await this.habitBusinessService.completeHabitYesterday(habitBusiness.id);
-                  const toast = await this.toastController.create({
-                    message: `✅ "${habitBusiness.business_name}" marked complete for yesterday! Earnings added.`,
-                    duration: 3000,
-                    position: 'top',
-                    color: 'success'
-                  });
-                  await toast.present();
-                  this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-                  await this.loadCurrentUser();
-                  await this.loadDashboardData();
-                } catch (error) {
-                  const isOfflineQueued = error instanceof OfflineQueuedError;
-                  const errorMessage = (error as any)?.message || 'Unknown error occurred';
-                  const errorToast = await this.toastController.create({
-                    message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed: ${errorMessage}`,
-                    duration: 3000,
-                    position: 'top',
-                    color: isOfflineQueued ? 'warning' : 'danger'
-                  });
-                  await errorToast.present();
-
-                  if (isOfflineQueued) {
-                    this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-                    await this.refreshAfterOfflineQueue();
-                  }
-                } finally {
-                  done();
-                }
-              })();
-            }
-          },
-          {
-            text: 'Today',
-            handler: () => {
-              (async () => {
-                try {
-                  await this.completeHabitBusiness(habitBusiness);
-                } finally {
-                  done();
-                }
-              })();
-            }
-          }
-        ]
+        buttons
       }).then(alert => alert.present());
     });
   }

@@ -142,7 +142,15 @@ export class HabitIntervalService {
   isHabitCompleteForCurrentPeriod(habit: HabitBusiness, now: Date = new Date()): boolean {
     const interval = this.resolveInterval(habit);
 
-    if (interval === 'specific_days' && !this.isTodayActiveDay(habit, now)) return true;
+    if (interval === 'specific_days' && !this.isTodayActiveDay(habit, now)) {
+      // One-day grace window: if yesterday was an active day that was missed,
+      // don't count the habit as "done" yet — let it stay in the todo list
+      // (with a Complete button) so the user can still backdate it. Once a
+      // second day has passed, didMissYesterday goes false and this reverts
+      // to "nothing due today" (rest day).
+      if (this.didMissYesterday(habit, now)) return false;
+      return true;
+    }
 
     const goalValue = habit.goal_value || 1;
     const currentProgress = habit.current_progress || 0;
@@ -217,15 +225,15 @@ export class HabitIntervalService {
   }
 
   /**
-   * Returns true if this is a daily ('24h') habit that was NOT completed yesterday.
-   * Only applies to simple daily habits (goal_value === 1).
+   * Returns true if the habit had a due day yesterday — every day for '24h'
+   * habits, or yesterday's weekday for 'specific_days' habits — that was NOT
+   * completed. This is a one-day grace window: it only ever looks at
+   * yesterday, so a day that was due two or more days ago (and never
+   * backdated) reports false and can no longer be completed.
+   * Only applies to simple habits (goal_value === 1).
    */
   didMissYesterday(habit: HabitBusiness, now: Date = new Date()): boolean {
     const interval = this.resolveInterval(habit);
-    if (interval !== '24h') {
-      console.log('[didMissYesterday] SKIP: interval is', interval);
-      return false;
-    }
     if ((habit.goal_value || 1) !== 1) {
       console.log('[didMissYesterday] SKIP: goal_value is', habit.goal_value);
       return false;
@@ -233,6 +241,14 @@ export class HabitIntervalService {
 
     const yesterdayStart = this.getPreviousPeriodStart('24h', now);
     const todayStart = this.getCurrentPeriodStart('24h', now);
+
+    if (interval === 'specific_days') {
+      const activeDays = habit.active_days || [];
+      if (!activeDays.includes(yesterdayStart.getDay())) {
+        console.log('[didMissYesterday] SKIP: yesterday was not an active day');
+        return false;
+      }
+    }
 
     const habitCreatedAt = new Date(habit.created_at);
     if (habitCreatedAt >= todayStart) {
