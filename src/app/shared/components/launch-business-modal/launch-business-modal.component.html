@@ -233,6 +233,18 @@
                 <span class="summary-label">Each friend's share:</span>
                 <span class="summary-value">${{ jvShareOthers | number:'1.2-2' }}</span>
               </div>
+              <div class="summary-item">
+                <span class="summary-label">Each owner earns per check-in:</span>
+                <span class="summary-value">${{ jvBasePayShare | number:'1.2-2' }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Max streak bonus:</span>
+                <span class="summary-value">+{{ jvMaxStreakMultiplierPercent }}%</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Max payout per owner (at full streak):</span>
+                <span class="summary-value">${{ jvMaxPayPerOwner | number:'1.2-2' }}</span>
+              </div>
             </div>
           </div>
         </div>

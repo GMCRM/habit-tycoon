@@ -133,6 +133,24 @@ export class LaunchBusinessModalComponent implements OnInit {
     return Math.round((this.selectedBusinessType.base_cost - this.jvShareOthers * (this.jvOwnerCount - 1)) * 100) / 100;
   }
 
+  /** Per-completion earnings each co-owner gets — base_pay split across owners, rounded up to the cent, same as the server. */
+  get jvBasePayShare(): number {
+    if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
+    return Math.ceil((this.selectedBusinessType.base_pay / this.jvOwnerCount) * 100) / 100;
+  }
+
+  /** Group streak-bonus cap as a percentage, added on top of the always-paid base share — scales with owner count instead of a flat 200%. */
+  get jvMaxStreakMultiplierPercent(): number {
+    if (this.jvOwnerCount < 2) return 0;
+    return this.jvOwnerCount * 20 + 200;
+  }
+
+  /** Each co-owner's max possible payout per completion once the group streak is maxed: base share + the bonus on top of it. */
+  get jvMaxPayPerOwner(): number {
+    if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
+    return Math.ceil(this.jvBasePayShare * (1 + this.jvMaxStreakMultiplierPercent / 100) * 100) / 100;
+  }
+
   onJointVentureToggle(checked: boolean) {
     this.isJointVenture = checked;
     if (checked) {
