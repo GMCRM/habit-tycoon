@@ -52,11 +52,12 @@
         <div class="option-details">
           <h3>
             {{ hb.business_name }}
-            <span *ngIf="hb.marketplace_bonus_percent && hb.marketplace_bonus_percent > 0" class="option-bonus-badge"
-              >+{{ hb.marketplace_bonus_percent }}%</span
+            <span *ngIf="resultingBonusPercent(hb) > 0" class="option-bonus-badge"
+              >+{{ resultingBonusPercent(hb) }}%</span
             >
           </h3>
-          <p>Replace this business &middot; {{ hb.streak }} day streak stays with the habit</p>
+          <p *ngIf="isSameBusinessType(hb)">Merge &middot; bonuses stack &middot; {{ hb.streak }} day streak stays with the habit</p>
+          <p *ngIf="!isSameBusinessType(hb)">Replace this business &middot; old one goes to the Marketplace &middot; {{ hb.streak }} day streak stays with the habit</p>
         </div>
         <ion-icon name="arrow-back" class="option-arrow"></ion-icon>
       </div>

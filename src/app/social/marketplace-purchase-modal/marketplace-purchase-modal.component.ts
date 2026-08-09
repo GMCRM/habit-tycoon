@@ -65,6 +65,28 @@ export class MarketplacePurchaseModalComponent implements OnInit {
     return this.purchase.earnings_per_completion * (1 + bonusPercent * 0.01);
   }
 
+  private get purchaseBonusPercent(): number {
+    return Math.min(Math.max(this.purchase.streak_at_purchase, 0), 100);
+  }
+
+  /** True when choosing this business would merge two of the same business
+   * type — the case where bonus percents stack instead of one replacing the
+   * other, and the old business is absorbed rather than displaced (so it
+   * isn't relisted on the Marketplace). Mirrors resolve_marketplace_purchase(). */
+  isSameBusinessType(hb: HabitBusiness): boolean {
+    return hb.business_type_id === this.purchase.business_type_id;
+  }
+
+  /** Resulting Marketplace bonus % this business will carry after the purchase
+   * resolves — stacked (capped at 100) for a same-type merge, or just the
+   * purchased business's own bonus for a different-type upgrade swap. */
+  resultingBonusPercent(hb: HabitBusiness): number {
+    if (this.isSameBusinessType(hb)) {
+      return Math.min((hb.marketplace_bonus_percent ?? 0) + this.purchaseBonusPercent, 100);
+    }
+    return this.purchaseBonusPercent;
+  }
+
   dismiss() {
     this.modalController.dismiss();
   }
