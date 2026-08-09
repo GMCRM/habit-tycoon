@@ -25,19 +25,17 @@ export class SignUpPage {
 
   // Google OAuth signup
   async onGoogleSignUp() {
-    console.log('🔄 Starting Google OAuth signup...');
     try {
       const result = await this.authService.signUpWithGoogle();
-      
+
       if (result.error) {
         console.error('❌ Google signup failed:', result.error);
         alert('Google signup failed: ' + (result.error as any)?.message || 'Unknown error');
         return;
       }
 
-      console.log('✅ Google OAuth initiated successfully');
       // Note: User will be redirected to Google, then back to our app
-      
+
     } catch (error) {
       console.error('❌ Unexpected Google signup error:', error);
       alert('Unexpected error during Google signup: ' + error);
@@ -64,10 +62,6 @@ export class SignUpPage {
       return;
     }
 
-    console.log('🔄 Starting sign-up process...');
-    console.log('Email:', email);
-    console.log('Display name:', displayName);
-
     try {
       const result = await this.authService.signUp(email, password, displayName);
       
@@ -90,8 +84,6 @@ export class SignUpPage {
         alert(errorMessage);
         return;
       }
-
-      console.log('✅ Sign-up successful:', result.data);
 
       // Check if user needs email confirmation
       if (result.data?.user && !result.data.user.email_confirmed_at) {

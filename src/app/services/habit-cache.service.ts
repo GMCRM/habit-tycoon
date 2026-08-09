@@ -198,4 +198,16 @@ export class HabitCacheService {
     await this.save({ ...snapshot, pendingDeltas: remaining });
     return delta;
   }
+
+  /**
+   * Wipe the cache (in-memory and persisted). The snapshot is keyed globally
+   * rather than per-user, so this must run on sign-out — otherwise a second
+   * account logging in on the same device while offline (before its first
+   * successful network fetch) would fall back to the previous account's
+   * cached cash/net-worth/habits.
+   */
+  async clear(): Promise<void> {
+    this.snapshot = { ...EMPTY_SNAPSHOT };
+    await Preferences.remove({ key: CACHE_KEY });
+  }
 }

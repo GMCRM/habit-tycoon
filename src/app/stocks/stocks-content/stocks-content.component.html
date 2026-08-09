@@ -168,7 +168,7 @@
       <div class="stocks-list-scroll-container">
         <div *ngIf="!isLoading && getFilteredBusinesses().length > 0">
           <div
-            *ngFor="let business of getFilteredBusinesses()"
+            *ngFor="let business of getFilteredBusinesses(); trackBy: trackByFriendBusinessId"
             class="habit-business-item"
           >
             <div class="item-content">

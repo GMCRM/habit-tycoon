@@ -112,33 +112,6 @@ export interface StockHolding {
   };
 }
 
-export interface BusinessUpgrade {
-  id: string;
-  user_id: string;
-  old_habit_business_id: string;
-  new_habit_business_id: string;
-  old_business_type_id: number;
-  new_business_type_id: number;
-  streak_value_sold: number;
-  upgrade_cost: number;
-  profit_from_upgrade: number;
-  old_streak_count: number;
-  created_at: string;
-}
-
-export interface UpgradeCalculation {
-  currentBusinessValue: number;
-  streakMultiplier: number;
-  totalStreakValue: number;
-  availableUpgrades: BusinessType[];
-  upgradeOptions: Array<{
-    businessType: BusinessType;
-    upgradeCost: number;
-    profitFromUpgrade: number;
-    canAfford: boolean;
-  }>;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -607,10 +580,20 @@ export class HabitBusinessService {
 
       if (updateCashError) {
         console.error('Error updating user cash:', updateCashError);
-        await this.showErrorToast('Habit created but payment failed. Please contact support.');
-        // Note: The habit-business was created but cash wasn't deducted
-        // In a production app, you'd want to use a database transaction
-        throw new Error('Habit-business created but failed to deduct payment');
+        // Roll back the just-created row rather than leaving the user with a
+        // free business — no DB transaction wraps these two writes, so this
+        // compensating delete is the best available substitute.
+        const { error: rollbackError } = await this.supabase
+          .from('habit_businesses')
+          .delete()
+          .eq('id', newHabitBusiness.id);
+        if (rollbackError) {
+          console.error('Error rolling back habit business after failed payment:', rollbackError);
+          await this.showErrorToast('Habit created but payment failed. Please contact support.');
+          throw new Error('Habit-business created but failed to deduct payment');
+        }
+        await this.showErrorToast('Failed to create habit business. Please try again.');
+        throw new Error('Failed to deduct payment for new habit-business');
       }
 
       await this.recalculateNetWorth(user.id);
@@ -738,7 +721,6 @@ export class HabitBusinessService {
         throw new Error('Business upgraded but failed to deduct payment');
       }
 
-      console.log('✅ Successfully upgraded habit business');
       return { listedAt };
     } catch (error) {
       console.error('Error in upgradeHabitBusiness:', error);
@@ -1192,182 +1174,29 @@ export class HabitBusinessService {
       throw new OfflineQueuedError("You're offline — this will sync automatically once you're back online.");
     }
     try {
-      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
-      if (userError || !user) throw new Error('User not authenticated');
-
-      const { data: habitBusiness, error: habitError } = await this.supabase
-        .from('habit_businesses')
-        .select('*')
-        .eq('id', habitBusinessId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (habitError || !habitBusiness) throw new Error('Habit-business not found');
-
-      const interval = this.habitIntervalService.resolveInterval(habitBusiness);
-      if (interval !== '24h' && interval !== 'specific_days') {
-        throw new Error('Backdated completion only available for daily or specific-day habits');
-      }
-
-      // Anchor "now" to occurredAt so a replayed completion resolves against
-      // the day it actually happened on, not the reconnect day.
-      const now = new Date(occurredAt);
-      const yesterdayStart = this.habitIntervalService.getPreviousPeriodStart('24h', now);
-      const todayStart = this.habitIntervalService.getCurrentPeriodStart('24h', now);
-
-      if (interval === 'specific_days') {
-        const activeDays = habitBusiness.active_days || [];
-        if (!activeDays.includes(yesterdayStart.getDay())) {
-          throw new Error('Yesterday was not a scheduled day for this habit');
-        }
-      }
-
-      // Guard: check if already completed yesterday
-      const { data: yesterdayCompletions } = await this.supabase
-        .from('habit_completions')
-        .select('id')
-        .eq('habit_business_id', habitBusinessId)
-        .eq('user_id', user.id)
-        .gte('completed_at', yesterdayStart.toISOString())
-        .lt('completed_at', todayStart.toISOString());
-
-      if (yesterdayCompletions && yesterdayCompletions.length > 0) {
-        await this.showErrorToast('This habit was already completed yesterday!');
-        throw new Error('This habit was already completed yesterday');
-      }
-
-      // Streak: was the habit completed on the previous due day (the day
-      // before yesterday for '24h', or the most recent active day before
-      // yesterday for 'specific_days')?
-      const dayBeforeYesterdayStart = new Date(yesterdayStart.getTime() - 24 * 60 * 60 * 1000);
-      const previousPeriodStart = interval === 'specific_days'
-        ? this.habitIntervalService.getPreviousActiveDayStart(habitBusiness.active_days || [], yesterdayStart)
-        : dayBeforeYesterdayStart;
-      let newStreak = 1;
-      if (habitBusiness.last_completed_at) {
-        const lastCompleted = new Date(habitBusiness.last_completed_at);
-        if (lastCompleted >= previousPeriodStart && lastCompleted < yesterdayStart) {
-          newStreak = (habitBusiness.streak || 0) + 1; // Consecutive — streak continues
-        } else {
-          newStreak = 1; // Gap — streak resets
-        }
-      }
-
-      // Earnings (yesterday's rate): stock ownership boost applied to base pay first,
-      // then the streak bonus on top of the boosted base
-      const baseEarnings = habitBusiness.earnings_per_completion;
-
-      // Stock ownership boost: 1% per tradeable share actually purchased by investors
-      let stockBoost = 0;
-      let stockInfoId: string | null = null;
-      const { data: stockData } = await this.supabase
-        .from('business_stocks')
-        .select('id, shares_owned_by_owner, shares_available, total_shares_issued')
-        .eq('habit_business_id', habitBusinessId)
-        .single();
-
-      if (stockData) {
-        stockInfoId = stockData.id;
-        const tradeableShares = stockData.total_shares_issued - stockData.shares_owned_by_owner;
-        const sharesSoldToInvestors = tradeableShares - stockData.shares_available;
-        const boostPct = Math.max(0, sharesSoldToInvestors);
-        stockBoost = baseEarnings * (boostPct / 100);
-      }
-
-      const boostedBaseEarnings = baseEarnings + stockBoost;
-      // Bonus is capped at +100% (2x total pay) so long streaks don't run away unbounded
-      const streakMultiplier = newStreak > 1 ? Math.min((newStreak - 1) * 0.1, 1) : 0;
-      const baseTotal = boostedBaseEarnings + boostedBaseEarnings * streakMultiplier;
-
-      const totalEarnings = baseTotal;
-
-      // Completion timestamp = yesterday at 6 PM local time
-      const yesterdayDateString = this.getLocalDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
-      const completionTime = new Date(`${yesterdayDateString}T18:00:00`);
-
-      console.log('📅 Recording BACKDATED completion for yesterday:', {
-        yesterday: yesterdayDateString,
-        completionTimestamp: completionTime.toISOString(),
-        newStreak,
-        totalEarnings
+      // The rest of backdated completion (period/streak resolution, stock-
+      // boost + streak-bonus earnings, dividends, stock price, atomic cash
+      // credit) now runs server-side as one transaction in the
+      // complete_habit_business_yesterday RPC (see the migration of the same
+      // name) — this used to be 6+ sequential, non-atomic calls here, same
+      // as completeHabit() before its own migration to complete_habit_business.
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const { error } = await this.supabase.rpc('complete_habit_business_yesterday', {
+        p_habit_business_id: habitBusinessId,
+        p_occurred_at: occurredAt,
+        p_client_timezone: clientTimezone,
       });
 
-      // Insert completion record
-      const { data: completionData, error: completionError } = await this.supabase
-        .from('habit_completions')
-        .insert({
-          habit_business_id: habitBusinessId,
-          user_id: user.id,
-          earnings: totalEarnings,
-          streak_count: newStreak,
-          completed_at: completionTime.toISOString()
-        })
-        .select()
-        .single();
-
-      if (completionError) {
-        if (completionError.code === '23505') {
-          await this.showErrorToast('This habit was already completed yesterday!');
-        } else {
-          await this.showErrorToast('Failed to record backdated completion. Please try again.');
+      if (error) {
+        if (error.message?.includes('already completed')) {
+          await this.showErrorToast(error.message);
         }
-        throw completionError;
+        throw new Error(error.message);
       }
-
-      // Process dividends for stockholders
-      if (stockInfoId) {
-        try {
-          if (stockData && (stockData.total_shares_issued - stockData.shares_owned_by_owner) > 0) {
-            try {
-              const { error: rpcError } = await this.supabase.rpc('process_habit_completion_dividends', {
-                completion_uuid: completionData.id,
-                p_stock_boost_amount: stockBoost
-              });
-              if (rpcError) throw rpcError;
-              console.log('✅ Dividends processed for backdated completion');
-            } catch {
-              await this.processDividendsManually(habitBusinessId, stockBoost, stockInfoId);
-            }
-          }
-        } catch (dividendError) {
-          console.error('⚠️ Warning: Failed to process dividends for backdated completion:', dividendError);
-        }
-      }
-
-      // Update habit-business stats
-      // Do NOT change current_progress — it tracks the *current* (today's) period
-      const { error: updateError } = await this.supabase
-        .from('habit_businesses')
-        .update({
-          streak: newStreak,
-          total_completions: habitBusiness.total_completions + 1,
-          total_earnings: habitBusiness.total_earnings + totalEarnings,
-          last_completed_at: completionTime.toISOString(),
-          updated_at: now.toISOString()
-        })
-        .eq('id', habitBusinessId);
-
-      if (updateError) throw updateError;
-
-      // Update stock price based on new streak
-      try {
-        await this.supabase.rpc('update_stock_price_by_streak', { habit_business_uuid: habitBusinessId });
-      } catch (priceError) {
-        console.error('⚠️ Warning: Failed to update stock price:', priceError);
-      }
-
-      // Pay earnings to user atomically (avoids a lost-update race with
-      // concurrent completions/dividends/undos hitting the same profile row)
-      const { error: updateCashError } = await this.supabase.rpc('adjust_user_cash', {
-        p_user_id: user.id,
-        p_delta: totalEarnings
-      });
-
-      if (updateCashError) throw new Error('Habit completed but failed to add earnings');
 
     } catch (error) {
       console.error('Error in completeHabitYesterday:', error);
-      if (error instanceof Error && !error.message.includes('already completed yesterday')) {
+      if (error instanceof Error && !error.message.includes('already completed')) {
         await this.showErrorToast('Failed to complete habit for yesterday. Please try again.');
       }
       throw error;
@@ -1432,145 +1261,25 @@ export class HabitBusinessService {
       throw new OfflineQueuedError("You're offline — this undo will sync automatically once you're back online.");
     }
     try {
-      // Get current user
-      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Get the habit-business details
-      const { data: habitBusiness, error: habitError } = await this.supabase
-        .from('habit_businesses')
-        .select('*')
-        .eq('id', habitBusinessId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (habitError || !habitBusiness) {
-        throw new Error('Habit-business not found');
-      }
-
-      // Check if there's a completion to undo for the target day (occurredAt,
-      // anchored the same way completeHabit is, so a queued undo that's
-      // replayed after a day boundary still targets the right day).
-      const referenceNow = new Date(occurredAt);
-      const today = this.getLocalDateString(referenceNow);
-      const lastCompleted = habitBusiness.last_completed_at ?
-        this.getLocalDateString(new Date(habitBusiness.last_completed_at)) : null;
-
-      console.log('📅 Checking undo eligibility - Today:', today, 'Last completed:', lastCompleted);
-
-      if (lastCompleted !== today) {
-        throw new Error('No completion found for today to undo');
-      }
-
-      // Get today's completion record - use broader time range to account for timezone differences
-      const todayStart = new Date(referenceNow);
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date(referenceNow);
-      todayEnd.setHours(23, 59, 59, 999);
-
-      // Convert to ISO strings for database query
-      const todayStartISO = todayStart.toISOString();
-      const todayEndISO = todayEnd.toISOString();
-      
-      console.log('🔍 Looking for completion between:', todayStartISO, 'and', todayEndISO);
-
-      const { data: todaysCompletion, error: completionError } = await this.supabase
-        .from('habit_completions')
-        .select('*')
-        .eq('habit_business_id', habitBusinessId)
-        .eq('user_id', user.id)
-        .gte('completed_at', todayStartISO)
-        .lte('completed_at', todayEndISO)
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (completionError || !todaysCompletion) {
-        console.error('❌ Completion lookup error:', completionError);
-        console.log('🔍 Checking all recent completions for debugging...');
-        
-        // Debug: Get recent completions to see what's available
-        const { data: recentCompletions } = await this.supabase
-          .from('habit_completions')
-          .select('*')
-          .eq('habit_business_id', habitBusinessId)
-          .eq('user_id', user.id)
-          .order('completed_at', { ascending: false })
-          .limit(5);
-          
-        console.log('📊 Recent completions found:', recentCompletions);
-        throw new Error('Could not find today\'s completion record');
-      }
-
-      // Only decrement the streak if today's completion was the one that
-      // actually reached goal_value (completeHabit only advances `streak` on
-      // the goal-completing tap, via current_progress reaching goal_value —
-      // see current_progress being set unconditionally there). Undoing an
-      // earlier, partial-progress tap on a multi-completion habit must leave
-      // the streak untouched.
-      const goalValue = habitBusiness.goal_value || 1;
-      const wasGoalCompletingTap = (habitBusiness.current_progress || 0) >= goalValue;
-      const previousStreak = wasGoalCompletingTap ? Math.max(0, habitBusiness.streak - 1) : habitBusiness.streak;
-
-      // Find the previous completion to set as last_completed_at
-      const { data: previousCompletion, error: prevError } = await this.supabase
-        .from('habit_completions')
-        .select('completed_at')
-        .eq('habit_business_id', habitBusinessId)
-        .eq('user_id', user.id)
-        .neq('id', todaysCompletion.id)
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      // Update habit-business stats (reverse the completion)
-      const newCurrentProgress = Math.max(0, (habitBusiness.current_progress || 0) - 1);
-      const { error: updateError } = await this.supabase
-        .from('habit_businesses')
-        .update({
-          streak: previousStreak,
-          current_progress: newCurrentProgress,
-          total_completions: Math.max(0, habitBusiness.total_completions - 1),
-          total_earnings: Math.max(0, habitBusiness.total_earnings - todaysCompletion.earnings),
-          last_completed_at: previousCompletion?.completed_at || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', habitBusinessId);
-
-      console.log(`↩️ Undoing completion: progress ${habitBusiness.current_progress} → ${newCurrentProgress}`);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      // Remove earnings from user's cash atomically (avoids a lost-update race
-      // with concurrent completions/dividends/undos hitting the same profile row).
-      // Do not clamp to 0: if the earnings were already spent, undo must still
-      // remove the full amount (even negative) so purchases made with them
-      // aren't left unpaid for — see habit completion/undo exploit.
-      const { error: updateCashError } = await this.supabase.rpc('adjust_user_cash', {
-        p_user_id: user.id,
-        p_delta: -todaysCompletion.earnings
+      // The rest of undo (finding today's completion, streak/stats reversal,
+      // atomic cash removal, completion delete) now runs server-side as one
+      // transaction in the undo_habit_business_completion RPC (see the
+      // migration of the same name) — this used to be 4+ sequential,
+      // non-atomic calls here, whose completion-delete failure was silently
+      // swallowed because by that point cash/stats had already been
+      // irrevocably committed as separate prior statements. Atomicity means
+      // a failure anywhere now rolls back the whole undo instead of leaving
+      // a stale completion row behind.
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const { data, error } = await this.supabase.rpc('undo_habit_business_completion', {
+        p_habit_business_id: habitBusinessId,
+        p_occurred_at: occurredAt,
+        p_client_timezone: clientTimezone,
       });
 
-      if (updateCashError) {
-        throw new Error('Failed to remove earnings from cash');
-      }
+      if (error) throw new Error(error.message);
 
-      // Delete the completion record
-      const { error: deleteError } = await this.supabase
-        .from('habit_completions')
-        .delete()
-        .eq('id', todaysCompletion.id);
-
-      if (deleteError) {
-        console.error('Error deleting completion record:', deleteError);
-        // Continue anyway as the main reversal is done
-      }
-
-      return { earnings: todaysCompletion.earnings };
+      return { earnings: data.earnings };
 
     } catch (error) {
       console.error('Error in undoHabitCompletion:', error);
@@ -1622,7 +1331,6 @@ export class HabitBusinessService {
    */
   async processDividendsManually(habitBusinessId: string, stockBoostAmount: number, stockId: string): Promise<void> {
     try {
-      console.log('🔧 Manual dividend processing for business:', habitBusinessId);
 
       // Get stock holdings for this business
       const { data: holdings, error: holdingsError } = await this.supabase
@@ -1636,7 +1344,6 @@ export class HabitBusinessService {
       }
 
       if (!holdings || holdings.length === 0) {
-        console.log('💡 No stockholders found for dividend distribution');
         return;
       }
 
@@ -1649,10 +1356,7 @@ export class HabitBusinessService {
       // tradeable pool — if only some of the shares are sold, only those count)
       const totalSharesHeld = holdings.reduce((sum, holding) => sum + holding.shares_owned, 0);
 
-      console.log(`💰 Dividend calculation: stock_boost=${stockBoostAmount.toFixed(2)}, pool=${dividendPool.toFixed(2)}, shares_held=${totalSharesHeld}`);
-
       if (dividendPool <= 0 || totalSharesHeld <= 0) {
-        console.log('💡 No dividend pool to distribute');
         return;
       }
 
@@ -1662,8 +1366,6 @@ export class HabitBusinessService {
       // Distribute dividends to each stockholder
       for (const holding of holdings) {
         const dividendAmount = holding.shares_owned * dividendPerShare;
-        
-        console.log(`💸 Paying ${dividendAmount.toFixed(2)} dividend to holder ${holding.holder_id} (${holding.shares_owned} shares)`);
         
         // Record dividend distribution
         const { error: distributionError } = await this.supabase
@@ -1724,102 +1426,8 @@ export class HabitBusinessService {
         }
       }
       
-      console.log('✅ Manual dividend processing completed');
-      
     } catch (error) {
       console.error('❌ Error in manual dividend processing:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Distribute dividends to stockholders
-   */
-  async distributeDividends(stockId: string, totalDividendPool: number): Promise<void> {
-    try {
-      // Get all stockholders for this business
-      const { data: stockholders, error: stockholdersError } = await this.supabase
-        .from('stock_holdings')
-        .select('*')
-        .eq('stock_id', stockId)
-        .gt('shares_owned', 0);
-
-      if (stockholdersError) {
-        throw stockholdersError;
-      }
-
-      if (!stockholders || stockholders.length === 0) {
-        return; // No stockholders to pay
-      }
-
-      // Get total shares owned by investors (excluding business owner)
-      const totalInvestorShares = stockholders.reduce((sum, holding) => sum + holding.shares_owned, 0);
-      
-      if (totalInvestorShares === 0) {
-        return; // No investor shares
-      }
-
-      // Calculate dividend per share
-      const dividendPerShare = totalDividendPool / totalInvestorShares;
-
-      // Create dividend distributions and update user cash
-      for (const holding of stockholders) {
-        const dividendAmount = holding.shares_owned * dividendPerShare;
-        
-        // Record the dividend distribution
-        const { error: distributionError } = await this.supabase
-          .from('stock_dividend_distributions')
-          .insert({
-            dividend_payment_id: crypto.randomUUID(),
-            stockholder_id: holding.holder_id,
-            shares_owned: holding.shares_owned,
-            dividend_per_share: dividendPerShare,
-            total_dividend: dividendAmount
-          });
-
-        if (distributionError) {
-          console.error('Error recording dividend distribution:', distributionError);
-          continue;
-        }
-
-        // Add dividend to stockholder's cash
-        const { data: profile, error: profileError } = await this.supabase
-          .from('user_profiles')
-          .select('cash')
-          .eq('id', holding.holder_id)
-          .single();
-
-        if (!profileError && profile) {
-          const { error: updateCashError } = await this.supabase
-            .from('user_profiles')
-            .update({
-              cash: profile.cash + dividendAmount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', holding.holder_id);
-
-          if (updateCashError) {
-            console.error('Error updating stockholder cash:', updateCashError);
-          } else {
-            await this.recalculateNetWorth(holding.holder_id);
-          }
-        }
-
-        // Update total dividends earned in holding
-        const { error: updateHoldingError } = await this.supabase
-          .from('stock_holdings')
-          .update({
-            total_dividends_earned: holding.total_dividends_earned + dividendAmount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', holding.id);
-
-        if (updateHoldingError) {
-          console.error('Error updating holding dividends:', updateHoldingError);
-        }
-      }
-    } catch (error) {
-      console.error('Error in distributeDividends:', error);
       throw error;
     }
   }
@@ -1871,185 +1479,6 @@ export class HabitBusinessService {
       return data || 0;
     } catch (error) {
       console.error('Error updating stock price:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Calculate upgrade options for a habit business
-   */
-  async calculateUpgradeOptions(habitBusinessId: string): Promise<UpgradeCalculation> {
-    try {
-      // Get the current habit business
-      const { data: habitBusiness, error: habitError } = await this.supabase
-        .from('habit_businesses')
-        .select(`
-          *,
-          business_types (
-            id,
-            name,
-            icon,
-            base_cost,
-            base_pay,
-            description
-          )
-        `)
-        .eq('id', habitBusinessId)
-        .single();
-
-      if (habitError || !habitBusiness) {
-        throw new Error('Habit business not found');
-      }
-
-      // Get all business types for upgrade options
-      const businessTypes = await this.getBusinessTypes();
-      
-      // Calculate current business value based on streak
-      const streakMultiplier = Math.max(1, habitBusiness.streak);
-      const currentBusinessValue = habitBusiness.earnings_per_completion * streakMultiplier;
-      
-      // Calculate total streak value (simplified: daily earnings × streak × 30 days)
-      // This represents the "investment value" of the current streak
-      const totalStreakValue = currentBusinessValue * habitBusiness.streak * 30;
-
-      // Find upgrade options (businesses that cost more than current)
-      const availableUpgrades = businessTypes.filter(bt => 
-        bt.base_cost > (habitBusiness.business_types?.base_cost || 0)
-      );
-
-      const upgradeOptions = availableUpgrades.map(businessType => {
-        const upgradeCost = businessType.base_cost;
-        const profitFromUpgrade = totalStreakValue - upgradeCost;
-        const canAfford = totalStreakValue >= upgradeCost;
-
-        return {
-          businessType,
-          upgradeCost,
-          profitFromUpgrade,
-          canAfford
-        };
-      });
-
-      return {
-        currentBusinessValue,
-        streakMultiplier,
-        totalStreakValue,
-        availableUpgrades,
-        upgradeOptions
-      };
-    } catch (error) {
-      console.error('Error in calculateUpgradeOptions:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Upgrade a business by selling streak value
-   */
-  async upgradeBusiness(
-    oldHabitBusinessId: string, 
-    newBusinessTypeId: number,
-    newBusinessName: string,
-    newHabitDescription: string
-  ): Promise<HabitBusiness> {
-    try {
-      // Get current user
-      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error('User not authenticated');
-      }
-
-      // Get upgrade calculation
-      const upgradeCalc = await this.calculateUpgradeOptions(oldHabitBusinessId);
-      const upgradeOption = upgradeCalc.upgradeOptions.find(opt => 
-        opt.businessType.id === newBusinessTypeId
-      );
-
-      if (!upgradeOption || !upgradeOption.canAfford) {
-        throw new Error('Cannot afford this upgrade');
-      }
-
-      // Get old habit business details
-      const { data: oldBusiness, error: oldBusinessError } = await this.supabase
-        .from('habit_businesses')
-        .select('*')
-        .eq('id', oldHabitBusinessId)
-        .single();
-
-      if (oldBusinessError || !oldBusiness) {
-        throw new Error('Old business not found');
-      }
-
-      // Create new habit business
-      const newHabitBusiness = await this.createHabitBusiness({
-        business_type_id: newBusinessTypeId,
-        business_name: newBusinessName,
-        habit_description: newHabitDescription,
-        recurrence_interval: oldBusiness.recurrence_interval ?? (oldBusiness.frequency === 'weekly' ? '7d' : '24h'),
-        goal_value: oldBusiness.goal_value || 1 // Use existing goal_value or default to 1
-      });
-
-      // Record the upgrade transaction
-      const { error: upgradeError } = await this.supabase
-        .from('business_upgrades')
-        .insert({
-          user_id: user.id,
-          old_habit_business_id: oldHabitBusinessId,
-          new_habit_business_id: newHabitBusiness.id,
-          old_business_type_id: oldBusiness.business_type_id,
-          new_business_type_id: newBusinessTypeId,
-          streak_value_sold: upgradeCalc.totalStreakValue,
-          upgrade_cost: upgradeOption.upgradeCost,
-          profit_from_upgrade: upgradeOption.profitFromUpgrade,
-          old_streak_count: oldBusiness.streak
-        });
-
-      if (upgradeError) {
-        console.error('Error recording upgrade:', upgradeError);
-      }
-
-      // Add profit to user's cash
-      if (upgradeOption.profitFromUpgrade > 0) {
-        const { data: profile, error: profileError } = await this.supabase
-          .from('user_profiles')
-          .select('cash')
-          .eq('id', user.id)
-          .single();
-
-        if (!profileError && profile) {
-          const { error: updateCashError } = await this.supabase
-            .from('user_profiles')
-            .update({ 
-              cash: profile.cash + upgradeOption.profitFromUpgrade,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
-
-          if (updateCashError) {
-            console.error('Error adding upgrade profit:', updateCashError);
-          }
-        }
-      }
-
-      // Deactivate old business
-      const { error: deactivateError } = await this.supabase
-        .from('habit_businesses')
-        .update({ 
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', oldHabitBusinessId);
-
-      if (deactivateError) {
-        console.error('Error deactivating old business:', deactivateError);
-      }
-
-      // Cash, old business (now inactive), and new business have all changed — recalc from scratch
-      await this.recalculateNetWorth(user.id);
-
-      return newHabitBusiness;
-    } catch (error) {
-      console.error('Error in upgradeBusiness:', error);
       throw error;
     }
   }
@@ -2243,8 +1672,6 @@ export class HabitBusinessService {
       // Use local date string to avoid timezone issues
       const todayLocalDateString = this.getLocalDateString(new Date());
       
-      console.log(`📊 Fetching habit earnings for ${userId} on local date: ${todayLocalDateString}`);
-      
       const { data, error } = await this.supabase
         .from('habit_completions')
         .select('earnings, completed_at')
@@ -2262,8 +1689,6 @@ export class HabitBusinessService {
       }) || [];
 
       const totalEarnings = todayCompletions.reduce((total, completion) => total + completion.earnings, 0);
-      console.log(`💰 Today's habit earnings for user: $${totalEarnings.toFixed(2)} (${todayCompletions.length} completions from ${data?.length || 0} total)`);
-      console.log(`📅 Filtering for local date: ${todayLocalDateString}`);
       
       return totalEarnings;
     } catch (error) {
@@ -2282,8 +1707,6 @@ export class HabitBusinessService {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
       
-      console.log(`📊 Fetching stock dividends for ${userId} between ${today.toISOString()} and ${tomorrow.toISOString()}`);
-      
       const { data, error } = await this.supabase
         .from('stock_dividend_distributions')
         .select('total_dividend, created_at')
@@ -2297,13 +1720,10 @@ export class HabitBusinessService {
       }
 
       const totalDividends = data?.reduce((total, distribution) => total + distribution.total_dividend, 0) || 0;
-      console.log(`💰 Today's stock dividends for user: $${totalDividends.toFixed(2)} (${data?.length || 0} distributions)`);
       
       // Debug: Show each individual dividend payment
       if (data && data.length > 0) {
-        console.log('🔍 Individual dividend payments received today:');
         data.forEach((payment, index) => {
-          console.log(`  ${index + 1}. $${payment.total_dividend.toFixed(4)} received at ${payment.created_at}`);
         });
       }
       
@@ -2311,10 +1731,7 @@ export class HabitBusinessService {
       try {
         const holdings = await this.getUserStockHoldings(userId);
         if (holdings.length > 0) {
-          console.log(`📈 User has ${holdings.length} stock holdings that could generate dividends:`, 
-            holdings.map(h => `${h.business_stocks?.habit_businesses?.business_name}: ${h.shares_owned} shares`));
         } else {
-          console.log(`ℹ️ User has no stock holdings - dividends will always be $0`);
         }
       } catch (holdingsError) {
         console.warn('Could not fetch holdings for dividend debugging:', holdingsError);
@@ -2395,7 +1812,6 @@ export class HabitBusinessService {
         throw error;
       }
 
-      console.log(`✅ Created test dividend of $${amount} for user ${userId}`);
     } catch (error) {
       console.error('Error creating test dividend:', error);
       throw error;
@@ -2408,7 +1824,6 @@ export class HabitBusinessService {
    */
   async resetOutdatedDailyHabits(): Promise<void> {
     try {
-      console.log('🔄 Checking for outdated daily habits to reset...');
       
       // First, clean up any future date completions that shouldn't exist
       await this.cleanupInvalidCompletions();
@@ -2423,7 +1838,6 @@ export class HabitBusinessService {
       }
 
       if (data && data.length > 0) {
-        console.log(`✅ Reset ${data.length} outdated daily habit(s):`, data);
         
         // Update stock prices for habits that had their streaks reset
         for (const resetHabit of data) {
@@ -2431,13 +1845,11 @@ export class HabitBusinessService {
             await this.supabase.rpc('update_stock_price_by_streak', {
               habit_business_uuid: resetHabit.id
             });
-            console.log(`📈 Updated stock price for habit: ${resetHabit.business_name}`);
           } catch (priceError) {
             console.error(`⚠️ Failed to update stock price for habit ${resetHabit.id}:`, priceError);
           }
         }
       } else {
-        console.log('✅ No daily habits needed resetting');
       }
     } catch (error) {
       console.error('Error in resetOutdatedDailyHabits:', error); // method kept for backwards compat
@@ -2457,8 +1869,6 @@ export class HabitBusinessService {
       // Be more strict: anything beyond today should be cleaned up
       const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
       
-      console.log('🧹 Cleaning up completion records after:', endOfToday.toISOString());
-      
       // Find and remove completion records that are in the future
       const { data: futureCompletions, error: queryError } = await this.supabase
         .from('habit_completions')
@@ -2472,13 +1882,6 @@ export class HabitBusinessService {
       }
 
       if (futureCompletions && futureCompletions.length > 0) {
-        console.log(`⚠️ Found ${futureCompletions.length} future completion records to clean up:`, 
-          futureCompletions.map(c => ({ 
-            id: c.id, 
-            date: c.completed_at, 
-            business: c.habit_business_id?.substring(0, 8),
-            isAfterToday: new Date(c.completed_at) > endOfToday
-          })));
         
         // Delete the invalid records
         const { error: deleteError } = await this.supabase
@@ -2489,7 +1892,6 @@ export class HabitBusinessService {
         if (deleteError) {
           console.error('Error deleting future completions:', deleteError);
         } else {
-          console.log('✅ Cleaned up future completion records');
           
           // Reset the progress for affected habit businesses
           const affectedBusinessIds = [...new Set(futureCompletions.map(c => c.habit_business_id))];
@@ -2510,7 +1912,6 @@ export class HabitBusinessService {
           }
         }
       } else {
-        console.log('✅ No future completion records found to clean up');
       }
     } catch (error) {
       console.error('Error in cleanupInvalidCompletions:', error);
@@ -2527,8 +1928,6 @@ export class HabitBusinessService {
         throw new Error('User not authenticated');
       }
 
-      console.log('🔍 DEBUGGING HABIT STATE for:', habitBusinessId);
-
       // Get habit business details
       const { data: habitBusiness, error: habitError } = await this.supabase
         .from('habit_businesses')
@@ -2537,22 +1936,11 @@ export class HabitBusinessService {
         .eq('user_id', user.id)
         .single();
 
-      console.log('📊 Habit Business State:', habitBusiness);
-
       // Get today's date info
       const now = new Date();
       const todayLocalString = this.getLocalDateString(now);
       const todayUTCString = now.toISOString().split('T')[0];
       
-      console.log('📅 Date Info:', {
-        now: now.toString(),
-        nowISO: now.toISOString(),
-        todayLocal: todayLocalString,
-        todayUTC: todayUTCString,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        timezoneOffset: now.getTimezoneOffset()
-      });
-
       // Get ALL completion records for this habit
       const { data: allCompletions, error: completionsError } = await this.supabase
         .from('habit_completions')
@@ -2561,8 +1949,6 @@ export class HabitBusinessService {
         .eq('user_id', user.id)
         .order('completed_at', { ascending: false })
         .limit(10);
-
-      console.log('📋 All Recent Completions:', allCompletions);
 
       // Check for today's completions specifically
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -2576,27 +1962,15 @@ export class HabitBusinessService {
         .gte('completed_at', todayStart.toISOString())
         .lte('completed_at', todayEnd.toISOString());
 
-      console.log('📅 Today\'s Completions (using time range):', todayCompletions);
-
       // Check completions using date string comparison
       const todayCompletionsByDate = allCompletions?.filter(completion => {
         const completionDate = this.getLocalDateString(new Date(completion.completed_at));
         return completionDate === todayLocalString;
       });
 
-      console.log('📅 Today\'s Completions (using date string):', todayCompletionsByDate);
-
       // Calculate what the UI methods would return
       const isCompletedResult = this.isCompletedTodayDebug(habitBusiness);
       const isGoalCompletedResult = this.isGoalCompletedDebug(habitBusiness);
-
-      console.log('🎯 UI Method Results:', {
-        isCompletedToday: isCompletedResult,
-        isGoalCompleted: isGoalCompletedResult,
-        currentProgress: habitBusiness?.current_progress,
-        goalValue: habitBusiness?.goal_value,
-        lastCompletedAt: habitBusiness?.last_completed_at
-      });
 
       return {
         habitBusiness,
@@ -2625,27 +1999,21 @@ export class HabitBusinessService {
    * Debug version of isCompletedToday that logs its logic
    */
   private isCompletedTodayDebug(habitBusiness: any): boolean {
-    console.log('🔍 isCompletedToday Debug for:', habitBusiness?.business_name);
     
     if (!habitBusiness?.last_completed_at) {
-      console.log('❌ No last_completed_at - returning false');
       return false;
     }
     
     const goalValue = habitBusiness.goal_value || 1;
     const currentProgress = habitBusiness.current_progress || 0;
     
-    console.log('📊 Progress check:', { currentProgress, goalValue });
-    
     // Check if goal is fully completed
     if (goalValue > 1 && currentProgress < goalValue) {
-      console.log('❌ Multi-completion habit goal not met - returning false');
       return false;
     }
     
     // Check if progress is 0
     if (currentProgress === 0) {
-      console.log('❌ Current progress is 0 - returning false');
       return false;
     }
     
@@ -2655,12 +2023,6 @@ export class HabitBusinessService {
       
       const completionDate = new Date(habitBusiness.last_completed_at);
       const completionString = this.getLocalDateString(completionDate);
-      
-      console.log('📅 Date comparison:', { 
-        todayString, 
-        completionString, 
-        match: completionString === todayString 
-      });
       
       return completionString === todayString;
     }
@@ -2672,21 +2034,16 @@ export class HabitBusinessService {
    * Debug version of isGoalCompleted that logs its logic
    */
   private isGoalCompletedDebug(habitBusiness: any): boolean {
-    console.log('🔍 isGoalCompleted Debug for:', habitBusiness?.business_name);
     
     const goalValue = habitBusiness?.goal_value || 1;
     const currentProgress = habitBusiness?.current_progress || 0;
     
-    console.log('📊 Goal check:', { currentProgress, goalValue });
-    
     // First check if the progress meets the goal
     if (currentProgress < goalValue) {
-      console.log('❌ Goal not met - returning false');
       return false;
     }
     
     if (!habitBusiness?.last_completed_at) {
-      console.log('❌ No completion record - returning false');
       return false;
     }
     
@@ -2696,12 +2053,6 @@ export class HabitBusinessService {
       
       const completionDate = new Date(habitBusiness.last_completed_at);
       const completionString = this.getLocalDateString(completionDate);
-      
-      console.log('📅 Date comparison for goal:', { 
-        todayString, 
-        completionString, 
-        match: completionString === todayString 
-      });
       
       return completionString === todayString;
     }
@@ -2717,8 +2068,6 @@ export class HabitBusinessService {
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
       if (userError || !user) return;
 
-      console.log('🚨 Emergency cleanup for habit:', habitBusinessId);
-
       // Get all completions for this habit
       const { data: allCompletions, error: queryError } = await this.supabase
         .from('habit_completions')
@@ -2733,11 +2082,8 @@ export class HabitBusinessService {
       }
 
       if (!allCompletions || allCompletions.length === 0) {
-        console.log('No completions found for this habit');
         return;
       }
-
-      console.log(`Found ${allCompletions.length} completion records`);
 
       // Group by date and keep only the first completion per day
       const completionsByDate = new Map<string, any>();
@@ -2749,10 +2095,8 @@ export class HabitBusinessService {
         if (completionsByDate.has(dateKey)) {
           // This is a duplicate - mark for deletion
           duplicatesToDelete.push(completion.id);
-          console.log(`🗑️ Marking duplicate for deletion: ${completion.id} (${completion.completed_at})`);
         } else {
           completionsByDate.set(dateKey, completion);
-          console.log(`✅ Keeping completion: ${completion.id} (${completion.completed_at})`);
         }
       }
 
@@ -2766,7 +2110,6 @@ export class HabitBusinessService {
         if (deleteError) {
           console.error('Error deleting duplicates:', deleteError);
         } else {
-          console.log(`✅ Deleted ${duplicatesToDelete.length} duplicate completion records`);
         }
       }
 
@@ -2776,8 +2119,6 @@ export class HabitBusinessService {
         .filter(([dateKey, completion]) => dateKey === today);
       
       const correctProgress = todayCompletions.length;
-      
-      console.log(`📊 Updating progress: today=${today}, todayCompletions=${correctProgress}`);
       
       const { error: updateError } = await this.supabase
         .from('habit_businesses')
@@ -2790,7 +2131,6 @@ export class HabitBusinessService {
       if (updateError) {
         console.error('Error updating habit progress:', updateError);
       } else {
-        console.log(`✅ Updated habit progress to ${correctProgress}`);
       }
 
     } catch (error) {
@@ -2867,20 +2207,10 @@ export class HabitBusinessService {
    * Get user's stock portfolio
    */
   async getUserStockPortfolio(userId: string): Promise<any[]> {
-    console.log('🔍 Loading portfolio for userId:', userId);
-    console.log('🔍 User ID type:', typeof userId);
-    console.log('🔍 User ID length:', userId?.length);
     
     try {
-      console.log('🔍 About to call RPC function...');
       const { data, error } = await this.supabase
         .rpc('get_user_stock_portfolio', { user_uuid: userId });
-
-      console.log('🔍 Portfolio RPC response:', { data, error });
-      console.log('🔍 Data type:', typeof data);
-      console.log('🔍 Data is array:', Array.isArray(data));
-      console.log('🔍 Data length:', data?.length);
-      console.log('🔍 Raw data:', JSON.stringify(data, null, 2));
 
       if (error) {
         console.error('❌ Error loading stock portfolio:', error);
@@ -2889,10 +2219,7 @@ export class HabitBusinessService {
         return [];
       }
 
-      console.log('🔍 Portfolio data length:', data?.length || 0);
-
       if (!data || data.length === 0) {
-        console.log('⚠️ No portfolio data returned - checking if transactions exist...');
         // Let's check raw transactions instead of non-existent stock_holdings
         const { data: rawTransactions, error: transactionsError } = await this.supabase
           .from('stock_transactions')
@@ -2900,20 +2227,14 @@ export class HabitBusinessService {
           .eq('buyer_id', userId)
           .eq('transaction_type', 'purchase');
         
-        console.log('🔍 Raw transactions check:', { rawTransactions, transactionsError });
-        console.log('🔍 Found', rawTransactions?.length || 0, 'transactions for user');
-        
         // Also check if RPC function works with direct SQL
-        console.log('🔍 Testing direct RPC call...');
         const { data: testData, error: testError } = await this.supabase
           .rpc('get_user_stock_portfolio', { user_uuid: 'cf12469a-d7a2-40ef-82ca-21e8ade1d69b' });
-        console.log('🔍 Test RPC result:', { testData, testError });
         
         return [];
       }
 
       const mappedData = (data || []).map((holding: any) => {
-        console.log('🔍 Portfolio holding raw data:', holding);
         return {
           id: holding.holding_id,
           stockId: holding.stock_id,
@@ -2940,7 +2261,6 @@ export class HabitBusinessService {
         };
       });
       
-      console.log('🔍 Mapped portfolio data:', mappedData);
       return mappedData;
 
     } catch (error) {
@@ -2990,89 +2310,10 @@ export class HabitBusinessService {
   }
 
   /**
-   * Fix stock prices for all businesses (for debugging/maintenance)
-   */
-  async fixAllStockPrices(): Promise<void> {
-    try {
-      console.log('🔧 Starting comprehensive stock price fix...');
-
-      // First, run the SQL fix for earnings and stock prices
-      console.log('🔧 Running database fixes...');
-      const { error: sqlError } = await this.supabase.rpc('execute_sql', {
-        sql: `
-          -- Fix earnings_per_completion for businesses with incorrect values
-          UPDATE habit_businesses 
-          SET earnings_per_completion = CASE
-              WHEN earnings_per_completion > (
-                  SELECT base_pay 
-                  FROM business_types bt 
-                  WHERE bt.id = habit_businesses.business_type_id
-              ) THEN (
-                  SELECT base_pay 
-                  FROM business_types bt 
-                  WHERE bt.id = habit_businesses.business_type_id
-              )
-              WHEN earnings_per_completion < 0.01 THEN GREATEST(0.01, (
-                  SELECT base_pay / 100
-                  FROM business_types bt 
-                  WHERE bt.id = habit_businesses.business_type_id
-              ))
-              ELSE earnings_per_completion
-          END;
-
-          -- Update stock prices to be reasonable (base_cost * 0.1 * multiplier)
-          UPDATE business_stocks 
-          SET current_stock_price = ROUND(
-              (bt.base_cost * 0.1) * COALESCE(price_multiplier, 1.0), 2
-          ),
-          last_price_update = NOW()
-          FROM habit_businesses hb
-          JOIN business_types bt ON hb.business_type_id = bt.id
-          WHERE business_stocks.habit_business_id = hb.id;
-        `
-      });
-
-      if (sqlError) {
-        console.warn('SQL fix failed, continuing with individual updates:', sqlError);
-      }
-
-      // Get all habit businesses and update their stock prices
-      const { data: businesses, error: businessError } = await this.supabase
-        .from('habit_businesses')
-        .select('id')
-        .eq('is_active', true);
-
-      if (businessError) {
-        throw businessError;
-      }
-
-      console.log(`🔧 Updating stock prices for ${businesses?.length || 0} businesses...`);
-
-      // Update stock price for each business using the updated function
-      for (const business of businesses || []) {
-        try {
-          await this.supabase.rpc('update_stock_price_by_streak', { 
-            habit_business_uuid: business.id 
-          });
-          console.log(`✅ Updated stock price for business ${business.id}`);
-        } catch (error) {
-          console.warn(`⚠️ Failed to update stock price for business ${business.id}:`, error);
-        }
-      }
-
-      console.log('🎉 Comprehensive stock price fix complete!');
-    } catch (error) {
-      console.error('Error in fixAllStockPrices:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Fix lemonade stock prices specifically (direct database update)
    */
   async fixLemonadeStockPrices(): Promise<void> {
     try {
-      console.log('🍋 Fixing lemonade stock prices...');
       
       // First get lemonade habit business IDs
       const { data: lemonadeBusinesses, error: fetchError } = await this.supabase
@@ -3086,12 +2327,10 @@ export class HabitBusinessService {
       }
 
       if (!lemonadeBusinesses || lemonadeBusinesses.length === 0) {
-        console.log('No lemonade businesses found');
         return;
       }
 
       const businessIds = lemonadeBusinesses.map(b => b.id);
-      console.log(`Found ${businessIds.length} lemonade businesses:`, businessIds);
 
       // Direct update to fix lemonade stocks showing $100 instead of $1
       const { error: updateError } = await this.supabase
@@ -3107,33 +2346,10 @@ export class HabitBusinessService {
         throw updateError;
       }
 
-      console.log('✅ Lemonade stock prices fixed!');
     } catch (error) {
       console.error('Error in fixLemonadeStockPrices:', error);
       throw error;
     }
-  }
-
-  /**
-   * Calculate potential dividend per share for a friend's business
-   */
-  private calculatePotentialDividend(earningsPerCompletion: number, streak: number, currentProgress: number, goalValue: number): number {
-    // Base dividend is a percentage of earnings per completion
-    const baseDividend = earningsPerCompletion * 0.1; // 10% base dividend
-
-    // Streak multiplier (1x to 2x based on streak)
-    const streakMultiplier = Math.min(1 + (streak * 0.01), 2); // +1% per day of streak, max 2x
-
-    // Progress bonus (if they're likely to complete today)
-    const progressBonus = currentProgress >= goalValue ? 1.5 : 1;
-
-    // Total dividend pool per completion
-    const totalDividendPool = baseDividend * streakMultiplier * progressBonus;
-    
-    // Divide by typical total shares (100) to get per-share dividend
-    const dividendPerShare = totalDividendPool / 100;
-
-    return dividendPerShare;
   }
 
   /**
@@ -3143,7 +2359,6 @@ export class HabitBusinessService {
    */
   async getHabitCompletionHistory(businessId: string, days: number = 30): Promise<{ date: string; completed: boolean; streakDay: number }[]> {
     try {
-      console.log('🔍 getHabitCompletionHistory called with:', { businessId, days });
       
       let startDate: Date;
       let endDate: Date;
@@ -3153,20 +2368,12 @@ export class HabitBusinessService {
         const currentYear = new Date().getFullYear();
         startDate = new Date(currentYear, 0, 1); // January 1st
         endDate = new Date(currentYear, 11, 31, 23, 59, 59); // December 31st end of day
-        console.log('📅 Using calendar year mode for 365 days');
       } else {
         // For other day counts, use the traditional "last N days" approach
         endDate = new Date();
         startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        console.log('📅 Using sliding window mode for', days, 'days');
       }
-
-      console.log('📅 Date range:', {
-        startDate: this.getLocalDateString(startDate),
-        endDate: this.getLocalDateString(endDate),
-        mode: days === 365 ? 'calendar-year' : 'sliding-window'
-      });
 
       // Get completion data - using correct column names from schema
       const { data: completions, error } = await this.supabase
@@ -3182,68 +2389,6 @@ export class HabitBusinessService {
         return [];
       }
 
-      console.log('📊 Raw completion data from Supabase:', completions);
-      console.log('📈 Number of completion records found:', completions?.length || 0);
-      
-      // Debug: Show which business IDs we found in the data
-      if (completions && completions.length > 0) {
-        const businessIds = [...new Set(completions.map(c => c.habit_business_id))];
-        console.log('🔍 Business IDs found in completion data:', businessIds);
-        console.log('🎯 Requested business ID:', businessId);
-        console.log('✅ Filtering match:', businessIds.includes(businessId) ? 'YES' : 'NO');
-        
-        // Log the actual completion dates for this business
-        const businessCompletions = completions.filter(c => c.habit_business_id === businessId);
-        console.log('📅 Completion dates for business', businessId.substring(0, 8) + '...:', 
-          businessCompletions.map(c => ({
-            id: c.id,
-            date: c.completed_at,
-            streak: c.streak_count,
-            earnings: c.earnings,
-            business_id: c.habit_business_id
-          })));
-        
-        const uniqueDates = [...new Set(businessCompletions.map(c => c.completed_at?.split('T')[0]))];
-        console.log('📆 Unique completion dates:', uniqueDates.length, 'dates:', uniqueDates);
-        
-        // Log ALL completion records to see if there's data sharing
-        console.log('🔍 ALL completion records in query result:');
-        completions.forEach((record, index) => {
-          console.log(`  ${index + 1}. ID: ${record.id}, Business: ${record.habit_business_id?.substring(0, 8)}..., Date: ${record.completed_at?.split('T')[0]}, Earnings: ${record.earnings}`);
-        });
-      }
-
-      // Debug: Query ALL completion records in the database to investigate data integrity
-      const { data: allCompletions } = await this.supabase
-        .from('habit_completions')
-        .select('id, completed_at, streak_count, earnings, habit_business_id')
-        .order('completed_at', { ascending: true });
-      
-      console.log('🌍 TOTAL completion records in database:', allCompletions?.length);
-      if (allCompletions && allCompletions.length > 0) {
-        console.log('🌍 ALL completion records in database:');
-        allCompletions.forEach((record, index) => {
-          console.log(`  ${index + 1}. ID: ${record.id}, Business: ${record.habit_business_id?.substring(0, 8)}..., Date: ${record.completed_at?.split('T')[0]}`);
-        });
-        
-        // Check for duplicate records
-        const duplicateDates = allCompletions.reduce((acc: any, record) => {
-          const date = record.completed_at?.split('T')[0];
-          if (!acc[date]) acc[date] = [];
-          acc[date].push(record);
-          return acc;
-        }, {});
-        
-        Object.entries(duplicateDates).forEach(([date, records]) => {
-          const recordArray = records as any[];
-          if (recordArray.length > 1) {
-            console.log(`⚠️ Date ${date} has ${recordArray.length} records:`, 
-              recordArray.map(r => ({ id: r.id, business: r.habit_business_id?.substring(0, 8) + '...' }))
-            );
-          }
-        });
-      }
-
       // Create a complete date range
       const dateRange: { date: string; completed: boolean; streakDay: number }[] = [];
       let currentStreak = 0;
@@ -3251,7 +2396,6 @@ export class HabitBusinessService {
 
       // Calculate total days in the range
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      console.log('📊 Generating date range:', totalDays, 'days from', this.getLocalDateString(startDate), 'to', this.getLocalDateString(endDate));
 
       for (let i = 0; i < totalDays; i++) {
         const currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
@@ -3265,7 +2409,6 @@ export class HabitBusinessService {
 
         // Debug for current date or specific dates
         if (dateStr === todayStr || dateStr === '2025-08-20' || i < 5 || i >= totalDays - 5) {
-          console.log(`🔍 Date ${i + 1}/${totalDays}: ${dateStr} = ${currentDate.toDateString()}, completion:`, completion ? 'YES' : 'NO');
         }
 
         const wasCompleted = !!completion;
@@ -3288,10 +2431,7 @@ export class HabitBusinessService {
         });
       }
 
-      console.log('✅ Generated date range with', dateRange.length, 'days');
       const completedDates = dateRange.filter(d => d.completed);
-      console.log('🎯 Completed days:', completedDates.length);
-      console.log('📅 Completed dates:', completedDates.slice(0, 10).map(d => d.date)); // Show first 10 dates
       return dateRange;
     } catch (error) {
       console.error('💥 Error in getHabitCompletionHistory:', error);
@@ -3305,7 +2445,6 @@ export class HabitBusinessService {
    */
   async getHabitCompletionHistoryForStock(businessId: string, days: number = 30): Promise<{ date: string; completed: boolean; streakDay: number }[]> {
     try {
-      console.log('🔍 getHabitCompletionHistoryForStock called with:', { businessId, days });
       
       let startDate: Date;
       let endDate: Date;
@@ -3315,27 +2454,14 @@ export class HabitBusinessService {
         const currentYear = new Date().getFullYear();
         startDate = new Date(currentYear, 0, 1); // January 1st
         endDate = new Date(currentYear, 11, 31, 23, 59, 59); // December 31st end of day
-        console.log('📅 Using calendar year mode for 365 days');
       } else {
         // For other day counts, use the traditional "last N days" approach
         endDate = new Date();
         startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        console.log('📅 Using sliding window mode for', days, 'days');
       }
 
-      console.log('📅 Stock completion date range:', {
-        startDate: this.getLocalDateString(startDate),
-        endDate: this.getLocalDateString(endDate),
-        mode: days === 365 ? 'calendar-year' : 'sliding-window'
-      });
-
       // Use RPC function to get completion history for stocks (bypasses RLS)
-      console.log('🔧 Calling RPC function with params:', {
-        input_uuid: businessId,
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString()
-      });
       
       const { data: completions, error } = await this.supabase
         .rpc('get_habit_completions_for_stock', {
@@ -3344,8 +2470,6 @@ export class HabitBusinessService {
           end_date: endDate.toISOString()
         });
 
-      console.log('🔍 RPC Response:', { data: completions, error: error });
-
       if (error) {
         console.error('❌ Error fetching stock habit completions:', error);
         console.error('❌ Error details:', error.message, error.code, error.hint);
@@ -3353,16 +2477,8 @@ export class HabitBusinessService {
         return this.getHabitCompletionHistoryFallback(businessId, startDate, endDate);
       }
 
-      console.log('📊 Raw stock completion data:', completions);
-      console.log('📈 Number of stock completion records found:', completions?.length || 0);
-      
       if (!completions || completions.length === 0) {
         console.warn('⚠️ No completion data returned for business:', businessId);
-        console.log('📝 Debugging - params sent:', {
-          input_uuid: businessId,
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString()
-        });
       }
 
       // Create date range array
@@ -3401,15 +2517,12 @@ export class HabitBusinessService {
         });
       }
 
-      console.log('✅ Generated stock date range with', dateRange.length, 'days');
       const completedDates = dateRange.filter(d => d.completed);
-      console.log('🎯 Stock completed days:', completedDates.length);
       return dateRange;
 
     } catch (error) {
       console.error('💥 Error in getHabitCompletionHistoryForStock:', error);
       // Fall back to regular method as last resort
-      console.log('🔄 Falling back to regular completion history method');
       return this.getHabitCompletionHistory(businessId, days);
     }
   }
@@ -3438,7 +2551,6 @@ export class HabitBusinessService {
    */
   private async getHabitCompletionHistoryFallback(businessId: string, startDate: Date, endDate: Date): Promise<{ date: string; completed: boolean; streakDay: number }[]> {
     try {
-      console.log('🔄 Using fallback method for completion history');
       
       // Try direct query (this might fail due to RLS but let's try)
       const { data: completions, error } = await this.supabase
@@ -3451,15 +2563,11 @@ export class HabitBusinessService {
 
       if (error) {
         console.error('❌ Fallback query failed:', error);
-        console.log('🚫 No demo data - returning empty array');
         return [];
       }
 
-      console.log('📊 Fallback completion data:', completions?.length || 0, 'records');
-
       // If no data found, return empty array
       if (!completions || completions.length === 0) {
-        console.log('📭 No completion data found - returning empty array');
         return [];
       }
 
@@ -3518,7 +2626,8 @@ export class HabitBusinessService {
         updated_at: new Date().toISOString()
       }));
 
-      for (const update of updates) {
+      // Independent per-row updates — fire concurrently instead of one round trip per habit.
+      await Promise.all(updates.map(async (update) => {
         const { error } = await this.supabase
           .from('habit_businesses')
           .update({
@@ -3533,63 +2642,10 @@ export class HabitBusinessService {
           console.error('Error updating habit business order:', error);
           throw error;
         }
-      }
+      }));
 
-      console.log('✅ Successfully updated habit business order for', orderedBusinessIds.length, 'items');
     } catch (error) {
       console.error('❌ Error updating habit business order:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Move completed habits to bottom while preserving non-completed order
-   */
-  async moveCompletedHabitsToBottom(userId: string): Promise<void> {
-    try {
-      // Get all user's habit businesses
-      const habits = await this.getUserHabitBusinesses(userId);
-      
-      // Separate completed and non-completed habits
-      const nonCompleted: HabitBusiness[] = [];
-      const completed: HabitBusiness[] = [];
-      
-      for (const habit of habits) {
-        if (this.isHabitCompleteForToday(habit)) {
-          completed.push(habit);
-        } else {
-          nonCompleted.push(habit);
-        }
-      }
-      
-      // Sort non-completed by their custom order, completed by their custom order too
-      nonCompleted.sort((a, b) => a.user_custom_order - b.user_custom_order);
-      completed.sort((a, b) => a.user_custom_order - b.user_custom_order);
-      
-      // Create new order: non-completed first, then completed
-      const newOrder = [...nonCompleted, ...completed];
-      const orderedBusinessIds = newOrder.map(h => h.id);
-      
-      // Update display orders (but don't change user_custom_order)
-      for (let i = 0; i < orderedBusinessIds.length; i++) {
-        const { error } = await this.supabase
-          .from('habit_businesses')
-          .update({
-            display_order: i + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', orderedBusinessIds[i])
-          .eq('user_id', userId);
-
-        if (error) {
-          console.error('Error updating display order for completed habits:', error);
-          throw error;
-        }
-      }
-
-      console.log('✅ Successfully moved completed habits to bottom');
-    } catch (error) {
-      console.error('❌ Error moving completed habits to bottom:', error);
       throw error;
     }
   }
@@ -3601,8 +2657,9 @@ export class HabitBusinessService {
     try {
       // Get all user's habits and reset display_order to match user_custom_order
       const habits = await this.getUserHabitBusinesses(userId);
-      
-      for (const habit of habits) {
+
+      // Independent per-row updates — fire concurrently instead of one round trip per habit.
+      await Promise.all(habits.map(async (habit) => {
         const { error } = await this.supabase
           .from('habit_businesses')
           .update({
@@ -3616,9 +2673,8 @@ export class HabitBusinessService {
           console.error('Error resetting individual habit to custom order:', error);
           throw error;
         }
-      }
+      }));
 
-      console.log('✅ Successfully reset habits to custom order');
     } catch (error) {
       console.error('❌ Error resetting to custom order:', error);
       throw error;

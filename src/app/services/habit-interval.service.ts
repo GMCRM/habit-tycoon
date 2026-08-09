@@ -235,7 +235,6 @@ export class HabitIntervalService {
   didMissYesterday(habit: HabitBusiness, now: Date = new Date()): boolean {
     const interval = this.resolveInterval(habit);
     if ((habit.goal_value || 1) !== 1) {
-      console.log('[didMissYesterday] SKIP: goal_value is', habit.goal_value);
       return false;
     }
 
@@ -245,25 +244,21 @@ export class HabitIntervalService {
     if (interval === 'specific_days') {
       const activeDays = habit.active_days || [];
       if (!activeDays.includes(yesterdayStart.getDay())) {
-        console.log('[didMissYesterday] SKIP: yesterday was not an active day');
         return false;
       }
     }
 
     const habitCreatedAt = new Date(habit.created_at);
     if (habitCreatedAt >= todayStart) {
-      console.log('[didMissYesterday] SKIP: habit created today', habitCreatedAt);
       return false;
     }
 
     if (!habit.last_completed_at) {
-      console.log('[didMissYesterday] TRUE: never completed');
       return true;
     }
 
     const lastCompleted = new Date(habit.last_completed_at);
     const result = lastCompleted < yesterdayStart;
-    console.log('[didMissYesterday] lastCompleted:', lastCompleted, '| yesterdayStart:', yesterdayStart, '| result:', result);
     return result;
   }
 

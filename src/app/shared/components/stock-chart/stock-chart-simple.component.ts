@@ -29,31 +29,21 @@ export class StockChartSimpleComponent implements OnInit, AfterViewInit {
   private chart?: Chart;
 
   ngOnInit() {
-    console.log('=== StockChartSimpleComponent - ngOnInit ===');
-    console.log('Business ID:', this.businessId);
-    console.log('Current Streak:', this.currentStreak);
   }
 
   ngAfterViewInit() {
-    console.log('=== StockChartSimpleComponent - ngAfterViewInit ===');
-    console.log('Canvas element:', this.chartCanvas?.nativeElement);
-    
     setTimeout(() => {
       this.createTestChart();
     }, 500);
   }
 
   createTestChart() {
-    console.log('=== Creating Test Chart ===');
-    
     if (!this.chartCanvas?.nativeElement) {
       console.error('Canvas not found!');
       return;
     }
 
     const canvas = this.chartCanvas.nativeElement;
-    console.log('Canvas:', canvas);
-    console.log('Canvas 2D context:', canvas.getContext('2d'));
 
     try {
       // Simple test data
@@ -123,8 +113,6 @@ export class StockChartSimpleComponent implements OnInit, AfterViewInit {
         }
       });
 
-      console.log('✅ TEST CHART CREATED SUCCESSFULLY:', this.chart);
-      
     } catch (error) {
       console.error('❌ Error creating test chart:', error);
     }

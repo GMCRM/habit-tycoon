@@ -563,7 +563,7 @@
             <h4 class="habit-group-title">To-Do</h4>
             <div class="habit-businesses-container">
               <ng-container
-                *ngFor="let hb of todoHabitBusinesses; let i = index; let last = last"
+                *ngFor="let hb of todoHabitBusinesses; trackBy: trackByHabitBusinessId; let i = index; let last = last"
               >
                 <ng-container
                   *ngTemplateOutlet="habitBusinessCard; context: { $implicit: hb, isFirst: i === 0, isLast: last }"
@@ -577,7 +577,7 @@
             <h4 class="habit-group-title">Done</h4>
             <div class="habit-businesses-container">
               <ng-container
-                *ngFor="let hb of doneHabitBusinesses; let i = index; let last = last"
+                *ngFor="let hb of doneHabitBusinesses; trackBy: trackByHabitBusinessId; let i = index; let last = last"
               >
                 <ng-container
                   *ngTemplateOutlet="habitBusinessCard; context: { $implicit: hb, isFirst: i === 0, isLast: last }"

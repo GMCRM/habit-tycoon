@@ -182,15 +182,9 @@ export class SocialService {
         allFriendships.map(async (friendship) => {
           // Determine which user is the friend (not the current user)
           const friendId = friendship.user_id === userId ? friendship.friend_id : friendship.user_id;
-          
-          console.log('🔍 Fetching friend profile for user_id:', friendId);
-          
+
           const { data: friendProfileData, error: profileError } = await this.supabase
             .rpc('get_user_profile_for_friend_request', { user_uuid: friendId });
-
-          console.log('📊 Friend profile fetch result:', { friendProfileData, profileError });
-          console.log('📊 Raw friendProfileData type:', typeof friendProfileData);
-          console.log('📊 Raw friendProfileData value:', JSON.stringify(friendProfileData, null, 2));
 
           if (profileError) {
             console.error('❌ Error loading friend profile:', profileError);
@@ -200,10 +194,8 @@ export class SocialService {
           let friendProfile;
           if (Array.isArray(friendProfileData) && friendProfileData.length > 0) {
             friendProfile = friendProfileData[0];
-            console.log('✅ Using first element from array:', friendProfile);
           } else if (friendProfileData && !Array.isArray(friendProfileData)) {
             friendProfile = friendProfileData;
-            console.log('✅ Using direct object:', friendProfile);
           } else {
             friendProfile = {
               id: friendId,
@@ -212,10 +204,7 @@ export class SocialService {
               cash: 0,
               net_worth: 0
             };
-            console.log('❌ Using fallback profile:', friendProfile);
           }
-
-          console.log('✅ Final friend profile:', friendProfile);
 
           return {
             ...friendship,
@@ -258,17 +247,8 @@ export class SocialService {
       // Use the special function to get sender profiles (bypasses RLS)
       const enrichedRequests = await Promise.all(
         friendships.map(async (friendship) => {
-          console.log('🔍 Fetching profile for user_id:', friendship.user_id);
-          
           const { data: profileData, error: profileError } = await this.supabase
             .rpc('get_user_profile_for_friend_request', { user_uuid: friendship.user_id });
-
-          console.log('📊 Profile fetch result:', { 
-            profileData, 
-            profileError,
-            dataType: typeof profileData,
-            isArray: Array.isArray(profileData)
-          });
 
           if (profileError) {
             console.error('❌ Error loading sender profile:', profileError);
@@ -285,8 +265,6 @@ export class SocialService {
               email: 'unknown@email.com'
             };
           }
-
-          console.log('✅ Using sender profile:', senderProfile);
 
           return {
             ...friendship,
@@ -400,11 +378,13 @@ export class SocialService {
           .from('friendships')
           .delete()
           .eq('id', existingFriendship.id);
-        
+
         if (deleteError) {
           console.error('Error deleting declined friendship:', deleteError);
           throw new Error('Error resending friend request');
         }
+      } else if (existingFriendship.status === 'blocked') {
+        throw new Error('Unable to send friend request to this user');
       }
     }
 
@@ -542,13 +522,6 @@ export class SocialService {
 
   async sendStockholderReminder(fromUserId: string, toUserId: string, businessName: string, fromUserName: string): Promise<void> {
     try {
-      console.log('🔍 Social service sending reminder:', {
-        fromUserId,
-        toUserId,
-        businessName,
-        fromUserName
-      });
-
       // Use the SQL function to send the stockholder reminder
       const { data, error } = await this.supabase
         .rpc('send_stockholder_reminder', {
@@ -557,8 +530,6 @@ export class SocialService {
           business_name: businessName,
           from_user_name: fromUserName
         });
-
-      console.log('🔍 RPC response:', { data, error });
 
       if (error) {
         console.error('❌ RPC Error sending stockholder reminder:', error);
@@ -570,8 +541,6 @@ export class SocialService {
         throw new Error(data.error || 'Function execution failed');
       }
 
-      console.log('✅ Reminder sent successfully');
-
     } catch (error) {
       console.error('❌ Error in sendStockholderReminder:', error);
       throw new Error(`Failed to send stockholder reminder: ${(error as any)?.message || 'Unknown error'}`);
@@ -580,7 +549,6 @@ export class SocialService {
 
   async getUserPokes(userId: string): Promise<any[]> {
     try {
-      console.log('🔍 SocialService: Loading pokes for user:', userId);
       const { data, error } = await this.supabase
         .rpc('get_user_social_notifications', { user_uuid: userId });
 
@@ -588,20 +556,14 @@ export class SocialService {
         console.error('❌ Error loading pokes:', error);
         throw error;
       }
-      
-      console.log('🔍 Raw pokes data from database:', data);
-      console.log('🔍 First poke structure:', data?.[0]);
-      
+
       // Transform the data to match expected format (poke_id -> id)
       const transformedData = (data || []).map((poke: any) => ({
         ...poke,
         id: poke.poke_id, // Map poke_id to id
         type: poke.poke_type // Map poke_type to type for consistency
       }));
-      
-      console.log('🔍 Transformed pokes data:', transformedData);
-      console.log('🔍 First transformed poke:', transformedData?.[0]);
-      
+
       return transformedData;
     } catch (error) {
       console.error('Error loading pokes:', error);
@@ -648,8 +610,6 @@ export class SocialService {
 
   async markPokeAsRead(pokeId: string): Promise<void> {
     try {
-      console.log('🔍 SocialService: Marking poke as read:', pokeId);
-      
       const { error } = await this.supabase
         .from('social_pokes')
         .update({ is_read: true })
@@ -659,8 +619,6 @@ export class SocialService {
         console.error('❌ Database error:', error);
         throw error;
       }
-      
-      console.log('✅ SocialService: Successfully marked poke as read');
     } catch (error) {
       console.error('❌ SocialService: Error marking poke as read:', error);
       throw error;
@@ -669,33 +627,25 @@ export class SocialService {
 
   async deleteNotification(notificationId: string): Promise<void> {
     try {
-      console.log('🗑️ SocialService: Deleting notification:', notificationId);
-      console.log('🔍 Notification ID type:', typeof notificationId);
-      console.log('🔍 Notification ID valid:', !!notificationId);
-      
       if (!notificationId) {
         throw new Error('Notification ID is required for deletion');
       }
-      
+
       const { data, error } = await this.supabase
         .from('social_pokes')
         .delete()
         .eq('id', notificationId)
         .select(); // Return the deleted rows to confirm deletion
 
-      console.log('🔍 Delete operation result:', { data, error });
-
       if (error) {
         console.error('❌ Database error deleting notification:', error);
         throw error;
       }
-      
+
       if (!data || data.length === 0) {
         console.warn('⚠️ No notification was deleted - ID might not exist:', notificationId);
         throw new Error('Notification not found or already deleted');
       }
-      
-      console.log('✅ SocialService: Notification deleted successfully:', data);
     } catch (error) {
       console.error('❌ SocialService: Error deleting notification:', error);
       throw error;

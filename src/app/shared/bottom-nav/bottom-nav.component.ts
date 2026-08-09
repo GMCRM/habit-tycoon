@@ -101,12 +101,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   }
 
   async openSocial() {
-    console.log('🔍 BottomNav: Social button clicked');
-    
     // Simple, direct navigation without complex checks
     try {
       await this.router.navigate(['/social']);
-      console.log('✅ BottomNav: Navigated to social');
     } catch (error) {
       console.error('❌ BottomNav: Navigation failed:', error);
     }

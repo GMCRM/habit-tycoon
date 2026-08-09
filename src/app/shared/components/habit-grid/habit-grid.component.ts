@@ -426,8 +426,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
   };
 
   ngOnInit() {
-    console.log('🎯 HabitGrid ngOnInit - businessId:', this.businessId, 'data length:', this.data.length);
-    
     // Check initial screen size
     this.checkScreenSize();
     
@@ -439,7 +437,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['data'] || changes['businessId'] || changes['weeksToShow']) {
-      console.log('🔄 HabitGrid data changed, regenerating grid');
       this.loadData();
     }
   }
@@ -468,7 +465,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
     
     // If mobile state changed, regenerate the grid
     if (previousMobileState !== this.isMobileScreen) {
-      console.log('📱 Screen size changed - Mobile:', this.isMobileScreen);
       this.generateGrid();
     }
   }
@@ -482,8 +478,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
       
       // Only update if this event is for our specific habit business
       if (event.habitBusinessId === this.businessId) {
-        console.log('🔥 Real-time update received for habit:', this.businessId, 'Type:', event.type);
-        
         // Apply the update immediately to the grid
         this.applyRealTimeUpdate(event);
       }
@@ -496,64 +490,29 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
   private applyRealTimeUpdate(event: HabitUpdateEvent) {
     const todayStr = this.getLocalDateString();
     const updateDate = event.completionDate || todayStr;
-    
-    console.log('📊 Applying real-time update:', { 
-      type: event.type, 
-      date: updateDate, 
-      businessId: event.habitBusinessId,
-      todayCalculated: todayStr,
-      eventCompletionDate: event.completionDate
-    });
-    
-    // Debug: Show what dates we have in the grid
-    const gridDates = this.gridDays.map(d => d.date).slice(0, 10); // First 10 dates
-    console.log('📅 First 10 grid dates:', gridDates);
-    console.log('📅 Last 10 grid dates:', this.gridDays.map(d => d.date).slice(-10));
-    
-    // Debug: Find dates around today
-    const todayIndex = this.gridDays.findIndex(d => d.date === todayStr);
-    const updateIndex = this.gridDays.findIndex(d => d.date === updateDate);
-    console.log('📍 Today index in grid:', todayIndex, 'Update date index:', updateIndex);
-    
-    if (todayIndex >= 0) {
-      console.log('📅 Grid context around today:', {
-        yesterday: this.gridDays[todayIndex - 1]?.date,
-        today: this.gridDays[todayIndex]?.date,
-        tomorrow: this.gridDays[todayIndex + 1]?.date
-      });
-    }
-    
+
     // Find the grid cell for today/update date
     let updated = false;
     for (const day of this.gridDays) {
       if (day.date === updateDate) {
-        console.log('🎯 Found matching grid cell:', {
-          date: day.date,
-          currentLevel: day.level,
-          currentCompleted: day.completed
-        });
-        
         if (event.type === 'completion') {
           // Mark as completed
           day.completed = true;
           day.level = 2; // Completed level
-          console.log('✅ Updated grid cell for completion:', updateDate);
         } else if (event.type === 'undo') {
           // Mark as not completed
           day.completed = false;
           day.level = 1; // Missed level (since we had data before)
           day.streakDay = 0;
-          console.log('↩️ Updated grid cell for undo:', updateDate);
         }
         updated = true;
         break;
       }
     }
-    
+
     if (updated) {
       // Recalculate stats after the update
       this.calculateStats();
-      console.log('📈 Grid updated in real-time! Completed days:', this.completedDays);
     } else {
       console.warn('⚠️ Could not find grid cell for date:', updateDate);
       console.warn('⚠️ Available dates in grid:', this.gridDays.length, 'total dates');
@@ -623,7 +582,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
   onDayClick(day: HabitGridDay) {
     if (day.level === 0) return;
-    console.log('📅 Clicked day:', day.date, 'Completed:', day.completed, 'Streak:', day.streakDay);
   }
 
   async closeModal() {
@@ -665,20 +623,12 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   toggleView(): void {
-    console.log('🔄 TOGGLE VIEW:', { 
-      from: this.showMonthView ? 'Month' : 'Year', 
-      to: !this.showMonthView ? 'Month' : 'Year'
-    });
-    
     this.showMonthView = !this.showMonthView;
-    
+
     if (this.showMonthView) {
       this.currentMonthOffset = 0; // Reset to current month when switching to month view
-      console.log('📅 Switched to MONTH view - should show current month');
-    } else {
-      console.log('📊 Switched to YEAR view - should show full year');
     }
-    
+
     // Regenerate the grid for the new view
     this.loadData();
   }
@@ -900,57 +850,41 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
   private async loadData() {
     try {
-      console.log('🔍 Loading habit grid data for businessId:', this.businessId);
-      console.log('🔍 BusinessId type:', typeof this.businessId, 'Length:', this.businessId?.length);
-      console.log('🔍 Stock view mode:', this.isStockView);
-      
       // Always try to fetch real data if we have a businessId
       if (this.businessId) {
-        console.log('📡 Fetching real habit completion history...');
-        
         let history;
         if (this.isStockView) {
           // Use stock-specific method for cross-user data
-          console.log('📈 Using stock completion history method');
           history = await this.habitBusinessService.getHabitCompletionHistoryForStock(
-            this.businessId, 
+            this.businessId,
             365 // Get full year of data
           );
         } else {
           // Use regular method for own businesses
-          console.log('� Using regular completion history method');
           history = await this.habitBusinessService.getHabitCompletionHistory(
-            this.businessId, 
+            this.businessId,
             365 // Get full year of data
           );
         }
-        
-        console.log('📥 Received completion history:', history.length, 'days');
-        console.log('📊 Sample completion data:', history.slice(0, 10));
-        
+
         if (history && history.length > 0) {
           this.data = history;
           this.usingRealData = true;
-          console.log('✅ Using real data with', this.data.length, 'data points');
-          const completedCount = this.data.filter(d => d.completed).length;
-          console.log('🎯 Found', completedCount, 'completed days out of', this.data.length, 'total days');
         } else {
           console.warn('⚠️ No completion history found for business:', this.businessId);
           this.data = []; // Use empty data instead of mock
           this.usingRealData = false;
         }
       } else {
-        console.log('🎲 No businessId provided - grid will show empty state');
         this.data = [];
         this.usingRealData = false;
       }
 
       this.generateGrid();
       this.calculateStats();
-      
+
     } catch (error) {
       console.error('❌ Error loading habit grid data:', error);
-      console.log('📝 Using empty data due to error');
       this.data = [];
       this.usingRealData = false;
       this.generateGrid();
@@ -960,15 +894,10 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
   private generateMockData() {
     // Mock data generation removed - we only want to show real habit data
-    console.log('🚫 Mock data generation disabled - use real habit completion data only');
     this.data = [];
   }
 
   private generateGrid() {
-    console.log('🏗️ Generating habit grid with', this.data.length, 'data points');
-    console.log('📱 Mobile screen:', this.isMobileScreen);
-    console.log('⚙️ WeeksToShow input:', this.weeksToShow);
-    
     this.gridDays = [];
     this.monthLabels = [];
     
@@ -1001,14 +930,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
       // Calculate actual weeks needed based on the full calendar year range
       const timeDiff = endDate.getTime() - startDate.getTime();
       weeksNeeded = Math.ceil(timeDiff / (1000 * 3600 * 24 * 7));
-      
-      console.log('📅 Calendar year mode:', {
-        calendarStart: new Date(currentYear, 0, 1).toDateString(),
-        calendarEnd: new Date(currentYear, 11, 31).toDateString(),
-        gridStart: startDate.toDateString(),
-        gridEnd: endDate.toDateString(),
-        weeksCalculated: weeksNeeded
-      });
     } else {
       // Original mode: Center around today
       const totalDays = weeksNeeded * 7;
@@ -1024,21 +945,11 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
       
       endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + (weeksNeeded * 7) - 1);
-      
-      console.log('📅 Dynamic range calculation:', {
-        weeksToShow: this.weeksToShow,
-        totalDays,
-        startDate: this.getLocalDateStringFromDate(startDate),
-        endDate: this.getLocalDateStringFromDate(endDate),
-        mondayStart: startDate.getDay() === 1 ? 'Yes' : 'No (day: ' + startDate.getDay() + ')'
-      });
     }
-    
+
     // Check if we need to clear data for new year
     this.checkAndClearNewYearData(currentYear);
-    
-    console.log(`📅 Grid will show ${weeksNeeded} weeks (${this.weeksToShow} weeks requested)`);
-    
+
     // Generate month labels for the calculated range
     this.generateMonthLabels(startDate, weeksNeeded, startDate, endDate);
     
@@ -1080,18 +991,10 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
           isInCalendarYear: isInTargetRange, // Rename for clarity
           isCreatedDate: isCreatedDate || false
         } as HabitGridDay & { isInCalendarYear: boolean });
-        
-        // Debug first week alignment
-        if (week === 0) {
-          const expectedMonday = day === 0 && currentDate.getDay() === 1;
-          console.log(`🔍 Week 0, Day ${day}: ${dateStr} = ${currentDate.toLocaleDateString('en-US', { weekday: 'short' })} (${currentDate.getDay()}) ${expectedMonday ? '✅ Monday start' : ''}`);
-        }
       }
     }
-    
+
     this.weeks = weeksNeeded;
-    console.log('✅ Generated grid with', this.gridDays.length, 'days');
-    console.log('📅 Grid covers:', startDate.toDateString(), 'to', endDate.toDateString());
 
     if (this.isMobileScreen) {
       this.scrollToToday();
@@ -1122,7 +1025,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
     const lastDataYear = this.data.length > 0 ? new Date(this.data[this.data.length - 1].date).getFullYear() : currentYear;
     
     if (lastDataYear < currentYear) {
-      console.log('🗓️ New year detected! Clearing old year data for fresh start');
       // In a real app, you might want to archive old data instead of clearing
       this.data = [];
     }
@@ -1221,8 +1123,6 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
         }
       }
     }
-    
-    console.log('📅 Month labels positioned above 1st day columns:', this.monthLabels);
   }
 
   private calculateStats() {
@@ -1254,13 +1154,5 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
         tempStreak = 0;
       }
     }
-    
-    console.log('📊 Grid stats calculated:', {
-      totalDays: this.totalDays,
-      completedDays: this.completedDays,
-      completionRate: (this.completionRate * 100).toFixed(1) + '%',
-      currentStreak: this.currentStreak,
-      longestStreak: this.longestStreak
-    });
   }
 }

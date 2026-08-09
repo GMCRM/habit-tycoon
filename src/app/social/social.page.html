@@ -76,7 +76,7 @@
           </div>
 
           <div *ngIf="friends.length > 0; else noFriends" class="friends-list">
-            <ion-card *ngFor="let friend of friends" class="friend-card">
+            <ion-card *ngFor="let friend of friends; trackBy: trackById" class="friend-card">
               <ion-card-content>
                 <div class="friend-info">
                   <div class="friend-details">
@@ -136,7 +136,7 @@
             </h3>
             <div class="requests-list">
               <ion-card
-                *ngFor="let request of pendingRequests"
+                *ngFor="let request of pendingRequests; trackBy: trackById"
                 class="request-card"
               >
                 <ion-card-content>
@@ -183,7 +183,7 @@
             </h3>
             <div class="requests-list">
               <ion-card
-                *ngFor="let request of sentRequests"
+                *ngFor="let request of sentRequests; trackBy: trackById"
                 class="request-card"
               >
                 <ion-card-content>
@@ -209,7 +209,7 @@
             *ngIf="notifications.length > 0; else noNotifications"
             class="notifications-list"
           >
-            <ng-container *ngFor="let notification of notifications">
+            <ng-container *ngFor="let notification of notifications; trackBy: trackById">
               <!-- Joint venture notifications (invite, upgrade request, deletion vote,
                    resolution) use the home-card visual style: icon large and centered,
                    name, then message underneath — not this row layout. -->
@@ -357,7 +357,7 @@
             >
               <ion-card-content>
                 <div
-                  *ngFor="let user of friendsLeaderboard; let last = last"
+                  *ngFor="let user of friendsLeaderboard; trackBy: trackById; let last = last"
                   class="leaderboard-row"
                   [class.current-user]="user.name === 'You'"
                 >
@@ -414,7 +414,7 @@
               >
                 <ion-card-content>
                   <div
-                    *ngFor="let user of cashLeaderboard; let last = last"
+                    *ngFor="let user of cashLeaderboard; trackBy: trackById; let last = last"
                     class="leaderboard-row"
                     [class.current-user]="user.name === 'You'"
                   >
@@ -467,7 +467,7 @@
               >
                 <ion-card-content>
                   <div
-                    *ngFor="let user of completedLeaderboard; let last = last"
+                    *ngFor="let user of completedLeaderboard; trackBy: trackById; let last = last"
                     class="leaderboard-row"
                     [class.current-user]="user.name === 'You'"
                   >
@@ -639,7 +639,7 @@
             class="marketplace-list"
           >
             <ion-card
-              *ngFor="let listing of marketplaceListings"
+              *ngFor="let listing of marketplaceListings; trackBy: trackById"
               class="marketplace-listing-card"
               [class.own-listing]="listing.is_own"
               [class.pending-listing]="isListingPending(listing)"

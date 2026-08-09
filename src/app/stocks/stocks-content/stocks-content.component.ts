@@ -187,16 +187,12 @@ export class StocksContentComponent implements OnInit {
     // Set weeks to show based on screen size with better breakpoints
     if (this.isMobileScreen) {
       this.weeksToShow = 13; // 3 months for mobile (13 weeks = ~3 months)
-      console.log('📱 MOBILE screen detected:', width + 'px - Setting weeks to:', this.weeksToShow);
     } else if (this.isMediumSmallScreen) {
       this.weeksToShow = 17; // 4 months for small-medium screens (17 weeks = ~4 months)
-      console.log('🔍 SMALL-MEDIUM screen detected:', width + 'px - Setting weeks to:', this.weeksToShow);
     } else if (this.isMediumLargeScreen) {
       this.weeksToShow = 26; // 6 months for medium-large screens (26 weeks = ~6 months)
-      console.log('� MEDIUM-LARGE screen detected:', width + 'px - Setting weeks to:', this.weeksToShow);
     } else {
       this.weeksToShow = 53; // Full year for large screens (53 weeks = full year)
-      console.log('🖥️ LARGE screen detected:', width + 'px - Setting weeks to:', this.weeksToShow, '(FULL YEAR)');
     }
   }
 
@@ -245,13 +241,11 @@ export class StocksContentComponent implements OnInit {
 
   async loadFriendBusinesses() {
     if (!this.currentUser?.id) {
-      console.log('No current user for loading friend businesses');
       return;
     }
 
     try {
       this.friendBusinesses = await this.habitBusinessService.getFriendBusinesses(this.currentUser.id);
-      console.log('✅ Loaded friend businesses:', this.friendBusinesses.length);
     } catch (error) {
       console.error('Error loading friend businesses:', error);
       this.friendBusinesses = [];
@@ -259,21 +253,15 @@ export class StocksContentComponent implements OnInit {
   }
 
   async loadPortfolio() {
-    console.log('🔍 Starting loadPortfolio...');
     if (!this.currentUser?.id) {
-      console.log('❌ No current user for loading portfolio');
       return;
     }
 
-    console.log('🔍 Loading portfolio for user:', this.currentUser.id);
     try {
       this.portfolio = await this.habitBusinessService.getUserStockPortfolio(this.currentUser.id);
-      console.log('✅ Loaded portfolio:', this.portfolio.length);
-      console.log('🔍 Portfolio data:', this.portfolio);
 
       // Load today's actual dividends
       this.todaysActualDividends = await this.habitBusinessService.getTodaysStockDividends(this.currentUser.id);
-      console.log('💰 Today\'s actual dividends:', this.todaysActualDividends);
     } catch (error) {
       console.error('❌ Error loading portfolio:', error);
       this.portfolio = [];
@@ -283,7 +271,6 @@ export class StocksContentComponent implements OnInit {
 
   async sendHabitPoke(friendId: string, businessName: string) {
     if (!this.currentUser?.id) {
-      console.log('No current user for sending poke');
       return;
     }
 
@@ -308,7 +295,6 @@ export class StocksContentComponent implements OnInit {
 
   async sendStockholderReminder(friendId: string, businessName: string, friendName: string) {
     if (!this.currentUser?.id) {
-      console.log('No current user for sending stockholder reminder');
       return;
     }
 
@@ -990,14 +976,6 @@ export class StocksContentComponent implements OnInit {
             text: 'Send Reminder',
             handler: async () => {
               try {
-                console.log('🔍 Sending reminder with data:', {
-                  fromUserId: this.currentUser.id,
-                  toUserId: holding.ownerId,
-                  businessName: holding.businessName,
-                  fromUserName: this.userProfile?.name || this.currentUser.email || 'A fellow investor',
-                  currentUser: this.currentUser
-                });
-
                 // Send the reminder using the social service
                 await this.socialService.sendStockholderReminder(
                   this.currentUser.id,
@@ -1071,6 +1049,11 @@ export class StocksContentComponent implements OnInit {
     }
 
     return businesses;
+  }
+
+  /** *ngFor trackBy for the friend-business list — keeps DOM/mini-chart nodes stable across reloads instead of destroying/recreating every card. */
+  trackByFriendBusinessId(_index: number, business: FriendBusiness): string {
+    return business.id;
   }
 
   /**

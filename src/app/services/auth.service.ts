@@ -19,8 +19,6 @@ export class AuthService {
   // Google OAuth sign up
   async signUpWithGoogle() {
     try {
-      console.log('🔄 Starting Google OAuth signup...');
-      
       const { data, error } = await this.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -33,7 +31,6 @@ export class AuthService {
         throw error;
       }
 
-      console.log('✅ Google OAuth initiated:', data);
       return { data, error: null };
       
     } catch (error) {
@@ -85,10 +82,6 @@ export class AuthService {
 
   async signUp(email: string, password: string, displayName?: string) {
     try {
-      console.log('🔄 Starting signup process...');
-      console.log('Email:', email);
-      console.log('Display name:', displayName);
-      
       // Step 1: Create auth user
       const { data: authData, error: authError } = await this.supabase.auth.signUp({
         email: email,
@@ -105,35 +98,38 @@ export class AuthService {
         throw authError;
       }
 
-      console.log('✅ Auth user created:', authData.user?.id);
-
       // Step 2: Check if profile was created by trigger
       if (authData.user) {
         try {
-          console.log('🔄 Checking if profile was created by trigger...');
           await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for trigger
-          
+
+          // getUserProfile() returns null (rather than throwing) when the row
+          // doesn't exist yet, so a missing trigger must be detected here —
+          // relying on a thrown exception would leave this fallback dead code.
           const profile = await this.getUserProfile(authData.user.id);
-          console.log('✅ Profile found via trigger:', profile);
-          
-        } catch (profileError) {
-          console.warn('⚠️ Profile not created by trigger, creating manually...');
-          console.error('Profile check error:', profileError);
-          
-          // Step 3: Manually create profile if trigger failed
-          try {
-            const manualProfile = await this.createUserProfile(
-              authData.user.id,
-              email,
-              displayName || email.split('@')[0]
-            );
-            console.log('✅ Profile created manually:', manualProfile);
-          } catch (manualError) {
-            console.error('❌ Manual profile creation failed:', manualError);
-            
-            // Don't throw here - auth user is created, profile can be created later
-            console.warn('⚠️ Profile creation failed, but auth user exists. User can still log in.');
+
+          if (profile) {
+            console.log('✅ Profile found via trigger:', profile);
+          } else {
+            console.warn('⚠️ Profile not created by trigger, creating manually...');
+
+            // Step 3: Manually create profile if trigger failed
+            try {
+              const manualProfile = await this.createUserProfile(
+                authData.user.id,
+                email,
+                displayName || email.split('@')[0]
+              );
+              console.log('✅ Profile created manually:', manualProfile);
+            } catch (manualError) {
+              console.error('❌ Manual profile creation failed:', manualError);
+
+              // Don't throw here - auth user is created, profile can be created later
+              console.warn('⚠️ Profile creation failed, but auth user exists. User can still log in.');
+            }
           }
+        } catch (profileError) {
+          console.error('❌ Profile check failed unexpectedly:', profileError);
         }
       }
 
@@ -180,8 +176,6 @@ export class AuthService {
   // Password Reset
   async resetPassword(email: string) {
     try {
-      console.log('🔄 Sending password reset email to:', email);
-      
       // Get the correct redirect URL for password reset with hash routing
       const isGitHubPages = window.location.hostname === 'gmcrm.github.io';
       const resetUrl = isGitHubPages 
@@ -197,7 +191,6 @@ export class AuthService {
         throw error;
       }
 
-      console.log('✅ Password reset email sent successfully');
       return { data, error: null };
       
     } catch (error) {
@@ -209,8 +202,6 @@ export class AuthService {
   // Update password (called from reset password page)
   async updatePassword(newPassword: string) {
     try {
-      console.log('🔄 Updating password...');
-      
       const { data, error } = await this.supabase.auth.updateUser({
         password: newPassword
       });
@@ -220,7 +211,6 @@ export class AuthService {
         throw error;
       }
 
-      console.log('✅ Password updated successfully');
       return { data, error: null };
       
     } catch (error) {
@@ -262,11 +252,6 @@ export class AuthService {
   // User Profile Management
   // Method to manually create user profile
   async createUserProfile(userId: string, email: string, name?: string) {
-    console.log('🔄 Creating profile manually...');
-    console.log('User ID:', userId);
-    console.log('Email:', email);
-    console.log('Name:', name);
-
     try {
       const { data, error } = await this.supabase
         .from('user_profiles')
@@ -293,7 +278,6 @@ export class AuthService {
         throw error;
       }
       
-      console.log('✅ Profile created successfully:', data);
       return data;
     } catch (error) {
       console.error('❌ Profile creation failed with exception:', error);
@@ -353,14 +337,11 @@ export class AuthService {
         throw new Error('No authenticated user found');
       }
 
-      console.log('🔍 Ensuring profile exists for user:', user.id);
-
       // First, try to get existing profile
       let profile;
       try {
         profile = await this.getUserProfile(user.id);
         if (profile && profile.cash !== undefined && profile.cash !== null) {
-          console.log('✅ Profile already exists with proper cash:', profile);
           return profile;
         }
       } catch (error) {
@@ -368,8 +349,7 @@ export class AuthService {
       }
 
       // Profile doesn't exist or missing cash, create/update it
-      console.log('🔄 Creating/updating profile for user:', user.id);
-      
+
       // Use upsert to handle both creation and updates, with retry logic for Safari/iPad
       let retryCount = 0;
       const maxRetries = 3;
@@ -428,13 +408,6 @@ export class AuthService {
         throw new Error('No authenticated user found');
       }
 
-      console.log('🔄 Force creating profile for current user...');
-      console.log('User details:', {
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.['full_name'] || user.user_metadata?.['name']
-      });
-
       // Use UPSERT to create or update the profile
       const { data, error } = await this.supabase
         .from('user_profiles')
@@ -455,7 +428,6 @@ export class AuthService {
         throw error;
       }
 
-      console.log('✅ Profile force created/updated successfully:', data);
       return data;
     } catch (error) {
       console.error('❌ Force profile creation exception:', error);
@@ -526,9 +498,7 @@ export class AuthService {
         console.error('SQL function delete failed:', error);
         return { error };
       }
-      
-      console.log('Delete result:', data);
-      
+
       if (data && data.success) {
         return { error: null };
       } else {

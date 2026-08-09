@@ -352,18 +352,6 @@
 
         <ion-button
           expand="block"
-          fill="outline"
-          color="primary"
-          (click)="fixStockPrices()"
-          [disabled]="isFixingStockPrices"
-          class="ion-margin-top"
-        >
-          <ion-icon name="trending-up" slot="start"></ion-icon>
-          {{ isFixingStockPrices ? 'Fixing...' : 'Fix All Stock Prices' }}
-        </ion-button>
-
-        <ion-button
-          expand="block"
           fill="solid"
           color="success"
           (click)="fixLemonadeStockPrices()"

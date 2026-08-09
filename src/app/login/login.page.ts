@@ -33,7 +33,6 @@ export class LoginPage implements OnInit {
 
   // Google OAuth login
   async onGoogleLogin() {
-    console.log('🔄 Starting Google OAuth login...');
     try {
       const result = await this.authService.signInWithGoogle();
       
@@ -51,9 +50,8 @@ export class LoginPage implements OnInit {
         return;
       }
 
-      console.log('✅ Google OAuth initiated successfully');
       // Note: User will be redirected to Google, then back to our app
-      
+
     } catch (error) {
       console.error('❌ Unexpected Google login error:', error);
       
@@ -71,8 +69,7 @@ export class LoginPage implements OnInit {
   async onLogin() {
     try {
       const result = await this.authService.signIn(this.email, this.password);
-      console.log('Logged in user:', result);
-      
+
       // Show success toast instead of blocking alert
       const successToast = await this.toastController.create({
         message: '🎉 Login successful! Welcome back!',

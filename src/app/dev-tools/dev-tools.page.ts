@@ -19,7 +19,6 @@ export class DevToolsPage {
   isTestingDb = false;
   isTestingAuth = false;
   isTestingDividends = false;
-  isFixingStockPrices = false;
   isFixingLemonadeStocks = false;
   isAddingMoney = false;
   isRemovingMoney = false;
@@ -40,35 +39,30 @@ export class DevToolsPage {
   async loadCurrentUser() {
     try {
       const { data: { user } } = await this.authService.getUser();
-      console.log('Current user from auth:', user);
       this.currentUser = user;
-      
+
       // Try to load user profile if user exists
       if (user) {
         try {
-          console.log('Attempting to load profile for user ID:', user.id);
           this.userProfile = await this.authService.getUserProfile(user.id);
-          console.log('Loaded user profile:', this.userProfile);
         } catch (error) {
           console.error('Profile loading failed:', error);
           // Try to create profile manually if it doesn't exist
           try {
-            console.log('Attempting to create profile manually...');
             await this.authService.createUserProfile(
-              user.id, 
-              user.email!, 
+              user.id,
+              user.email!,
               user.user_metadata?.['name'] || user.email!.split('@')[0]
             );
             // Try loading again
             this.userProfile = await this.authService.getUserProfile(user.id);
-            console.log('Created and loaded profile:', this.userProfile);
           } catch (createError) {
             console.error('Profile creation failed:', createError);
           }
         }
       }
-    } catch (error) {
-      console.log('No user logged in');
+    } catch {
+      // No user logged in
     }
   }
 
@@ -125,10 +119,8 @@ export class DevToolsPage {
   // Force create profile for current user
   async forceCreateProfile() {
     try {
-      console.log('🔄 Force creating profile...');
       const profile = await this.authService.forceCreateCurrentUserProfile();
-      console.log('✅ Profile force created:', profile);
-      
+
       // Reload user data
       await this.loadCurrentUser();
       
@@ -141,18 +133,17 @@ export class DevToolsPage {
 
   // Add method to check all profiles in database
   async checkAllProfiles() {
-    console.log('🔍 Checking all profiles in database...');
     try {
       const allProfiles = await this.authService.getAllProfiles();
       console.log('All profiles found:', allProfiles);
-      
+
       const allUsers = await this.authService.getAllAuthUsers();
       console.log('All auth users found:', allUsers);
-      
+
       // Check current auth user
       const { data: { user } } = await this.authService.getUser();
       console.log('Current auth user:', user);
-      
+
       // Show detailed profile info
       let profileDetails = '';
       if (allProfiles && allProfiles.length > 0) {
@@ -184,15 +175,12 @@ export class DevToolsPage {
     if (!confirmDelete) return;
 
     try {
-      console.log('🗑️ Starting complete account deletion...');
-      
       // Use the new server-side delete function
-      console.log('Calling server-side delete function...');
       const { error: deleteError } = await this.authService.deleteAuthUser();
-      
+
       if (deleteError) {
         console.error('❌ Server-side deletion failed:', deleteError);
-        
+
         // Fallback: Delete just the profile and sign out
         console.log('Falling back to profile deletion only...');
         await this.authService.deleteUserProfile(this.currentUser.id);
@@ -206,8 +194,6 @@ export class DevToolsPage {
         
         alert('Profile deleted and signed out successfully!\n\nNote: Complete auth account deletion failed. You may be able to log in again.\n\nFor complete deletion, contact support or delete manually from Supabase dashboard.');
       } else {
-        console.log('✅ Complete account deletion successful');
-        
         // Clear storage
         localStorage.clear();
         sessionStorage.clear();
@@ -234,20 +220,15 @@ export class DevToolsPage {
     }
 
     try {
-      console.log('🔍 Debugging habit businesses...');
-      
       // Get all habit businesses
       const habitBusinesses = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
-      console.log('All habit businesses:', habitBusinesses);
-      
+
       // Check which habits need reset
       const habitsNeedingReset = await this.habitBusinessService.checkUserHabitsNeedReset(this.currentUser.id);
-      console.log('Habits needing reset:', habitsNeedingReset);
-      
+
       // Get today's earnings
       const todaysEarnings = await this.habitBusinessService.getTodaysActualEarnings(this.currentUser.id);
-      console.log('Today\'s actual earnings:', todaysEarnings);
-      
+
       // Show debug info
       let debugInfo = `Found ${habitBusinesses.length} habit businesses:\n\n`;
       
@@ -281,7 +262,6 @@ export class DevToolsPage {
   // Test the reset function
   async testResetOutdatedHabits() {
     try {
-      console.log('🔄 Testing reset outdated habits function...');
       await this.habitBusinessService.resetOutdatedDailyHabits();
       await this.showToast('✅ Reset outdated habits test completed!', 'success');
     } catch (error) {
@@ -292,8 +272,6 @@ export class DevToolsPage {
 
   async cleanupAllHabits() {
     try {
-      console.log('🚨 Starting emergency cleanup of all habit duplicates...');
-      
       if (!this.currentUser) {
         await this.showToast('❌ User not authenticated', 'danger');
         return;
@@ -306,13 +284,11 @@ export class DevToolsPage {
         let totalCleaned = 0;
         
         for (const habit of habits) {
-          console.log(`🧹 Cleaning habit: ${habit.business_name}`);
           await this.habitBusinessService.cleanupHabitCompletions(habit.id);
           totalCleaned++;
         }
-        
+
         await this.showToast(`✅ Cleaned up ${totalCleaned} habits successfully!`, 'success');
-        console.log(`✅ Emergency cleanup completed for ${totalCleaned} habits`);
       } else {
         await this.showToast('ℹ️ No habits found to clean up', 'warning');
       }
@@ -332,15 +308,11 @@ export class DevToolsPage {
     this.dividendTestResult = null;
 
     try {
-      console.log('🧪 Testing dividend processing...');
-      
       // Get comprehensive dividend debug info
       const debugInfo = await this.habitBusinessService.getDividendSystemDebugInfo(this.currentUser.id);
-      console.log('📊 Dividend system debug info:', debugInfo);
-      
+
       if (debugInfo.userHoldings.length === 0) {
         // User has no stock holdings - create a test dividend to verify the display works
-        console.log('💡 No stock holdings found. Creating test dividend...');
         await this.habitBusinessService.createTestDividend(this.currentUser.id, 7.50);
         
         // Refresh dividend info
@@ -361,47 +333,39 @@ export class DevToolsPage {
       } else {
         // User has holdings - test with real dividend processing
         const habits = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
-        console.log('Found habits:', habits);
-        
+
         if (habits.length === 0) {
           throw new Error('No habit businesses found for testing');
         }
-        
+
         // Get the first habit for testing
         const testHabit = habits[0];
-        console.log('Testing with habit:', testHabit);
-        
+
         // Get stock info for this habit
         const stocks = await this.habitBusinessService.getAvailableStocks(this.currentUser.id);
         const stockInfo = stocks.find(s => s.habit_business_id === testHabit.id);
-        
+
         if (!stockInfo) {
           throw new Error('No stock information found for test habit');
         }
-        
-        console.log('Stock info:', stockInfo);
-        
+
         // Get holdings for this specific stock
         const specificHoldings = debugInfo.userHoldings.filter(h => h.stock_id === stockInfo.id);
-        console.log('Holdings for this stock:', specificHoldings);
-        
+
         // Get today's dividends before test
         const dividendsBefore = debugInfo.todaysDividends;
-        console.log('Dividends before test:', dividendsBefore);
-        
+
         // Simulate a habit completion dividend processing
         if (specificHoldings.length > 0) {
-          console.log('🔧 Running manual dividend processing test...');
           await this.habitBusinessService.processDividendsManually(
-            testHabit.id, 
-            testHabit.earnings_per_completion, 
+            testHabit.id,
+            testHabit.earnings_per_completion,
             stockInfo.id
           );
-          
+
           // Get dividends after test
           const dividendsAfter = await this.habitBusinessService.getTodaysStockDividends(this.currentUser.id);
-          console.log('Dividends after test:', dividendsAfter);
-          
+
           this.dividendTestResult = {
             success: true,
             message: 'Dividend processing test completed',
@@ -461,28 +425,11 @@ export class DevToolsPage {
     await toast.present();
   }
 
-  async fixStockPrices() {
-    this.isFixingStockPrices = true;
-    try {
-      console.log('🔧 Starting stock price fix...');
-      await this.habitBusinessService.fixAllStockPrices();
-      await this.showToast('✅ All stock prices have been updated!', 'success');
-      console.log('✅ Stock price fix completed successfully');
-    } catch (error) {
-      console.error('❌ Stock price fix failed:', error);
-      await this.showToast(`❌ Failed to fix stock prices: ${(error as any)?.message || 'Unknown error'}`, 'danger');
-    } finally {
-      this.isFixingStockPrices = false;
-    }
-  }
-
   async fixLemonadeStockPrices() {
     this.isFixingLemonadeStocks = true;
     try {
-      console.log('🍋 Starting lemonade stock price fix...');
       await this.habitBusinessService.fixLemonadeStockPrices();
       await this.showToast('🍋 Lemonade stock prices fixed! ($100 → $1)', 'success');
-      console.log('✅ Lemonade stock price fix completed successfully');
     } catch (error) {
       console.error('❌ Lemonade stock price fix failed:', error);
       await this.showToast(`❌ Failed to fix lemonade prices: ${(error as any)?.message || 'Unknown error'}`, 'danger');
@@ -511,9 +458,7 @@ export class DevToolsPage {
 
       // For demo, debug the first habit (usually the problematic one)
       const habitToDebug = habits[0];
-      
-      console.log('🔍 Starting habit debug for:', habitToDebug.business_name);
-      
+
       const debugResult = await this.habitBusinessService.debugHabitState(habitToDebug.id);
       
       // Show summary in alert
@@ -555,25 +500,18 @@ Check console for detailed logs.`;
   async addTestMoney() {
     this.isAddingMoney = true;
     try {
-      console.log('💰 Starting add test money process...');
-      
       if (!this.currentUser) {
         throw new Error('User not authenticated');
       }
 
       // Get current user profile to calculate new amounts (fresh from database)
-      console.log('📊 Fetching current profile from database...');
       const currentProfile = await this.authService.getUserProfile(this.currentUser.id);
-      console.log('📊 Current profile data:', currentProfile);
-      
+
       const currentCash = currentProfile?.cash || 0;
       const newCash = currentCash + 1000000;
 
-      console.log(`💰 Current cash: $${currentCash.toLocaleString()}, adding $1,000,000 = new cash: $${newCash.toLocaleString()}`);
-
       // Update cash, then recompute net worth from scratch (cash + business value + portfolio value)
-      console.log('💾 Updating database (cash)...');
-      const { data: updateResult, error } = await this.authService.supabase
+      const { error } = await this.authService.supabase
         .from('user_profiles')
         .update({
           cash: newCash,
@@ -594,19 +532,13 @@ Check console for detailed logs.`;
         console.error('❌ Error recalculating net worth:', recalcError);
       }
 
-      console.log('✅ Database update result:', updateResult);
-
       // Refresh user profile to show new amounts (fresh from database)
-      console.log('🔄 Refreshing profile data...');
       await this.loadCurrentUser();
-      
+
       const updatedCash = this.userProfile?.cash || 0;
       const updatedNetWorth = this.userProfile?.net_worth || 0;
-      
-      console.log(`✅ Updated profile - Cash: $${updatedCash.toLocaleString()}, Net Worth: $${updatedNetWorth.toLocaleString()}`);
-      
+
       await this.showToast(`💰 Added $1M! Cash: $${updatedCash.toLocaleString()}, Net Worth: $${updatedNetWorth.toLocaleString()} 🚀`, 'success');
-      console.log(`✅ Test money operation completed successfully`);
     } catch (error) {
       console.error('❌ Failed to add test money:', error);
       await this.showToast(`❌ Failed to add test money: ${(error as any)?.message || 'Unknown error'}`, 'danger');

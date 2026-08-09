@@ -29,8 +29,6 @@ export class HabitUpdateService {
    * Emit a habit completion event
    */
   emitHabitCompletion(habitBusinessId: string, completionDate: string = this.getLocalDateString()) {
-    console.log('📡 Emitting habit completion event:', { habitBusinessId, completionDate });
-    
     this.updateSubject.next({
       type: 'completion',
       habitBusinessId,
@@ -43,8 +41,6 @@ export class HabitUpdateService {
    * Emit a habit undo event
    */
   emitHabitUndo(habitBusinessId: string, completionDate: string = this.getLocalDateString()) {
-    console.log('📡 Emitting habit undo event:', { habitBusinessId, completionDate });
-    
     this.updateSubject.next({
       type: 'undo',
       habitBusinessId,
@@ -57,8 +53,6 @@ export class HabitUpdateService {
    * Emit a new habit-business creation event
    */
   emitHabitCreated(habitBusinessId: string) {
-    console.log('📡 Emitting habit created event:', { habitBusinessId });
-
     this.updateSubject.next({
       type: 'created',
       habitBusinessId,

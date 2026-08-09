@@ -123,19 +123,14 @@ export class HomePage implements OnInit, OnDestroy {
     // Use absolute value and modulo to get array index
     const index = Math.abs(hash) % this.motivationalTaglines.length;
     this.currentTagline = this.motivationalTaglines[index];
-    
-    console.log(`🎯 Today's motivation (${dateString}):`, this.currentTagline);
   }
 
   // Refresh data whenever the page is entered
   ionViewWillEnter() {
-    console.log('🔄 HomePage: ionViewWillEnter - refreshing data...');
-    
     // Set a new random tagline each time the page is entered
     this.setRandomTagline();
-    
+
     if (!this.isLoading) {
-      console.log('🔄 Verifying auth state before loading home data...');
       this.loadCurrentUser();
     }
   }
@@ -162,9 +157,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (!this.currentUser) return;
     
     try {
-      console.log('🔄 Refreshing user profile for ID:', this.currentUser.id);
       this.userProfile = await this.authService.getUserProfile(this.currentUser.id);
-      console.log('✅ Refreshed user profile:', this.userProfile);
     } catch (error) {
       console.error('❌ Error refreshing user profile:', error);
     }
@@ -172,18 +165,15 @@ export class HomePage implements OnInit, OnDestroy {
 
   async loadCurrentUser() {
     if (this.isLoading) {
-      console.log('🔄 Already loading user, skipping...');
       return;
     }
     
     this.isLoading = true;
     try {
       const { data: { user } } = await this.authService.getUser();
-      console.log('Current user from auth:', user);
       this.currentUser = user;
 
       if (!user) {
-        console.log('❌ No authenticated user found, redirecting to login');
         this.hasCheckedAuth = true;
         this.habitBusinesses = [];
         this.userProfile = null;
@@ -199,13 +189,10 @@ export class HomePage implements OnInit, OnDestroy {
       // Try to load user profile if user exists
       // Check if user is admin
       this.isAdmin = await this.adminService.isAdmin();
-      console.log('👤 Admin status:', this.isAdmin);
-      
+
       try {
-        console.log('Attempting to ensure profile exists for user ID:', user.id);
         this.userProfile = await this.authService.ensureUserProfileExists(user);
-        console.log('User profile ensured:', this.userProfile);
-        } catch (error) {
+      } catch (error) {
         console.error('Profile creation/loading failed:', error);
         // Most likely offline — fall back to the last synced profile snapshot
         // instead of a hardcoded $100 starting balance, so cash/net worth
@@ -224,18 +211,16 @@ export class HomePage implements OnInit, OnDestroy {
       await this.loadDashboardData();
       this.hasCheckedAuth = true;
     } catch (error) {
-      console.log('❌ No user logged in, redirecting to login');
       console.error('Auth error details:', error);
       this.hasCheckedAuth = true;
-      
+
       // Clear any data that might have been loaded
       this.habitBusinesses = [];
       this.userProfile = null;
       this.currentUser = null;
-      
+
       // Only redirect to login after a brief delay to avoid immediate redirect
       setTimeout(() => {
-        console.log('🔄 Redirecting to login...');
         this.router.navigate(['/login']);
       }, 1000);
     } finally {
@@ -245,14 +230,11 @@ export class HomePage implements OnInit, OnDestroy {
 
   async loadDashboardData() {
     if (this.isLoading) {
-      console.log('📊 Already loading dashboard, skipping...');
       return;
     }
-    
+
     this.isLoading = true;
     try {
-      console.log('📊 Loading dashboard data for user:', this.currentUser?.id);
-      
       if (this.currentUser) {
         // Reset any outdated daily habits first to ensure accurate counts
         try {
@@ -339,11 +321,8 @@ export class HomePage implements OnInit, OnDestroy {
         // Calculate pending habits (habits that haven't reached their goal for today/this week)
         this.pendingHabitsCount = this.habitBusinesses.filter(hb => {
           const isCompleted = this.isGoalCompleted(hb);
-          console.log(`🔍 Habit ${hb.business_name}: progress=${hb.current_progress}/${hb.goal_value || 1}, frequency=${hb.frequency}, lastCompleted=${hb.last_completed_at}, isCompleted=${isCompleted}`);
           return !isCompleted;
         }).length;
-        
-        console.log(`📊 Dashboard calculations complete: pending=${this.pendingHabitsCount}, habit earnings=$${this.todaysEarnings.toFixed(2)}, stock dividends=$${this.todaysStockEarnings.toFixed(2)}`);
       } else {
         console.warn('⚠️  No current user found, cannot load dashboard data');
       }
@@ -366,7 +345,6 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async createNewHabitBusiness() {
-    console.log('🏢 Creating new habit-business...');
     const modal = await this.modalController.create({
       component: LaunchBusinessModalComponent,
       componentProps: {
@@ -387,8 +365,6 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async completeHabitBusiness(habitBusiness: HabitBusiness) {
-    console.log('✅ Completing habit business:', habitBusiness);
-    
     try {
       // Call the actual habit completion service
       const { earnings } = await this.habitBusinessService.completeHabit(habitBusiness.id);
@@ -428,29 +404,6 @@ export class HomePage implements OnInit, OnDestroy {
         this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
         await this.refreshAfterOfflineQueue();
       }
-    }
-  }
-
-  completeHabit() {
-    console.log('🎯 Opening habit check-in page...');
-    this.router.navigate(['/habit-checkin']);
-  }
-
-  async toggleHabit(habit: any) {
-    console.log('🔄 Toggling habit:', habit);
-    // TODO: Implement habit toggle
-    habit.completed = !habit.completed;
-    
-    if (habit.completed) {
-      // Show success toast instead of blocking alert
-      const toast = await this.toastController.create({
-        message: `✅ Habit "${habit.name}" completed! +$${habit.earnings} earned`,
-        duration: 3000,
-        position: 'top',
-        color: 'success'
-      });
-      await toast.present();
-      // TODO: Update database and user cash
     }
   }
 
@@ -514,6 +467,11 @@ export class HomePage implements OnInit, OnDestroy {
     return this.habitBusinesses.filter(hb => this.isGoalCompleted(hb));
   }
 
+  /** *ngFor trackBy for habit-business cards — keeps DOM nodes stable across reloads (fresh objects each fetch) instead of destroying/recreating every card. */
+  trackByHabitBusinessId(_index: number, hb: HabitBusiness): string {
+    return hb.id;
+  }
+
   /** True when today is one of the habit's active days (or it's a daily habit). */
   isTodayActiveDay(habitBusiness: HabitBusiness): boolean {
     return this.habitIntervalService.isTodayActiveDay(habitBusiness);
@@ -538,8 +496,6 @@ export class HomePage implements OnInit, OnDestroy {
    * Undo habit completion for today
    */
   async undoHabitCompletion(habitBusiness: HabitBusiness) {
-    console.log('↩️ Undoing habit completion:', habitBusiness);
-    
     try {
       // Call the undo completion service method directly
       const { earnings } = await this.habitBusinessService.undoHabitCompletion(habitBusiness.id);
@@ -589,17 +545,13 @@ export class HomePage implements OnInit, OnDestroy {
    * Toggle the inline 365-day habit grid for a specific habit business
    */
   toggleHabitGrid(habitBusiness: HabitBusiness) {
-    console.log('📅 Toggling habit grid for:', habitBusiness);
-    
     const currentState = this.expandedGrids[habitBusiness.id] || false;
-    
+
     // Close all other grids first (only allow one open at a time)
     this.expandedGrids = {};
-    
+
     // Toggle the clicked grid
     this.expandedGrids[habitBusiness.id] = !currentState;
-    
-    console.log('Grid expanded state for', habitBusiness.business_name, ':', this.expandedGrids[habitBusiness.id]);
   }
 
   /** Routes the upgrade button to the group-payment flow for a joint venture, or the existing single-owner flow otherwise. */
@@ -738,8 +690,6 @@ export class HomePage implements OnInit, OnDestroy {
    * Upgrade a habit business to a better business type
    */
   async upgradeHabitBusiness(habitBusiness: HabitBusiness) {
-    console.log('📈 Upgrading habit business:', habitBusiness);
-
     // Businesses can only be upgraded once every 24h (server-enforced too —
     // this just avoids a round trip and gives a friendlier message).
     const UPGRADE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -862,7 +812,6 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
   async editHabitBusiness(habitBusiness: HabitBusiness) {
-    console.log('✏️ Editing habit business:', habitBusiness);
     try {
       const modal = await this.modalController.create({
         component: EditHabitModalComponent,
@@ -951,8 +900,6 @@ export class HomePage implements OnInit, OnDestroy {
    * Delete (sell) a habit business with loss penalty
    */
   async deleteHabitBusiness(habitBusiness: HabitBusiness) {
-    console.log('🗑️ Deleting habit business:', habitBusiness);
-    
     try {
       // Check if this would be the user's last habit business
       if (this.habitBusinesses.length <= 1) {
@@ -1168,7 +1115,6 @@ export class HomePage implements OnInit, OnDestroy {
     }
     // Show "missed yesterday" prompt for daily habits that weren't done yesterday
     const missedYesterday = this.habitIntervalService.didMissYesterday(habitBusiness);
-    console.log('[runCompleteHabit] habit:', habitBusiness.business_name, '| recurrence_interval:', habitBusiness.recurrence_interval, '| goal_value:', habitBusiness.goal_value, '| created_at:', habitBusiness.created_at, '| last_completed_at:', habitBusiness.last_completed_at, '| didMissYesterday:', missedYesterday);
     if (missedYesterday) {
       await this.showMissedYesterdayAlert(habitBusiness);
     } else {
@@ -1505,8 +1451,6 @@ export class HomePage implements OnInit, OnDestroy {
    */
   async undoLastCompletion(habitBusiness: HabitBusiness) {
     try {
-      console.log('🔄 Undoing last completion for habit:', habitBusiness.business_name);
-      
       // Call the undo service
       await this.habitBusinessService.undoHabitCompletion(habitBusiness.id);
       

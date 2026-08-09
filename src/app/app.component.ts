@@ -85,7 +85,6 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (e) {
       console.error('❌ AppComponent: Failed to ensure user profile:', e);
     }
-    console.log('🔄 AppComponent: Navigating to home');
     await this.router.navigate(['/home']);
     // Strip ?code= so a hard-refresh doesn't attempt to re-exchange an
     // already-used code (which would leave the user stuck on login).
@@ -102,7 +101,6 @@ export class AppComponent implements OnInit, OnDestroy {
   // navigates to the custom-scheme URL, so window.location never sees the
   // code on native; it only ever arrives via the appUrlOpen event.
   private async exchangeCodeAndGoHome(code: string) {
-    console.log('🔍 AppComponent: OAuth callback — exchanging code for session...');
     this.isExchangingCode = true;
     try {
       const { data, error } = await this.authService.supabase.auth.exchangeCodeForSession(code);
@@ -135,8 +133,6 @@ export class AppComponent implements OnInit, OnDestroy {
     });
     document.addEventListener('visibilitychange', this.onVisibilityChange);
 
-    console.log('🔍 AppComponent: Initializing app, current path:', this.getCurrentRoutePath());
-
     const urlParams = new URLSearchParams(window.location.search);
     const isOAuthCallback = urlParams.has('code') || urlParams.has('error_code');
 
@@ -150,7 +146,6 @@ export class AppComponent implements OnInit, OnDestroy {
     // immediately below, which has to run before any await (see its comment).
     App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
       this.ngZone.run(async () => {
-        console.log('🔍 AppComponent: appUrlOpen received:', event.url);
         const callbackUrl = new URL(event.url);
         const errorCode = callbackUrl.searchParams.get('error_code');
         if (errorCode) {
@@ -173,8 +168,6 @@ export class AppComponent implements OnInit, OnDestroy {
     // it; the OAuth poller below is the fallback for when we still miss it.
     this.authService.onAuthStateChange(async (event, session) => {
       this.ngZone.run(async () => {
-        console.log('🔍 AppComponent: Auth state change:', event, 'current path:', this.getCurrentRoutePath());
-
         // Covers every event that carries a session (SIGNED_IN,
         // TOKEN_REFRESHED, INITIAL_SESSION, ...), not just the two branched
         // on below — the widget needs a current token independent of the
@@ -191,15 +184,12 @@ export class AppComponent implements OnInit, OnDestroy {
           // router.navigate(['/login']) call would override the successful
           // exchange and boot the user back to the login screen.
           if (this.isExchangingCode) {
-            console.log('🔍 AppComponent: Ignoring SIGNED_OUT during OAuth code exchange');
             return;
           }
-          console.log('🔄 AppComponent: User signed out, redirecting to login');
           this.navigatedToHome = false; // Reset so next sign-in works
           void WidgetBridge.clearAuthSession();
           this.router.navigate(['/login']);
         } else if (event === 'SIGNED_IN') {
-          console.log('🔄 AppComponent: SIGNED_IN event received');
           const currentPath = this.getCurrentRoutePath();
           if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/' || isOAuthCallback) {
             await this.goHome(session?.user);
@@ -221,14 +211,12 @@ export class AppComponent implements OnInit, OnDestroy {
       try {
         const { data: { session } } = await this.authService.getSession();
         if (session) {
-          console.log('✅ AppComponent: User session found');
           this.syncWidgetAuthSession(session);
           const currentPath = this.getCurrentRoutePath();
           if (currentPath === '/login' || currentPath === '/sign-up' || currentPath === '/') {
             this.router.navigate(['/home']);
           }
         } else {
-          console.log('❌ AppComponent: No user session found');
           const currentPath = this.getCurrentRoutePath();
           const publicPaths = ['/login', '/sign-up', '/reset-password', '/'];
           if (!publicPaths.includes(currentPath)) {

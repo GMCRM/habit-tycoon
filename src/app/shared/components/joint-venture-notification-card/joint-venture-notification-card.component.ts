@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonIcon, IonButton, IonSpinner, IonBadge, ToastController, AlertController } from '@ionic/angular/standalone';
+import { Subscription } from 'rxjs';
 import { JointVentureService } from '../../../services/joint-venture.service';
 import { SocialService } from '../../../services/social.service';
 import { AuthService } from '../../../services/auth.service';
@@ -32,6 +33,7 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
 
   acting = false;
   now = Date.now();
+  private tickSub?: Subscription;
 
   constructor(
     private jointVentureService: JointVentureService,
@@ -46,10 +48,11 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
 
   ngOnInit() {
     this.countdownTick.register();
-    this.countdownTick.tick$.subscribe(t => this.now = t);
+    this.tickSub = this.countdownTick.tick$.subscribe(t => this.now = t);
   }
 
   ngOnDestroy() {
+    this.tickSub?.unsubscribe();
     this.countdownTick.unregister();
   }
 

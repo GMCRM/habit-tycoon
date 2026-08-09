@@ -120,8 +120,6 @@ export class SocialPage implements OnInit, OnDestroy {
   }
 
   async ionViewWillEnter() {
-    console.log('🔍 SocialPage: ionViewWillEnter');
-
     // Tick every 60s so formatTimeAgo() bindings re-evaluate automatically
     if (!this.timeRefreshInterval) {
       this.timeRefreshInterval = setInterval(() => { this.timeRefreshTick++; }, 60_000);
@@ -145,26 +143,19 @@ export class SocialPage implements OnInit, OnDestroy {
   }
 
   async initializePage() {
-    console.log('🔍 SocialPage: initializePage started');
-    
     if (this.isInitialized) {
-      console.log('🔍 SocialPage: Already initialized in initializePage, skipping');
       return;
     }
-    
+
     this.isLoading = true;
-    
+
     try {
-      console.log('🔍 SocialPage: Loading current user...');
       await this.loadCurrentUser();
-      
+
       if (this.currentUser) {
-        console.log('✅ SocialPage: User found, loading social data...');
         await this.loadSocialData();
-        console.log('✅ SocialPage: Social data loaded successfully');
         this.isInitialized = true;
       } else {
-        console.log('❌ SocialPage: No user found, redirecting to login');
         this.router.navigate(['/login']);
         return;
       }
@@ -173,19 +164,15 @@ export class SocialPage implements OnInit, OnDestroy {
       // Don't redirect on initialization errors, just show empty state
     } finally {
       this.isLoading = false;
-      console.log('✅ SocialPage: Initialization complete');
     }
   }
 
   async ngOnInit() {
-    console.log('🔍 SocialPage: ngOnInit started');
-    
     // Prevent double initialization
     if (this.isInitialized) {
-      console.log('🔍 SocialPage: Already initialized, skipping');
       return;
     }
-    
+
     // Always initialize when the component is created
     // The ionViewWillEnter will handle refreshing if needed
     await this.initializePage();
@@ -193,18 +180,16 @@ export class SocialPage implements OnInit, OnDestroy {
 
   async loadCurrentUser() {
     try {
-      console.log('🔍 SocialPage: Loading current user...');
       const { data: { user }, error: userError } = await this.authService.getUser();
-      
+
       if (userError) {
         console.error('❌ SocialPage: Error getting user from auth:', userError);
         this.currentUser = null;
         return;
       }
-      
+
       this.currentUser = user;
-      console.log('✅ SocialPage: User loaded successfully:', user?.id);
-      
+
       // Load user profile (but don't fail if this doesn't work)
       if (user) {
         try {
@@ -213,13 +198,12 @@ export class SocialPage implements OnInit, OnDestroy {
             .select('*')
             .eq('id', user.id)
             .single();
-          
+
           if (error) {
             console.log('⚠️ SocialPage: User profile not found, will use defaults:', error.message);
             this.userProfile = null;
           } else {
             this.userProfile = profile;
-            console.log('User profile loaded:', profile.name);
           }
         } catch (profileError) {
           console.log('Error loading user profile, continuing without it:', profileError);
@@ -234,11 +218,8 @@ export class SocialPage implements OnInit, OnDestroy {
 
   async loadSocialData() {
     if (!this.currentUser) {
-      console.log('No current user, skipping social data load');
       return;
     }
-    
-    console.log('Loading social data for user:', this.currentUser.id);
 
     try {
       // Settle any of this user's own joint-venture invites/upgrades/deletion
@@ -269,37 +250,11 @@ export class SocialPage implements OnInit, OnDestroy {
       // Best-effort, doesn't block the rest of the page from loading
       this.loadMarketplaceData();
 
-      console.log('Social data loaded:', {
-        friends: this.friends.length,
-        notifications: this.notifications.length,
-        pendingRequests: this.pendingRequests.length,
-        sentRequests: this.sentRequests.length,
-        leaderboard: this.friendsLeaderboard.length
-      });
-
       // Keep the bottom-nav badge(s) in sync with the freshly loaded notifications/requests.
       this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
 
-      // Debug: Check notification structure
-      if (this.notifications.length > 0) {
-        console.log('🔍 First notification structure:', this.notifications[0]);
-        console.log('🔍 All notification IDs:', this.notifications.map(n => ({ id: n.id, hasId: !!n.id })));
-      }
-
-      // Debug: Check what profiles actually exist in the database
-      try {
-        const { data: allProfiles, error: profilesError } = await this.authService.supabase
-          .rpc('debug_user_profiles');
-        
-        console.log('🔍 All user profiles in database:', allProfiles);
-        if (profilesError) {
-          console.error('❌ Error fetching all profiles:', profilesError);
-        }
-      } catch (debugError) {
-        console.log('Debug function not available yet:', debugError);
-      }      // If leaderboard failed or is empty, create a simple fallback with just the user
+      // If leaderboard failed or is empty, create a simple fallback with just the user
       if (leaderboard.status === 'rejected' || this.friendsLeaderboard.length === 0) {
-        console.log('Creating fallback leaderboard with current user');
         this.friendsLeaderboard = [{
           id: this.currentUser.id,
           name: 'You',
@@ -678,17 +633,12 @@ export class SocialPage implements OnInit, OnDestroy {
 
   async markNotificationAsRead(notificationId: string) {
     try {
-      console.log('🔍 Marking notification as read:', notificationId);
-      
       await this.socialService.markPokeAsRead(notificationId);
-      console.log('✅ Database update completed');
 
       // Update local state
       const notification = this.notifications.find(n => n.id === notificationId);
       if (notification) {
-        console.log('🔍 Before update - is_read:', notification.is_read);
         notification.is_read = true;
-        console.log('✅ After update - is_read:', notification.is_read);
         this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
 
         // Show success feedback
@@ -698,11 +648,7 @@ export class SocialPage implements OnInit, OnDestroy {
           color: 'success'
         });
         await toast.present();
-      } else {
-        console.log('❌ Notification not found in local array');
       }
-      
-      console.log(`✅ Marked notification ${notificationId} as read`);
     } catch (error) {
       console.error('❌ Error marking notification as read:', error);
       const toast = await this.toastController.create({
@@ -728,21 +674,9 @@ export class SocialPage implements OnInit, OnDestroy {
         return;
       }
       
-      console.log(`🔍 Marking ${unreadNotifications.length} notifications as read...`);
-      console.log('🔍 Unread notifications structure:', unreadNotifications.map(n => ({
-        id: n.id,
-        message: n.message?.substring(0, 50) + '...',
-        is_read: n.is_read,
-        hasId: !!n.id,
-        idType: typeof n.id
-      })));
-      
       // Mark all unread notifications as read with better error handling
       const results = await Promise.allSettled(
-        unreadNotifications.map(notification => {
-          console.log(`🔍 Marking notification ${notification.id} as read`);
-          return this.socialService.markPokeAsRead(notification.id);
-        })
+        unreadNotifications.map(notification => this.socialService.markPokeAsRead(notification.id))
       );
       
       // Count successes and failures
@@ -786,8 +720,6 @@ export class SocialPage implements OnInit, OnDestroy {
       } else {
         throw new Error(`All ${failureCount} notifications failed to update`);
       }
-      
-      console.log(`✅ Mark all complete: ${successCount} success, ${failureCount} failures`);
     } catch (error) {
       console.error('❌ Error marking all notifications as read:', error);
       const toast = await this.toastController.create({
@@ -801,33 +733,19 @@ export class SocialPage implements OnInit, OnDestroy {
 
   async deleteNotification(notificationId: string) {
     try {
-      console.log('🗑️ SocialPage: Deleting notification:', notificationId);
-      console.log('🔍 Notification ID type:', typeof notificationId);
-      console.log('🔍 Current notifications array:', this.notifications.map(n => ({ id: n.id, message: n.message?.substring(0, 30) + '...' })));
-      
       // Find the notification in the local array to verify it exists
       const notificationToDelete = this.notifications.find(n => n.id === notificationId);
       if (!notificationToDelete) {
         console.error('❌ Notification not found in local array');
         throw new Error('Notification not found in local array');
       }
-      
-      console.log('🔍 Found notification to delete:', {
-        id: notificationToDelete.id,
-        message: notificationToDelete.message?.substring(0, 50) + '...',
-        created_at: notificationToDelete.created_at
-      });
-      
+
       // Call the social service to delete the notification
       await this.socialService.deleteNotification(notificationId);
-      
+
       // Remove the notification from the local array
-      const originalLength = this.notifications.length;
       this.notifications = this.notifications.filter(n => n.id !== notificationId);
-      const newLength = this.notifications.length;
-      
-      console.log(`🔍 Local array update: ${originalLength} → ${newLength} notifications`);
-      
+
       // Show success message
       const toast = await this.toastController.create({
         message: '✅ Notification deleted',
@@ -835,8 +753,6 @@ export class SocialPage implements OnInit, OnDestroy {
         color: 'success'
       });
       await toast.present();
-      
-      console.log('✅ SocialPage: Notification deleted successfully');
     } catch (error) {
       console.error('❌ SocialPage: Error deleting notification:', error);
       const toast = await this.toastController.create({
@@ -853,8 +769,6 @@ export class SocialPage implements OnInit, OnDestroy {
       if (!this.currentUser) {
         throw new Error('No current user found');
       }
-      
-      console.log('Creating profile for current user...');
       
       // Check if profile already exists
       const { data: existingProfile } = await this.authService.supabase
@@ -887,9 +801,7 @@ export class SocialPage implements OnInit, OnDestroy {
       if (error) {
         throw error;
       }
-      
-      console.log(`✅ Created profile for ${this.currentUser.email}`);
-      
+
       const toast = await this.toastController.create({
         message: '✅ Profile created successfully!',
         duration: 3000,
@@ -913,8 +825,6 @@ export class SocialPage implements OnInit, OnDestroy {
 
   async debugFriendRequests() {
     try {
-      console.log('🔍 Debug: Checking friend requests...');
-      
       // Check all friendships in the database for current user
       const { data: allFriendships, error } = await this.authService.supabase
         .from('friendships')
@@ -924,9 +834,7 @@ export class SocialPage implements OnInit, OnDestroy {
           recipient_profile:user_profiles!friendships_friend_id_fkey(id, name, email)
         `)
         .or(`user_id.eq.${this.currentUser.id},friend_id.eq.${this.currentUser.id}`);
-      
-      console.log('All friendships for user:', allFriendships);
-      
+
       let debugMessage = `🔍 FRIEND REQUESTS DEBUG\n`;
       debugMessage += `Current user: ${this.currentUser.email}\n`;
       debugMessage += `User ID: ${this.currentUser.id.substring(0, 8)}...\n\n`;
@@ -1205,6 +1113,11 @@ export class SocialPage implements OnInit, OnDestroy {
       this.timeRefreshInterval = null;
     }
     this.unregisterMarketplaceTick();
+  }
+
+  /** *ngFor trackBy for id-keyed lists (friends, notifications, requests, leaderboards, listings) — keeps DOM nodes stable across reloads (fresh objects each fetch). */
+  trackById(_index: number, item: { id: string }): string {
+    return item.id;
   }
 
   private unregisterMarketplaceTick() {
