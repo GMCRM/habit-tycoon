@@ -20,7 +20,6 @@ import { CountdownTickService } from '../services/countdown-tick.service';
 import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
 import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.component';
 import { StockOwnersModalComponent } from '../shared/components/stock-owners-modal/stock-owners-modal.component';
-import { LaunchBusinessModalComponent } from '../shared/components/launch-business-modal/launch-business-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
 import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
@@ -345,23 +344,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async createNewHabitBusiness() {
-    const modal = await this.modalController.create({
-      component: LaunchBusinessModalComponent,
-      componentProps: {
-        modalController: this.modalController,
-        toastController: this.toastController
-      },
-      cssClass: 'launch-business-modal'
-    });
-
-    await modal.present();
-
-    const { data } = await modal.onDidDismiss();
-
-    if (data?.created) {
-      await this.loadCurrentUser();
-      await this.loadDashboardData();
-    }
+    this.router.navigate(['/create-habit']);
   }
 
   async completeHabitBusiness(habitBusiness: HabitBusiness) {

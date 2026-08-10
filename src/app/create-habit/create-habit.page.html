@@ -1,0 +1,297 @@
+<ion-header [translucent]="true">
+  <ion-toolbar class="page-toolbar">
+    <ion-title>
+      <div class="page-title">
+        <ion-icon name="rocket" color="success"></ion-icon>
+        Launch New Business
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="cancel()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="page-container">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-container">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading business opportunities...</p>
+      </div>
+
+      <div *ngIf="!loading" class="page-body">
+        <div class="cash-banner">
+          <div class="cash-main">
+            <div class="cash-title">Available Capital</div>
+            <div class="cash-amount">${{ (userProfile?.cash || 0) | number:'1.2-2' }}</div>
+          </div>
+          <div class="cash-subtitle">Turn a daily habit into a business</div>
+        </div>
+
+        <!-- Solo Venture / Joint Venture pill tabs -->
+        <div class="venture-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            class="venture-tab"
+            [class.active]="activeTab === 'solo'"
+            [attr.aria-selected]="activeTab === 'solo'"
+            (click)="selectTab('solo')"
+          >
+            <ion-icon name="briefcase"></ion-icon>
+            Solo Venture
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="venture-tab"
+            [class.active]="activeTab === 'joint'"
+            [attr.aria-selected]="activeTab === 'joint'"
+            (click)="selectTab('joint')"
+          >
+            <ion-icon name="people-circle"></ion-icon>
+            Joint Venture
+          </button>
+        </div>
+
+        <!-- Step 1: Name -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <h3>Business Name</h3>
+          </div>
+
+          <ion-item lines="none" class="section-input">
+            <ion-input
+              [(ngModel)]="habitName"
+              placeholder="e.g., Morning Walk, Reading Time, Push-ups..."
+              maxlength="50"
+            ></ion-input>
+          </ion-item>
+        </div>
+
+        <!-- Step 2: Details -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="document"></ion-icon>
+            <h3>Habit Details</h3>
+          </div>
+
+          <ion-item lines="none" class="section-input">
+            <ion-label position="stacked">Description</ion-label>
+            <ion-textarea
+              [(ngModel)]="habitDescription"
+              placeholder="e.g., Take a 30-minute walk around the neighborhood..."
+              rows="2"
+              maxlength="200"
+            ></ion-textarea>
+          </ion-item>
+
+          <div class="inline-row">
+            <ion-item lines="none" class="section-input">
+              <ion-label position="stacked">Schedule</ion-label>
+              <ion-select
+                [(ngModel)]="recurrenceInterval"
+                placeholder="Select schedule"
+                interface="popover"
+                [disabled]="isJointVenture"
+              >
+                <ion-select-option value="24h">Every Day 🔥</ion-select-option>
+                <ion-select-option *ngIf="!isJointVenture" value="specific_days">Specific Days 📅</ion-select-option>
+              </ion-select>
+            </ion-item>
+
+            <ion-item lines="none" class="section-input">
+              <ion-label position="stacked">Completions/day</ion-label>
+              <ion-input
+                [(ngModel)]="goalValue"
+                type="number"
+                min="1"
+                max="20"
+                placeholder="1"
+                [disabled]="isJointVenture"
+              ></ion-input>
+            </ion-item>
+          </div>
+          <p *ngIf="isJointVenture" class="jv-schedule-lock-note">Joint ventures are always "Every Day", once per day — locked while on the Joint Venture tab.</p>
+
+          <!-- Day picker — only shown for specific_days, and never for a joint venture -->
+          <div *ngIf="recurrenceInterval === 'specific_days' && !isJointVenture" class="day-picker-section">
+            <div class="day-picker-label">Active Days</div>
+            <div class="day-chips">
+              <button
+                *ngFor="let dow of dayDows; let i = index"
+                class="day-chip"
+                [class.active]="isDayActive(dow)"
+                (click)="toggleDay(dow)"
+                type="button"
+              >{{ dayLabels[i] }}</button>
+            </div>
+            <div *ngIf="activeDays.length === 0" class="day-picker-warning">
+              Select at least one active day
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Investment Package -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="trophy"></ion-icon>
+            <h3>Investment Package</h3>
+          </div>
+
+          <div class="investment-options">
+            <div
+              *ngFor="let type of businessTypes"
+              class="investment-option"
+              [class.selected]="selectedBusinessTypeId === type.id"
+              [class.locked]="userProfile?.cash < type.base_cost"
+              (click)="selectRewardLevel(type)"
+            >
+              <div class="investment-header">
+                <div class="investment-icon">
+                  <img
+                    *ngIf="type.icon | businessIconSrc as iconSrc"
+                    [src]="iconSrc"
+                    [alt]="type.name"
+                    class="investment-icon-img"
+                  />
+                  <span *ngIf="!(type.icon | businessIconSrc)">{{ type.icon }}</span>
+                </div>
+                <div class="investment-info">
+                  <div class="investment-name">{{ type.name }}</div>
+                  <div class="investment-cost" [class.unaffordable]="userProfile?.cash < type.base_cost">
+                    ${{ type.base_cost | number }}
+                  </div>
+                  <div class="investment-details">
+                    <span class="revenue-amount">${{ type.base_pay | number }}</span>
+                    <span class="revenue-label">per completion</span>
+                  </div>
+                </div>
+                <ion-icon
+                  class="investment-status-icon"
+                  [name]="userProfile?.cash >= type.base_cost ? 'checkmark-circle' : 'lock-closed'"
+                  [color]="userProfile?.cash >= type.base_cost ? 'success' : 'medium'"
+                ></ion-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="form-section summary-section" *ngIf="baseFormValid">
+          <div class="section-header">
+            <ion-icon name="rocket"></ion-icon>
+            <h3>Ready to Launch</h3>
+          </div>
+
+          <div class="business-summary">
+            <div class="summary-item">
+              <span class="summary-label">Investment:</span>
+              <span class="summary-value">
+                <img
+                  *ngIf="selectedBusinessType?.icon | businessIconSrc as iconSrc"
+                  [src]="iconSrc"
+                  [alt]="selectedBusinessType?.name"
+                  class="summary-icon-img"
+                />
+                <span *ngIf="!(selectedBusinessType?.icon | businessIconSrc)">{{ selectedBusinessType?.icon }}</span>
+                {{ selectedBusinessType?.name }}
+              </span>
+            </div>
+            <div class="summary-item cost">
+              <span class="summary-label">Initial Cost:</span>
+              <span class="summary-value">-${{ selectedBusinessType?.base_cost | number }}</span>
+            </div>
+            <div class="summary-item earning">
+              <span class="summary-label">Revenue / Completion:</span>
+              <span class="summary-value">+${{ selectedBusinessType?.base_pay | number }}</span>
+            </div>
+            <div class="summary-item highlight">
+              <span class="summary-label">Break-even Point:</span>
+              <span class="summary-value">
+                {{ Math.ceil((selectedBusinessType?.base_cost || 0) / (selectedBusinessType?.base_pay || 1)) }} completions
+              </span>
+            </div>
+          </div>
+
+          <!-- Joint Venture: friend picker + split summary -->
+          <div *ngIf="isJointVenture" class="joint-venture-section">
+            <p class="jv-note">Joint ventures are always a simple daily habit — everyone checks in once a day.</p>
+
+            <ion-button
+              expand="block"
+              fill="outline"
+              color="tertiary"
+              (click)="openFriendPicker()"
+            >
+              <ion-icon name="people-circle" slot="start"></ion-icon>
+              Choose Friends ({{ selectedFriendIds.length }} selected)
+            </ion-button>
+
+            <div *ngIf="selectedFriendIds.length > 0" class="jv-split-summary">
+              <div class="summary-item">
+                <span class="summary-label">Co-owners:</span>
+                <span class="summary-value">{{ jvOwnerCount }} people</span>
+              </div>
+              <div class="summary-item highlight">
+                <span class="summary-label">Your share:</span>
+                <span class="summary-value">-${{ jvCreatorShare | number:'1.2-2' }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Each friend's share:</span>
+                <span class="summary-value">${{ jvShareOthers | number:'1.2-2' }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Each owner earns per check-in:</span>
+                <span class="summary-value">${{ jvBasePayShare | number:'1.2-2' }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Max streak bonus:</span>
+                <span class="summary-value">+{{ jvMaxStreakMultiplierPercent }}%</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Max payout per owner (at full streak):</span>
+                <span class="summary-value">${{ jvMaxPayPerOwner | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!canAfford" class="insufficient-capital">
+            <ion-icon name="warning" color="danger"></ion-icon>
+            <div class="warning-text">
+              <strong>Insufficient Capital</strong><br />
+              <ng-container *ngIf="!isJointVenture">
+                Need ${{ selectedBusinessType?.base_cost | number }} but only have ${{ userProfile?.cash | number }}
+              </ng-container>
+              <ng-container *ngIf="isJointVenture">
+                Need ${{ jvCreatorShare | number:'1.2-2' }} for your share but only have ${{ userProfile?.cash | number }}
+              </ng-container>
+            </div>
+          </div>
+        </div>
+
+        <!-- Launch button flows with the page content, not pinned to the viewport -->
+        <ion-button
+          expand="block"
+          color="success"
+          size="large"
+          [disabled]="!isFormValid || !canAfford || creating"
+          (click)="createHabitBusiness()"
+          class="launch-button"
+        >
+          <ion-spinner *ngIf="creating" slot="start"></ion-spinner>
+          <ion-icon *ngIf="!creating" name="rocket" slot="start"></ion-icon>
+          {{ creating ? 'Launching Business...' : 'Launch My Business!' }}
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<!-- Fixed Bottom Navigation -->
+<app-bottom-nav mainButton="home"></app-bottom-nav>

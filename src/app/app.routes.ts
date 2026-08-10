@@ -38,6 +38,11 @@ export const routes: Routes = [
     canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
+    path: 'create-habit',
+    loadComponent: () => import('./create-habit/create-habit.page').then( m => m.CreateHabitPage),
+    canActivate: [authGuard, onboardingRequiredGuard],
+  },
+  {
     path: 'stocks',
     loadComponent: () => import('./stocks/stocks.page').then( m => m.StocksPage),
     canActivate: [authGuard, onboardingRequiredGuard],
