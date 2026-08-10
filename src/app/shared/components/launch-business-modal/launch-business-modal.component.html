@@ -184,12 +184,6 @@
             <span class="summary-label">Revenue / Completion:</span>
             <span class="summary-value">+${{ selectedBusinessType?.base_pay | number }}</span>
           </div>
-          <div class="summary-item highlight">
-            <span class="summary-label">Break-even Point:</span>
-            <span class="summary-value">
-              {{ Math.ceil((selectedBusinessType?.base_cost || 0) / (selectedBusinessType?.base_pay || 1)) }} completions
-            </span>
-          </div>
         </div>
 
         <!-- Joint Venture -->

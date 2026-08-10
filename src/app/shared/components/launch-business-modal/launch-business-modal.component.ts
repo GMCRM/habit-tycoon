@@ -34,7 +34,6 @@ export class LaunchBusinessModalComponent implements OnInit {
   userProfile: any = null;
   loading = false;
   creating = false;
-  Math = Math;
 
   selectedBusinessTypeId: number | null = null;
   selectedBusinessType: BusinessType | null = null;
