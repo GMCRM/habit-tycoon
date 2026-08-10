@@ -360,6 +360,10 @@ export class StocksContentComponent implements OnInit {
     return profitLoss >= 0 ? 'profit' : 'loss';
   }
 
+  absValue(value: number): number {
+    return Math.abs(value || 0);
+  }
+
   getTotalPortfolioValue(): number {
     return this.portfolio.reduce((sum, item) => sum + item.currentValue, 0);
   }
@@ -394,7 +398,6 @@ export class StocksContentComponent implements OnInit {
    */
   private abbreviateStatNumber(value: number, decimals: number = 1): string {
     const units = ['', 'K', 'M', 'B', 'T'];
-    const sign = value < 0 ? '-' : '';
     let scaled = Math.abs(value);
     let unitIndex = 0;
     while (scaled >= 1000 && unitIndex < units.length - 1) {
@@ -409,19 +412,21 @@ export class StocksContentComponent implements OnInit {
       unitIndex++;
     }
     const display = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(decimals);
-    return `${sign}${display}${units[unitIndex]}`;
+    return `${display}${units[unitIndex]}`;
   }
 
   /**
    * Format a currency amount with thousands separators (e.g. $1,234.56),
    * abbreviating to $101K / $1.2M / $1T once it crosses the threshold.
+   * Negative amounts render as "-$X" (not "$-X").
    */
   formatStatCurrency(amount: number, decimals: number = 1): string {
     const value = amount || 0;
+    const sign = value < 0 ? '-' : '';
     if (this.isStatAbbreviated(value)) {
-      return '$' + this.abbreviateStatNumber(value, decimals);
+      return sign + '$' + this.abbreviateStatNumber(value, decimals);
     }
-    return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return sign + '$' + Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /**
@@ -430,8 +435,9 @@ export class StocksContentComponent implements OnInit {
   async showExactStatValue(label: string, value: number, isCurrency: boolean) {
     if (!this.isStatAbbreviated(value)) return;
     const exact = value || 0;
+    const sign = exact < 0 ? '-' : '';
     const message = isCurrency
-      ? '$' + exact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      ? sign + '$' + Math.abs(exact).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : exact.toLocaleString('en-US');
     const alert = await this.alertController.create({
       header: label,
@@ -627,9 +633,11 @@ export class StocksContentComponent implements OnInit {
     if (!this.selectedBuyBusiness) return [];
     const maxShares = this.selectedBuyBusiness.sharesAvailable;
     const cash = this.userProfile?.cash || 0;
+    // If the price is missing/zero we can't determine affordability - default
+    // to 0 rather than treating it as "free" and offering every share.
     const affordableShares = this.selectedBuyBusiness.stockPrice > 0
       ? Math.floor(cash / this.selectedBuyBusiness.stockPrice)
-      : maxShares;
+      : 0;
     const limit = Math.min(maxShares, affordableShares);
     return Array.from({ length: limit }, (_, i) => i + 1);
   }

@@ -570,10 +570,10 @@
                     [class.profit]="holding.profitLoss >= 0"
                     [class.loss]="holding.profitLoss < 0"
                   >
-                    {{ holding.profitLoss >= 0 ? '+' : '' }}${{
-                    holding.profitLoss.toFixed(2) }}
+                    {{ (holding.profitLoss || 0) >= 0 ? '+$' : '-$' }}{{
+                    absValue(holding.profitLoss || 0).toFixed(2) }}
                     <span class="invested-note"
-                      >(${{ holding.totalInvested }} invested)</span
+                      >(${{ (holding.totalInvested || 0) | number: '1.2-2' }} invested)</span
                     >
                   </div>
                 </div>
@@ -684,8 +684,8 @@
             <div>
               <h2>{{ selectedHolding.businessName }}</h2>
               <p>
-                Current Share Price: ${{ selectedHolding.sharePrice.toFixed(2)
-                }}
+                Current Share Price: ${{ (selectedHolding.sharePrice ||
+                0).toFixed(2) }}
               </p>
             </div>
           </div>
@@ -697,15 +697,17 @@
           </p>
           <p>
             <strong>Total Value:</strong> ${{ (selectedHolding.shares *
-            selectedHolding.sharePrice).toFixed(2) }}
+            (selectedHolding.sharePrice || 0)).toFixed(2) }}
           </p>
           <p>
             <strong>Profit/Loss:</strong>
             <span
-              [class]="(selectedHolding.shares * selectedHolding.sharePrice - selectedHolding.totalInvested) >= 0 ? 'profit' : 'loss'"
+              [class]="(selectedHolding.shares * (selectedHolding.sharePrice || 0) - (selectedHolding.totalInvested || 0)) >= 0 ? 'profit' : 'loss'"
             >
-              ${{ (selectedHolding.shares * selectedHolding.sharePrice -
-              selectedHolding.totalInvested).toFixed(2) }}
+              {{ (selectedHolding.shares * (selectedHolding.sharePrice || 0) -
+              (selectedHolding.totalInvested || 0)) >= 0 ? '+$' : '-$' }}{{
+              absValue(selectedHolding.shares * (selectedHolding.sharePrice ||
+              0) - (selectedHolding.totalInvested || 0)).toFixed(2) }}
             </span>
           </p>
         </div>
