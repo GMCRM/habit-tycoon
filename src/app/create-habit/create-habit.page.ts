@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
-  IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons,
+  IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon,
   IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner,
   ModalController, ToastController
 } from '@ionic/angular/standalone';
@@ -15,7 +15,7 @@ import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { FriendPickerModalComponent } from '../shared/components/friend-picker-modal/friend-picker-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { rocket, close, checkmarkCircle, document, trophy, lockClosed, warning, peopleCircle, briefcase } from 'ionicons/icons';
+import { rocket, checkmarkCircle, document, trophy, lockClosed, warning, peopleCircle, briefcase } from 'ionicons/icons';
 
 type LaunchTab = 'solo' | 'joint';
 
@@ -26,7 +26,7 @@ type LaunchTab = 'solo' | 'joint';
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons,
+    IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon,
     IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner,
     BusinessIconPipe, BottomNavComponent
   ]
@@ -68,7 +68,7 @@ export class CreateHabitPage implements OnInit {
     private toastController: ToastController,
     private router: Router
   ) {
-    addIcons({ rocket, close, checkmarkCircle, document, trophy, lockClosed, warning, peopleCircle, briefcase });
+    addIcons({ rocket, checkmarkCircle, document, trophy, lockClosed, warning, peopleCircle, briefcase });
   }
 
   async ngOnInit() {
@@ -259,10 +259,6 @@ export class CreateHabitPage implements OnInit {
   get isFormValid(): boolean {
     const jvValid = !this.isJointVenture || this.selectedFriendIds.length >= 1;
     return this.baseFormValid && jvValid;
-  }
-
-  cancel() {
-    this.router.navigate(['/home']);
   }
 
   async createHabitBusiness() {
