@@ -887,17 +887,9 @@ export class StocksContentComponent implements OnInit {
       return this.habitCompletionStatus[holding.businessId];
     }
 
-    // For daily habits, check if current progress meets or exceeds goal
-    if (holding.frequency === 'daily') {
-      return (holding.currentProgress || 0) >= (holding.goalValue || 1);
-    }
-    
-    // For weekly habits, also check if current progress meets or exceeds goal
-    if (holding.frequency === 'weekly') {
-      return (holding.currentProgress || 0) >= (holding.goalValue || 1);
-    }
-
-    return false;
+    // current_progress/goal_value are already scoped to the business's
+    // current period by the backend, regardless of recurrence frequency.
+    return (holding.currentProgress || 0) >= (holding.goalValue || 1);
   }
 
   /**
