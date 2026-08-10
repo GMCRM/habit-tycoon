@@ -1355,12 +1355,12 @@ export class HabitBusinessService {
         return;
       }
 
-      // The business is cut into 100 shares (80 owner / 20 tradeable). The
-      // owner's base pay, boosted by up to +20% (1% per tradeable share
-      // actually sold to an investor — stockBoostAmount), is the business's
-      // "complete income" for this completion, and each of the 100 shares is
-      // worth exactly 1/100th of it. Mirrors process_habit_completion_dividends.
-      const completeIncome = baseEarnings + stockBoostAmount;
+      // The business is cut into 100 shares (80 owner / 20 tradeable). Every
+      // one of them is worth 1/100th of whatever the owner actually made
+      // from this completion (base pay + stock boost + streak bonus, all
+      // folded into baseEarnings by the caller) — stockBoostAmount is kept
+      // for informational recording only. Mirrors process_habit_completion_dividends.
+      const completeIncome = baseEarnings;
       const dividendPerShare = completeIncome / 100;
 
       const totalSharesHeld = holdings.reduce((sum, holding) => sum + holding.shares_owned, 0);

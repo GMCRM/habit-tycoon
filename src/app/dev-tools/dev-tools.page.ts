@@ -359,8 +359,9 @@ export class DevToolsPage {
         if (specificHoldings.length > 0) {
           await this.habitBusinessService.processDividendsManually(
             testHabit.id,
-            testHabit.earnings_per_completion,
-            stockInfo.id
+            0,
+            stockInfo.id,
+            testHabit.earnings_per_completion
           );
 
           // Get dividends after test
