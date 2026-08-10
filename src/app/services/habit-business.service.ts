@@ -1337,7 +1337,7 @@ export class HabitBusinessService {
   /**
    * Manually process dividends when RPC function fails
    */
-  async processDividendsManually(habitBusinessId: string, stockBoostAmount: number, stockId: string): Promise<void> {
+  async processDividendsManually(habitBusinessId: string, stockBoostAmount: number, stockId: string, baseEarnings: number = 0): Promise<void> {
     try {
 
       // Get stock holdings for this business
@@ -1355,21 +1355,19 @@ export class HabitBusinessService {
         return;
       }
 
-      // Investors get 50% of the owner's stock-ownership pay boost as a dividend pool.
-      // stockBoostAmount is the exact dollar boost already computed by the caller
-      // (1% of base pay per tradeable share actually purchased by investors)
-      const dividendPool = stockBoostAmount * 0.5;
+      // The business is cut into 100 shares (80 owner / 20 tradeable). The
+      // owner's base pay, boosted by up to +20% (1% per tradeable share
+      // actually sold to an investor — stockBoostAmount), is the business's
+      // "complete income" for this completion, and each of the 100 shares is
+      // worth exactly 1/100th of it. Mirrors process_habit_completion_dividends.
+      const completeIncome = baseEarnings + stockBoostAmount;
+      const dividendPerShare = completeIncome / 100;
 
-      // Split the pool across the shares actually held today (not the fixed 20-share
-      // tradeable pool — if only some of the shares are sold, only those count)
       const totalSharesHeld = holdings.reduce((sum, holding) => sum + holding.shares_owned, 0);
 
-      if (dividendPool <= 0 || totalSharesHeld <= 0) {
+      if (dividendPerShare <= 0 || totalSharesHeld <= 0) {
         return;
       }
-
-      // Calculate dividend per share
-      const dividendPerShare = dividendPool / totalSharesHeld;
       
       // Distribute dividends to each stockholder
       for (const holding of holdings) {
