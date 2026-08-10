@@ -997,14 +997,16 @@ export class HabitBusinessService {
     // getEffectiveStreak already encodes "was the previous period's goal
     // actually met" from the fields a cached habit already carries — reuse
     // it rather than re-deriving that from a completions table we don't have.
-    let newStreak = habit.streak;
-    if (isGoalCompleted) {
-      const effectiveStreak = this.habitIntervalService.getEffectiveStreak(habit, now);
-      newStreak = effectiveStreak > 0 ? effectiveStreak + 1 : 1;
-    }
+    // This projection only depends on the *previous* period, so it's valid
+    // on every tap of a multi-completion goal, not just the one that
+    // happens to finish it — each tap needs it to earn its equal share of
+    // the day's streak bonus (see totalEarnings below).
+    const effectiveStreak = this.habitIntervalService.getEffectiveStreak(habit, now);
+    const projectedStreak = effectiveStreak > 0 ? effectiveStreak + 1 : 1;
+    const newStreak = isGoalCompleted ? projectedStreak : habit.streak;
 
     const baseEarnings = habit.earnings_per_completion;
-    const streakMultiplier = isGoalCompleted && newStreak > 1 ? Math.min((newStreak - 1) * 0.1, 1) : 0;
+    const streakMultiplier = projectedStreak > 1 ? Math.min((projectedStreak - 1) * 0.1, 1) : 0;
     const totalEarnings = baseEarnings + baseEarnings * streakMultiplier;
 
     return { currentProgress, isGoalCompleted, newStreak, totalEarnings, completionTime: now };
@@ -1246,7 +1248,13 @@ export class HabitBusinessService {
         const goalValue = cachedHabit.goal_value || 1;
         const wasGoalCompletingTap = (cachedHabit.current_progress || 0) >= goalValue;
         const baseEarnings = cachedHabit.earnings_per_completion;
-        const streakMultiplier = wasGoalCompletingTap && cachedHabit.streak > 1 ? Math.min((cachedHabit.streak - 1) * 0.1, 1) : 0;
+        // Every tap of a multi-completion goal earns an equal share of the day's
+        // streak bonus, not just the goal-completing one (see previewCompletion) —
+        // so the projected streak is needed here too, not just cachedHabit.streak
+        // as-is, which for a non-final tap is still last period's (un-incremented) value.
+        const effectiveStreak = this.habitIntervalService.getEffectiveStreak(cachedHabit, new Date(occurredAt));
+        const projectedStreak = wasGoalCompletingTap ? cachedHabit.streak : (effectiveStreak > 0 ? effectiveStreak + 1 : 1);
+        const streakMultiplier = projectedStreak > 1 ? Math.min((projectedStreak - 1) * 0.1, 1) : 0;
         const approxEarnings = baseEarnings + baseEarnings * streakMultiplier;
 
         await this.habitCache.patchHabit(habitBusinessId, {
