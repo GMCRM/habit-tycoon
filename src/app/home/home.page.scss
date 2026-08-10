@@ -1281,7 +1281,9 @@ button, span, div, ion-button {
   user-select: none !important;
   -webkit-user-select: none !important;
   -webkit-tap-highlight-color: transparent !important;
-  overflow: hidden !important;
+  // Not hidden: the multi-completion progress badge below is positioned
+  // just outside this circle's edge and must not be clipped by it.
+  overflow: visible !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
   box-shadow:
     0 6px 18px rgba(255, 184, 0, 0.3),
