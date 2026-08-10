@@ -73,6 +73,8 @@ export interface BusinessStock {
   shares_available: number;
   price_multiplier: number;
   last_price_update: string;
+  ramp_start_price?: number;
+  ramp_start_at?: string;
   created_at: string;
   updated_at: string;
   habit_businesses?: {
