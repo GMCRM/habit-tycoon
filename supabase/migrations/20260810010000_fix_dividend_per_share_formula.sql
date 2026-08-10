@@ -178,7 +178,7 @@ GRANT EXECUTE ON FUNCTION process_habit_completion_dividends(UUID, NUMERIC, NUME
 -- habit_completions.earnings. Each redefinition below is otherwise
 -- byte-for-byte identical to its live version. ───
 
--- complete_habit_business (live version: 20260807050000_joint_venture_checkin.sql)
+-- complete_habit_business (live version: 20260810000000_split_stock_streak_bonus_per_completion.sql)
 CREATE OR REPLACE FUNCTION complete_habit_business(
     p_habit_business_id UUID,
     p_occurred_at TIMESTAMPTZ DEFAULT NOW(),
@@ -198,6 +198,7 @@ DECLARE
     v_period_completions INTEGER;
     v_previous_period_count INTEGER;
     v_new_streak INTEGER;
+    v_projected_streak INTEGER;
     v_base_earnings NUMERIC;
     v_stock_boost NUMERIC := 0;
     v_boosted_base NUMERIC;
@@ -260,59 +261,73 @@ BEGIN
     v_is_goal_completed := v_current_progress >= v_goal_value;
     v_new_streak := v_habit.streak;
 
+    -- Project the streak this period is building toward. This lookback only
+    -- reads the *previous* period's completions, so — unlike the streak
+    -- itself — it's valid to compute on every tap of the day, not only the
+    -- goal-completing one.
+    v_previous_start := NULL;
+    v_previous_end := NULL;
+
+    IF v_interval = 'specific_days' THEN
+        IF v_habit.active_days IS NOT NULL AND array_length(v_habit.active_days, 1) > 0 THEN
+            FOR i IN 1..7 LOOP
+                v_candidate_start := v_period_start - (i || ' days')::interval;
+                v_candidate_dow := EXTRACT(DOW FROM v_candidate_start AT TIME ZONE p_client_timezone)::INTEGER;
+                IF v_candidate_dow = ANY(v_habit.active_days) THEN
+                    v_previous_start := v_candidate_start;
+                    v_previous_end := v_previous_start + INTERVAL '1 day';
+                    EXIT;
+                END IF;
+            END LOOP;
+        END IF;
+    ELSE
+        v_previous_start := v_period_start - INTERVAL '1 day';
+        v_previous_end := v_period_start;
+    END IF;
+
+    IF v_previous_start IS NOT NULL THEN
+        SELECT COUNT(*) INTO v_previous_period_count
+        FROM habit_completions
+        WHERE habit_business_id = p_habit_business_id
+          AND user_id = v_user_id
+          AND completed_at >= v_previous_start
+          AND completed_at < v_previous_end;
+
+        IF v_previous_period_count >= v_goal_value THEN
+            v_projected_streak := v_habit.streak + 1;
+        ELSE
+            v_projected_streak := 1;
+        END IF;
+    ELSE
+        v_projected_streak := 1;
+    END IF;
+
+    -- The streak only "officially" advances once the day's goal is actually
+    -- met — keep that persistence behavior exactly as before.
     IF v_is_goal_completed THEN
-        v_previous_start := NULL;
-        v_previous_end := NULL;
-
-        IF v_interval = 'specific_days' THEN
-            IF v_habit.active_days IS NOT NULL AND array_length(v_habit.active_days, 1) > 0 THEN
-                FOR i IN 1..7 LOOP
-                    v_candidate_start := v_period_start - (i || ' days')::interval;
-                    v_candidate_dow := EXTRACT(DOW FROM v_candidate_start AT TIME ZONE p_client_timezone)::INTEGER;
-                    IF v_candidate_dow = ANY(v_habit.active_days) THEN
-                        v_previous_start := v_candidate_start;
-                        v_previous_end := v_previous_start + INTERVAL '1 day';
-                        EXIT;
-                    END IF;
-                END LOOP;
-            END IF;
-        ELSE
-            v_previous_start := v_period_start - INTERVAL '1 day';
-            v_previous_end := v_period_start;
-        END IF;
-
-        IF v_previous_start IS NOT NULL THEN
-            SELECT COUNT(*) INTO v_previous_period_count
-            FROM habit_completions
-            WHERE habit_business_id = p_habit_business_id
-              AND user_id = v_user_id
-              AND completed_at >= v_previous_start
-              AND completed_at < v_previous_end;
-
-            IF v_previous_period_count >= v_goal_value THEN
-                v_new_streak := v_habit.streak + 1;
-            ELSE
-                v_new_streak := 1;
-            END IF;
-        ELSE
-            v_new_streak := 1;
-        END IF;
+        v_new_streak := v_projected_streak;
     END IF;
 
     v_base_earnings := v_habit.earnings_per_completion;
-    v_stock_boost := 0;
-    IF v_is_goal_completed THEN
-        SELECT * INTO v_stock FROM business_stocks WHERE habit_business_id = p_habit_business_id;
-        IF FOUND THEN
-            v_stock_boost := v_base_earnings * (
-                GREATEST(0, (v_stock.total_shares_issued - v_stock.shares_owned_by_owner) - v_stock.shares_available)::NUMERIC / 100
-            );
-        END IF;
+
+    -- Stock boost and streak bonus are computed (and paid) on every
+    -- completion, not gated behind v_is_goal_completed, so a multi-tap
+    -- goal splits its full day's bonus evenly across all of its taps
+    -- instead of dumping it all on the last one.
+    SELECT * INTO v_stock FROM business_stocks WHERE habit_business_id = p_habit_business_id;
+    IF FOUND THEN
+        v_stock_boost := v_base_earnings * (
+            GREATEST(0, (v_stock.total_shares_issued - v_stock.shares_owned_by_owner) - v_stock.shares_available)::NUMERIC / 100
+        );
+    ELSE
+        v_stock_boost := 0;
     END IF;
     v_boosted_base := v_base_earnings + v_stock_boost;
 
-    IF v_is_goal_completed AND v_new_streak > 1 THEN
-        v_streak_multiplier := LEAST((v_new_streak - 1) * 0.1, 1);
+    IF v_projected_streak > 1 THEN
+        v_streak_multiplier := LEAST((v_projected_streak - 1) * 0.1, 1);
+    ELSE
+        v_streak_multiplier := 0;
     END IF;
     v_total_earnings := v_boosted_base + (v_boosted_base * v_streak_multiplier);
 
