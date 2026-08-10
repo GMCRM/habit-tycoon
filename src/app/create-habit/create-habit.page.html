@@ -24,13 +24,18 @@
       </div>
 
       <div *ngIf="!loading" class="page-body">
-        <div class="cash-banner">
-          <div class="cash-main">
-            <div class="cash-title">Available Capital</div>
-            <div class="cash-amount">${{ (userProfile?.cash || 0) | number:'1.2-2' }}</div>
+        <!-- Net Worth / Habit Cash — same bar shown across the app -->
+        <div class="cash-display-bar" *ngIf="userProfile">
+          <div class="networth-display" (click)="toggleNetWorthDisplay()">
+            <div class="networth-amount clickable">${{ getDisplayedNetWorth() }}</div>
+            <div class="networth-label">NET WORTH</div>
           </div>
-          <div class="cash-subtitle">Turn a daily habit into a business</div>
+          <div class="cash-section" (click)="toggleCashDisplay()">
+            <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
+            <div class="cash-label">HABIT CASH</div>
+          </div>
         </div>
+        <p class="page-subtitle">Turn a daily habit into a business</p>
 
         <!-- Solo Venture / Joint Venture pill tabs -->
         <div class="venture-tabs" role="tablist">

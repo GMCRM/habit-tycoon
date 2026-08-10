@@ -72,43 +72,104 @@ ion-content {
   padding-bottom: 8px;
 }
 
-// Cash banner
-.cash-banner {
+// Net Worth / Habit Cash bar — same look used on Home and the Social/Marketplace tab
+.cash-display-bar {
   display: flex;
-  flex-direction: column;
-  background: linear-gradient(135deg, #1e1e3f 0%, #16213e 100%);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 16px 0;
 
-  .cash-main {
+  .networth-display,
+  .cash-section {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--ion-color-dark);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: scale(1.02);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
   }
 
-  .cash-title {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: rgba(255, 255, 255, 0.6);
-    font-weight: 600;
+  .networth-display {
+    border: 2px solid #FFD700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+
+    &:hover {
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    }
   }
 
-  .cash-subtitle {
-    margin-top: 6px;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.8);
+  .cash-section {
+    border: 2px solid #00FF7F;
+    box-shadow: 0 0 10px rgba(0, 255, 127, 0.3);
+
+    &:hover {
+      box-shadow: 0 0 15px rgba(0, 255, 127, 0.5);
+    }
+  }
+
+  .networth-amount,
+  .cash-amount {
+    font-size: 1.3rem !important;
+    font-weight: 700;
+
+    &.clickable {
+      user-select: none;
+    }
+  }
+
+  .networth-amount {
+    color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
   }
 
   .cash-amount {
-    font-size: 1.6rem;
-    font-weight: bold;
-    color: var(--cash-color);
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    color: #00FF7F;
+    text-shadow: 0 0 8px rgba(0, 255, 127, 0.4);
   }
+
+  .networth-label,
+  .cash-label {
+    font-size: 0.75rem;
+    color: white;
+    margin-top: 2px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cash-display-bar {
+    gap: 12px;
+
+    .networth-display,
+    .cash-section {
+      flex: 1;
+      padding: 8px;
+    }
+
+    .networth-amount,
+    .cash-amount {
+      font-size: 1.1rem !important;
+    }
+  }
+}
+
+.page-subtitle {
+  margin: 10px 16px 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
 }
 
 // Solo Venture / Joint Venture pill tabs

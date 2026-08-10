@@ -40,6 +40,10 @@ export class CreateHabitPage implements OnInit {
 
   activeTab: LaunchTab = 'solo';
 
+  // Net worth / habit cash bar — abbreviated by default, tap to reveal the exact figure.
+  showDetailedNetWorth = false;
+  showDetailedCash = false;
+
   selectedBusinessTypeId: number | null = null;
   selectedBusinessType: BusinessType | null = null;
   habitName = '';
@@ -103,6 +107,48 @@ export class CreateHabitPage implements OnInit {
 
   get isJointVenture(): boolean {
     return this.activeTab === 'joint';
+  }
+
+  private formatLargeNumber(amount: number): string {
+    if (amount >= 1000000000000) {
+      const trillions = amount / 1000000000000;
+      return trillions >= 10 ? `${Math.floor(trillions)}T` : `${trillions.toFixed(1)}T`;
+    } else if (amount >= 1000000000) {
+      const billions = amount / 1000000000;
+      return billions >= 10 ? `${Math.floor(billions)}B` : `${billions.toFixed(1)}B`;
+    } else if (amount >= 1000000) {
+      const millions = amount / 1000000;
+      return millions >= 10 ? `${Math.floor(millions)}M` : `${millions.toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      const thousands = amount / 1000;
+      return thousands >= 10 ? `${Math.floor(thousands)}K` : `${thousands.toFixed(1)}K`;
+    } else {
+      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
+  getDisplayedNetWorth(): string {
+    const netWorth = this.userProfile?.net_worth || 0;
+    if (netWorth >= 1000 && !this.showDetailedNetWorth) {
+      return this.formatLargeNumber(netWorth);
+    }
+    return netWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  getDisplayedCash(): string {
+    const cash = this.userProfile?.cash || 0;
+    if (cash >= 1000 && !this.showDetailedCash) {
+      return this.formatLargeNumber(cash);
+    }
+    return cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  toggleNetWorthDisplay(): void {
+    this.showDetailedNetWorth = !this.showDetailedNetWorth;
+  }
+
+  toggleCashDisplay(): void {
+    this.showDetailedCash = !this.showDetailedCash;
   }
 
   selectTab(tab: LaunchTab) {
