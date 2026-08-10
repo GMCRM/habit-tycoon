@@ -36,7 +36,6 @@ export class CreateHabitPage implements OnInit {
   userProfile: any = null;
   loading = false;
   creating = false;
-  Math = Math;
 
   activeTab: LaunchTab = 'solo';
 
