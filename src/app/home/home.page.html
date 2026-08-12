@@ -462,7 +462,7 @@
                   >
                     <div class="earnings-total">
                       <div class="total-amount">
-                        ${{ getEarningsBreakdown(hb).totalEarnings.toFixed(2) }}
+                        ${{ getEarningsBreakdown(hb).totalEarnings | number:'1.2-2' }}
                       </div>
                       <div class="earnings-label">total per completion</div>
 
@@ -490,7 +490,7 @@
                       <div class="breakdown-item">
                         <span class="breakdown-label">Base Pay:</span>
                         <span class="breakdown-value"
-                          >${{ getEarningsBreakdown(hb).baseEarnings.toFixed(2)
+                          >${{ getEarningsBreakdown(hb).baseEarnings | number:'1.2-2'
                           }}</span
                         >
                       </div>
@@ -500,7 +500,7 @@
                       >
                         <span class="breakdown-label">Stock Boost:</span>
                         <span class="breakdown-value"
-                          >+${{ getEarningsBreakdown(hb).stockBoost.toFixed(2)
+                          >+${{ getEarningsBreakdown(hb).stockBoost | number:'1.2-2'
                           }}</span
                         >
                       </div>
@@ -510,14 +510,14 @@
                       >
                         <span class="breakdown-label">Streak Bonus:</span>
                         <span class="breakdown-value"
-                          >+${{ getEarningsBreakdown(hb).streakBonus.toFixed(2)
+                          >+${{ getEarningsBreakdown(hb).streakBonus | number:'1.2-2'
                           }}</span
                         >
                       </div>
                       <div class="breakdown-item breakdown-total">
                         <span class="breakdown-label">Total:</span>
                         <span class="breakdown-value"
-                          >${{ getEarningsBreakdown(hb).totalEarnings.toFixed(2)
+                          >${{ getEarningsBreakdown(hb).totalEarnings | number:'1.2-2'
                           }}</span
                         >
                       </div>
