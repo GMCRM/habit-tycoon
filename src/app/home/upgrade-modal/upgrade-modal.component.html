@@ -36,14 +36,14 @@
           <ion-icon name="cash" color="success"></ion-icon>
           <div class="info-content">
             <div class="info-label">Sell Value</div>
-            <div class="info-value">${{ currentBusinessValue }}</div>
+            <div class="info-value">${{ currentBusinessValue | number:'1.2-2' }}</div>
           </div>
         </div>
         <div class="info-card">
           <ion-icon name="wallet" color="primary"></ion-icon>
           <div class="info-content">
             <div class="info-label">Your Cash</div>
-            <div class="info-value">${{ userCash }}</div>
+            <div class="info-value">${{ userCash | number:'1.2-2' }}</div>
           </div>
         </div>
       </div>
