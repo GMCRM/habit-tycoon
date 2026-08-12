@@ -90,7 +90,7 @@
             </div>
 
             <div *ngIf="!canAffordUpgrade(businessType)" class="need-more">
-              Need ${{ getUpgradeCost(businessType) - userCash }} more
+              Need ${{ getUpgradeCost(businessType) - userCash | number:'1.2-2' }} more
             </div>
           </div>
 
