@@ -59,6 +59,13 @@ export class UpgradeModalComponent implements OnInit {
     return this.userCash >= this.getUpgradeCost(businessType);
   }
 
+  /** Percentage of the upgrade cost the user's current cash covers, clamped to [0, 100] for progress bars. */
+  affordPercent(businessType: any): number {
+    const cost = this.getUpgradeCost(businessType);
+    if (cost <= 0) return 100;
+    return Math.min(100, Math.max(0, (this.userCash / cost) * 100));
+  }
+
   private async showErrorToast(message: string) {
     const toast = await this.toastController.create({
       message: `❌ ${message}`,

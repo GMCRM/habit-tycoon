@@ -66,6 +66,11 @@
           [class.expensive]="!canAffordUpgrade(businessType)"
           (click)="selectUpgrade(businessType)"
         >
+          <div class="status-badge" *ngIf="canAffordUpgrade(businessType)">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            Ready
+          </div>
+
           <div class="option-header">
             <img
               *ngIf="businessType.icon | businessIconSrc as iconSrc"
@@ -77,20 +82,26 @@
             <div class="business-type-name">{{ businessType.name }}</div>
           </div>
 
+          <div class="option-divider"></div>
+
           <div class="pricing-info">
-            <div
-              class="upgrade-cost"
-              [class.affordable-text]="canAffordUpgrade(businessType)"
-              [class.expensive-text]="!canAffordUpgrade(businessType)"
-            >
-              <span class="cost-label">{{ isJointVenture ? 'Your Share:' : 'Upgrade Cost:' }}</span>
-              <span class="cost-amount"
+            <div class="cost-row">
+              <span class="cost-label">{{ isJointVenture ? 'Your Share' : 'Upgrade Cost' }}</span>
+              <span
+                class="cost-amount"
+                [class.affordable-text]="canAffordUpgrade(businessType)"
+                [class.expensive-text]="!canAffordUpgrade(businessType)"
                 >${{ getUpgradeCost(businessType) | number:'1.2-2' }}</span
               >
             </div>
 
-            <div *ngIf="!canAffordUpgrade(businessType)" class="need-more">
-              Need ${{ getUpgradeCost(businessType) - userCash | number:'1.2-2' }} more
+            <div *ngIf="!canAffordUpgrade(businessType)" class="afford-progress">
+              <div class="progress-track">
+                <div class="progress-fill" [style.width.%]="affordPercent(businessType)"></div>
+              </div>
+              <div class="need-more">
+                Need ${{ getUpgradeCost(businessType) - userCash | number:'1.2-2' }} more
+              </div>
             </div>
           </div>
 

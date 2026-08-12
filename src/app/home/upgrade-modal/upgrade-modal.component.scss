@@ -151,35 +151,58 @@
 }
 
 .upgrade-option {
+  position: relative;
   background: var(--business-item-background);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .upgrade-option.affordable {
-  border-color: var(--ion-color-success-tint);
+  border-color: rgba(26, 255, 148, 0.35);
 }
 
 .upgrade-option.affordable:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
   border-color: var(--ion-color-success);
 }
 
 .upgrade-option.expensive {
-  opacity: 0.7;
-  border-color: var(--ion-color-medium-tint);
+  opacity: 0.82;
+  cursor: default;
+}
+
+.status-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(26, 255, 148, 0.12);
+  border: 1px solid rgba(26, 255, 148, 0.35);
+  color: var(--ion-color-success-tint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-badge ion-icon {
+  font-size: 13px;
 }
 
 .option-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
+  padding-right: 72px;
 }
 
 .business-type-icon-img {
@@ -208,33 +231,64 @@
   color: #ffffff;
 }
 
-.pricing-info {
-  margin-bottom: 16px;
+.option-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 16px 0;
 }
 
-.upgrade-cost {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 16px;
+.pricing-info {
   margin-bottom: 4px;
 }
 
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.cost-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.cost-amount {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
 .affordable-text {
-  color: var(--ion-color-success);
+  color: var(--ion-color-success-tint);
 }
 
 .expensive-text {
   color: var(--ion-color-danger);
 }
 
-.cost-label {
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 500;
+.afford-progress {
+  margin-top: 10px;
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--ion-color-warning-shade), var(--ion-color-warning));
+  transition: width 0.3s ease;
 }
 
 .need-more {
+  margin-top: 6px;
   font-size: 12px;
   color: var(--ion-color-danger);
   font-style: italic;
