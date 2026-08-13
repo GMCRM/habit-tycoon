@@ -163,6 +163,16 @@
   --border-radius: 12px;
 }
 
+/*
+ * ion-select popovers default to a fixed 200px width (iOS) / 250px (MD)
+ * regardless of option text length, which truncates longer option labels
+ * with an ellipsis. Widen popovers that opt into this class via
+ * interfaceOptions.cssClass so their full text is readable.
+ */
+ion-popover.feedback-type-popover {
+  --width: min(300px, 92vw);
+}
+
 .disabled-button {
   opacity: 0.5 !important;
   pointer-events: none !important;

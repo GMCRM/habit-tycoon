@@ -33,6 +33,7 @@
                 [(ngModel)]="feedbackType"
                 placeholder="Choose one"
                 interface="popover"
+                [interfaceOptions]="feedbackTypeInterfaceOptions"
               >
                 <ion-select-option value="bug">🐞 Bug Report</ion-select-option>
                 <ion-select-option value="feature"

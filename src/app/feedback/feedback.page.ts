@@ -65,6 +65,8 @@ export class FeedbackPage {
 
   feedbackType: FeedbackType | null = null;
 
+  readonly feedbackTypeInterfaceOptions = { cssClass: 'feedback-type-popover' };
+
   stepsToReproduce = '';
   expectedResult = '';
   actualResult = '';
