@@ -8,12 +8,11 @@ import { WelcomeStepComponent } from './steps/welcome-step/welcome-step.componen
 import { CreateHabitStepComponent } from './steps/create-habit-step/create-habit-step.component';
 import { FirstCheckinStepComponent, CheckinResult } from './steps/first-checkin-step/first-checkin-step.component';
 import { IncomeExplainerStepComponent } from './steps/income-explainer-step/income-explainer-step.component';
-import { ShopPreviewStepComponent } from './steps/shop-preview-step/shop-preview-step.component';
 import { SocialPreviewStepComponent } from './steps/social-preview-step/social-preview-step.component';
 import { StreaksAchievementsStepComponent } from './steps/streaks-achievements-step/streaks-achievements-step.component';
 import { TermsStepComponent } from './steps/terms-step/terms-step.component';
 
-const STEP_COUNT = 8;
+const STEP_COUNT = 7;
 
 @Component({
   selector: 'app-onboarding',
@@ -27,7 +26,6 @@ const STEP_COUNT = 8;
     CreateHabitStepComponent,
     FirstCheckinStepComponent,
     IncomeExplainerStepComponent,
-    ShopPreviewStepComponent,
     SocialPreviewStepComponent,
     StreaksAchievementsStepComponent,
     TermsStepComponent,
