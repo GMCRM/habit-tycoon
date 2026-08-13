@@ -1309,10 +1309,10 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Abbreviate a number to K/M/B/T, always rounding UP so the displayed
-   * value never understates the real amount (e.g. 100,001 -> "101K").
-   * `decimals` controls precision (e.g. 1 -> "58.6K", 0 -> "59K") - lower it
-   * for cards where an extra digit (or a leading "+"/"-") would overflow.
+   * Abbreviate a number to K/M/B/T using standard rounding (e.g. 3,432,000 ->
+   * "3M", 3,600,000 -> "4M"). `decimals` controls precision (e.g. 1 ->
+   * "58.6K", 0 -> "59K") - lower it for cards where an extra digit (or a
+   * leading "+"/"-") would overflow.
    */
   private abbreviateStatNumber(value: number, decimals: number = 1): string {
     const units = ['', 'K', 'M', 'B', 'T'];
@@ -1324,10 +1324,10 @@ export class HomePage implements OnInit, OnDestroy {
       unitIndex++;
     }
     const factor = Math.pow(10, decimals);
-    let rounded = Math.ceil(scaled * factor) / factor;
+    let rounded = Math.round(scaled * factor) / factor;
     // Rounding up can push a value like 999.99K to 1000K - roll it into the next unit
     if (rounded >= 1000 && unitIndex < units.length - 1) {
-      rounded = Math.ceil((rounded / 1000) * factor) / factor;
+      rounded = Math.round((rounded / 1000) * factor) / factor;
       unitIndex++;
     }
     const display = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(decimals);
