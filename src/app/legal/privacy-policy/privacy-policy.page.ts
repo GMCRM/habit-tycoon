@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import {
   IonContent,
   IonHeader,
@@ -17,7 +18,7 @@ import { arrowBack } from 'ionicons/icons';
   templateUrl: './privacy-policy.page.html',
   styleUrls: ['../legal-page.scss'],
   standalone: true,
-  imports: [CommonModule, IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonButton, IonIcon],
+  imports: [CommonModule, RouterLink, IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonButton, IonIcon],
 })
 export class PrivacyPolicyPage {
   constructor(private location: Location) {
