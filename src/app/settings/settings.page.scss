@@ -354,53 +354,6 @@ ion-header {
   }
 }
 
-// Google account info card styling
-.google-info-card {
-  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
-  border: 2px solid #4169E1;
-  box-shadow: 0 8px 32px rgba(65, 105, 225, 0.4);
-  
-  ion-card-title {
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    
-    ion-icon {
-      font-size: 1.5rem;
-      color: #FFD700;
-    }
-  }
-}
-
-.google-info {
-  .google-message {
-    color: #ffffff;
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 12px;
-  }
-
-  .google-tip {
-    color: #b8c6db;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin-bottom: 0;
-  }
-
-  .google-link {
-    color: #FFD700;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: #FFF;
-      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
-    }
-  }
-}
-
 // Danger Zone Card styling
 .danger-zone-card {
   background: var(--business-item-background);
