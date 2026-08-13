@@ -20,10 +20,10 @@ import {
   IonTextarea
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning, logOut, chatbubbleEllipses } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, logOut, chatbubbleEllipses, documentText } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -49,7 +49,8 @@ import { save, person, lockClosed, logoGoogle, trash, warning, logOut, chatbubbl
     IonToast,
     IonModal,
     IonTextarea,
-    BottomNavComponent
+    BottomNavComponent,
+    RouterLink
   ]
 })
 export class SettingsPage implements OnInit {
@@ -83,7 +84,7 @@ export class SettingsPage implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOut,chatbubbleEllipses});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOut,chatbubbleEllipses,documentText});
   }
 
   async ngOnInit() {

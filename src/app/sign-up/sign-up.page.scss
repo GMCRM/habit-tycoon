@@ -50,6 +50,36 @@ ion-button {
   font-style: italic;
 }
 
+.terms-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 8px;
+  align-items: flex-start;
+
+  ion-checkbox {
+    margin-top: 2px;
+    margin-right: 10px;
+  }
+}
+
+.terms-label {
+  white-space: normal !important;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium-shade);
+  line-height: 1.4;
+
+  a {
+    color: var(--ion-color-primary);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
 .login-link {
   margin-top: 24px;
   

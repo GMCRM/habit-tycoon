@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonText, IonCard, IonCardContent, IonIcon } from '@ionic/angular/standalone';
+import { IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonText, IonCard, IonCardContent, IonIcon, IonCheckbox } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logoGoogle } from 'ionicons/icons';
 import { AuthService } from '../services/auth.service';
@@ -10,7 +10,7 @@ import { AuthService } from '../services/auth.service';
 @Component({
   selector: 'app-sign-up',
   standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonText, IonCard, IonCardContent, IonIcon, CommonModule, FormsModule, RouterLink],
+  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonText, IonCard, IonCardContent, IonIcon, IonCheckbox, CommonModule, FormsModule, RouterLink],
   templateUrl: './sign-up.page.html',
   styleUrls: ['./sign-up.page.scss'],
 })
@@ -18,6 +18,7 @@ export class SignUpPage {
   email: string = '';
   displayName: string = '';
   password: string = '';
+  agreeToTerms: boolean = false;
 
   constructor(private authService: AuthService, private router: Router) {
     addIcons({ logoGoogle });
@@ -25,6 +26,11 @@ export class SignUpPage {
 
   // Google OAuth signup
   async onGoogleSignUp() {
+    if (!this.agreeToTerms) {
+      alert('Please agree to the Terms of Service and Privacy Policy to continue');
+      return;
+    }
+
     try {
       const result = await this.authService.signUpWithGoogle();
 
@@ -49,6 +55,11 @@ export class SignUpPage {
 
     if (!email || !password) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    if (!this.agreeToTerms) {
+      alert('Please agree to the Terms of Service and Privacy Policy to continue');
       return;
     }
 

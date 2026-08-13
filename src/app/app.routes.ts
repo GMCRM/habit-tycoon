@@ -48,6 +48,14 @@ export const routes: Routes = [
     canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () => import('./legal/privacy-policy/privacy-policy.page').then((m) => m.PrivacyPolicyPage),
+  },
+  {
+    path: 'terms-of-service',
+    loadComponent: () => import('./legal/terms-of-service/terms-of-service.page').then((m) => m.TermsOfServicePage),
+  },
+  {
     path: 'reset-password',
     loadComponent: () => import('./reset-password/reset-password.page').then( m => m.ResetPasswordPage),
   },

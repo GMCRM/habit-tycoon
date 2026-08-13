@@ -9,6 +9,7 @@
           expand="block"
           fill="solid"
           color="danger"
+          [disabled]="!agreeToTerms"
           (click)="onGoogleSignUp()"
         >
           <ion-icon name="logo-google" slot="start"></ion-icon>
@@ -56,10 +57,24 @@
           </ion-item>
           <p class="input-helper">At least 8 characters, with a letter and a number</p>
 
+          <ion-item lines="none" class="terms-item">
+            <ion-checkbox
+              slot="start"
+              name="agreeToTerms"
+              [(ngModel)]="agreeToTerms"
+            ></ion-checkbox>
+            <ion-label class="terms-label">
+              I agree to the
+              <a routerLink="/terms-of-service">Terms of Service</a> and
+              <a routerLink="/privacy-policy">Privacy Policy</a>
+            </ion-label>
+          </ion-item>
+
           <ion-button
             expand="block"
             fill="outline"
             type="submit"
+            [disabled]="!agreeToTerms"
             (click)="onSignUp()"
           >
             Sign Up with Email
