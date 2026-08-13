@@ -23,7 +23,7 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning, logOut, chatbubbleEllipses } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, logOutOutline, chatbubbleEllipses } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -83,7 +83,7 @@ export class SettingsPage implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOut,chatbubbleEllipses});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOutOutline,chatbubbleEllipses});
   }
 
   async ngOnInit() {
