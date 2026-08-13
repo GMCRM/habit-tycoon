@@ -259,6 +259,26 @@ describe('AuthService', () => {
     expect(userProfilesQuery.eq).toHaveBeenCalledWith('id', 'u1');
   });
 
+  // updateUsername calls the server-side RPC (not a raw table update) so
+  // the DB can validate/sanitize the name and restrict the write to that
+  // one column for the caller's own row.
+  it('should update the username via the update_username RPC', async () => {
+    mockSupabaseClient.rpc.and.resolveTo({ data: { id: 'u1', name: 'New Name' }, error: null });
+
+    const result = await service.updateUsername('New Name');
+
+    expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('update_username', { new_name: 'New Name' });
+    expect(result).toEqual({ id: 'u1', name: 'New Name' });
+  });
+
+  // updateUsername should surface RPC-side validation errors (e.g. empty
+  // or over-length names) rather than swallowing them
+  it('should throw when the update_username RPC returns an error', async () => {
+    mockSupabaseClient.rpc.and.resolveTo({ data: null, error: { message: 'Username cannot be empty' } });
+
+    await expectAsync(service.updateUsername('')).toBeRejected();
+  });
+
   // --- Account Deletion ---
 
   // deleteAuthUser calls the RPC function to fully delete the account

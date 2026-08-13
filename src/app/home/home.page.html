@@ -144,420 +144,6 @@
         <div
           *ngIf="habitBusinesses && habitBusinesses.length > 0; else noHabitBusinesses"
         >
-          <!-- Shared card markup, rendered once per habit-business in either group below -->
-          <ng-template
-            #habitBusinessCard
-            let-hb
-            let-isFirst="isFirst"
-            let-isLast="isLast"
-          >
-            <div class="habit-business-item">
-              <!-- Reorder Controls (top-left corner). Disabled for joint
-                   ventures: display_order is one shared value on a row every
-                   co-owner sees, and habit_businesses' RLS now blocks any
-                   raw client update to a joint-venture row (writes only go
-                   through the SECURITY DEFINER RPCs), so a drag here
-                   wouldn't actually persist. -->
-              <div class="corner-controls corner-top-left reorder-controls">
-                <button
-                  type="button"
-                  class="reorder-btn"
-                  [disabled]="isFirst || hb.is_joint_venture"
-                  (click)="moveHabitBusiness(hb, 'up')"
-                  aria-label="Move up"
-                >
-                  <ion-icon name="chevron-up"></ion-icon>
-                </button>
-                <button
-                  type="button"
-                  class="reorder-btn"
-                  [disabled]="isLast || hb.is_joint_venture"
-                  (click)="moveHabitBusiness(hb, 'down')"
-                  aria-label="Move down"
-                >
-                  <ion-icon name="chevron-down"></ion-icon>
-                </button>
-              </div>
-
-              <!-- Complete/Undo controls (top-right corner) -->
-              <div class="corner-controls corner-top-right" *ngIf="!hb.is_joint_venture">
-                <!-- Single transforming button: Complete -> Undo, single tap -->
-                <div
-                  *ngIf="!isGoalCompleted(hb) || (isTodayActiveDay(hb) && (hb.current_progress || 0) > 0)"
-                  class="hold-complete-button"
-                  [class.is-completing]="completeButtonStates[hb.id]?.isCompleting"
-                  [class.is-undo-mode]="isGoalCompleted(hb) && (hb.current_progress || 0) > 0"
-                  [class.is-undoing]="completeButtonStates[hb.id]?.isUndoing"
-                  [attr.aria-label]="isGoalCompleted(hb) ? 'Undo completion' : 'Complete'"
-                  (click)="isGoalCompleted(hb) ? handleUndoTap(hb, $event) : handleCompleteTap(hb, $event)"
-                >
-                  <!-- Icon changes based on mode -->
-                  <ion-icon
-                    [name]="isGoalCompleted(hb) ? 'arrow-undo' : 'checkmark-circle'"
-                    class="button-icon"
-                  ></ion-icon>
-
-                  <!-- Progress count badge for multi-completion goals -->
-                  <span class="progress-badge" *ngIf="hb.goal_value && hb.goal_value > 1">
-                    {{ hb.current_progress || 0 }}/{{ hb.goal_value }}
-                  </span>
-                </div>
-
-                <!-- Simple back button for multi-completion habits with progress -->
-                <div
-                  *ngIf="isTodayActiveDay(hb) && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
-                  class="back-button"
-                  (click)="undoLastCompletion(hb)"
-                >
-                  <ion-icon
-                    name="arrow-back"
-                    class="back-icon"
-                  ></ion-icon>
-                </div>
-
-                <!-- Show completed status if goal is fully completed but no undo available
-                     (either zero progress left to undo, or it's a rest day — rest days show
-                     in Done regardless of whether the habit was actually completed) -->
-                <ion-button
-                  *ngIf="isGoalCompleted(hb) && ((hb.current_progress || 0) === 0 || !isTodayActiveDay(hb))"
-                  fill="outline"
-                  color="medium"
-                  size="small"
-                  disabled
-                >
-                  <ion-icon
-                    name="checkmark-circle"
-                    slot="start"
-                  ></ion-icon>
-                  <!-- Multi-completion habit, goal actually reached -->
-                  <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) >= hb.goal_value">
-                    Goal Complete ({{ hb.current_progress }}/{{
-                    hb.goal_value }})
-                  </span>
-                  <!-- Multi-completion habit, rest day but goal not reached -->
-                  <span *ngIf="hb.goal_value && hb.goal_value > 1 && (hb.current_progress || 0) < hb.goal_value">
-                    Resting ({{ hb.current_progress || 0 }}/{{
-                    hb.goal_value }})
-                  </span>
-                  <!-- Simple text for single completion habits, active day -->
-                  <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && isTodayActiveDay(hb)">
-                    Completed Today
-                  </span>
-                  <!-- Simple text for single completion habits, rest day, actually completed -->
-                  <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) > 0">
-                    Completed
-                  </span>
-                  <!-- Simple text for single completion habits, rest day, not completed -->
-                  <span *ngIf="(!hb.goal_value || hb.goal_value <= 1) && !isTodayActiveDay(hb) && (hb.current_progress || 0) === 0">
-                    Resting
-                  </span>
-                </ion-button>
-              </div>
-
-              <!-- Joint venture check-in (top-right corner): no undo, no
-                   backdating — see runJointVentureCheckIn(). Checked-in state
-                   comes from jvStatusByBusinessId, not current_progress
-                   (never touched for a joint venture). -->
-              <div class="corner-controls corner-top-right" *ngIf="hb.is_joint_venture">
-                <div
-                  *ngIf="!isJvCheckedInToday(hb)"
-                  class="hold-complete-button"
-                  [class.is-completing]="completeButtonStates[hb.id]?.isCompleting"
-                  aria-label="Check in"
-                  (click)="handleCompleteTap(hb, $event)"
-                >
-                  <ion-icon name="checkmark-circle" class="button-icon"></ion-icon>
-                </div>
-
-                <ion-button
-                  *ngIf="isJvCheckedInToday(hb)"
-                  fill="outline"
-                  color="medium"
-                  size="small"
-                  disabled
-                >
-                  <ion-icon name="checkmark-circle" slot="start"></ion-icon>
-                  Checked In
-                </ion-button>
-              </div>
-
-              <div class="item-content">
-                <div class="business-info">
-                  <!-- Icon: largest element, front and center -->
-                  <div class="business-hero">
-                    <div class="business-icon-wrap">
-                      <img
-                        *ngIf="hb.business_icon | businessIconSrc as iconSrc"
-                        [src]="iconSrc"
-                        [alt]="hb.business_name"
-                        class="business-icon business-icon-img"
-                      />
-                      <span *ngIf="!(hb.business_icon | businessIconSrc)" class="business-icon">{{ hb.business_icon }}</span>
-                      <!-- Marketplace bonus badge: streak bonus % baked into this business's
-                           base pay when it was bought from the Marketplace -->
-                      <span
-                        *ngIf="hb.marketplace_bonus_percent && hb.marketplace_bonus_percent > 0"
-                        class="market-bonus-badge"
-                      >+{{ hb.marketplace_bonus_percent }}%</span>
-                    </div>
-                  </div>
-                  <h3 class="business-name">{{ hb.business_name }}</h3>
-                  <span *ngIf="hb.is_joint_venture" class="jv-badge">
-                    <ion-icon name="people"></ion-icon>Joint Venture
-                  </span>
-                  <span *ngIf="hb.id.startsWith('local-')" class="pending-sync-chip">📡 Pending sync</span>
-
-                  <!-- Description is hidden by default; tap to view it in a popup -->
-                  <button
-                    *ngIf="hb.habit_description"
-                    type="button"
-                    class="description-toggle"
-                    (click)="showHabitDescription(hb)"
-                  >
-                    <ion-icon name="information-circle-outline"></ion-icon>Description
-                  </button>
-
-                  <div class="business-action-icons">
-                    <!-- Delete button — lists this business on the Marketplace instead of an instant sale
-                         (joint venture: starts a majority-vote instead, see onDeleteClick) -->
-                    <ion-button
-                      fill="clear"
-                      color="danger"
-                      size="small"
-                      (click)="onDeleteClick(hb)"
-                    >
-                      <ion-icon name="trash" slot="icon-only"></ion-icon>
-                    </ion-button>
-
-                    <!-- Earnings Toggle Button -->
-                    <div
-                      class="earnings-toggle-button"
-                      (click)="toggleEarningsVisibility(hb.id)"
-                    >
-                      <ion-icon name="receipt-outline" class="dollar-icon"></ion-icon>
-                    </div>
-
-                    <ion-button
-                      fill="clear"
-                      color="tertiary"
-                      size="default"
-                      class="calendar-toggle-button"
-                      (click)="toggleHabitGrid(hb)"
-                      style="
-                        margin: 0;
-                        --padding-start: 12px;
-                        --padding-end: 12px;
-                      "
-                    >
-                      <ion-icon
-                        name="calendar-outline"
-                        slot="icon-only"
-                      ></ion-icon>
-                    </ion-button>
-                    <ion-button
-                      fill="clear"
-                      color="warning"
-                      size="default"
-                      (click)="onUpgradeClick(hb)"
-                      style="
-                        margin: 0;
-                        --padding-start: 12px;
-                        --padding-end: 12px;
-                      "
-                    >
-                      <ion-icon
-                        name="trending-up"
-                        slot="icon-only"
-                      ></ion-icon>
-                    </ion-button>
-                    <ion-button
-                      fill="clear"
-                      color="tertiary"
-                      size="default"
-                      (click)="openStockOwnersModal(hb)"
-                      style="
-                        margin: 0;
-                        --padding-start: 12px;
-                        --padding-end: 12px;
-                      "
-                    >
-                      <ion-icon
-                        name="people"
-                        slot="icon-only"
-                      ></ion-icon>
-                    </ion-button>
-                    <ion-button
-                      *ngIf="!hb.is_joint_venture || isJvCreator(hb)"
-                      fill="clear"
-                      size="default"
-                      (click)="editHabitBusiness(hb)"
-                      style="
-                        margin: 0;
-                        --padding-start: 12px;
-                        --padding-end: 12px;
-                        --color: #7ecfff;
-                        opacity: 1;
-                      "
-                    >
-                      <ion-icon name="create" slot="icon-only"></ion-icon>
-                    </ion-button>
-                  </div>
-
-                  <div class="habit-stats">
-                    <div class="stat-item">
-                      <div class="stat-label">Streak</div>
-                      <div class="stat-value streak">
-                        {{ getEffectiveStreak(hb) }} days
-                      </div>
-                    </div>
-                    <div class="stat-item">
-                      <div class="stat-label">Total Earned</div>
-                      <div class="stat-value total-earned">
-                        ${{ formatLargeNumber(hb.total_earnings) }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Day chips — only shown for specific_days habits -->
-                  <div *ngIf="hb.recurrence_interval === 'specific_days' || hb.frequency === 'weekly'" class="habit-day-chips">
-                    <ng-container *ngFor="let dow of allDows; let i = index">
-                      <span
-                        *ngIf="(hb.active_days || []).includes(dow)"
-                        class="habit-day-chip active"
-                        [class.today]="dow === today.getDay()"
-                      >{{ dayChipLabels[i] }}</span>
-                    </ng-container>
-                    <span *ngIf="!isTodayActiveDay(hb)" class="next-active-label">
-                      Next: {{ getNextActiveDayLabel(hb) }}
-                    </span>
-                  </div>
-
-                  <div class="habit-period-status" *ngIf="!hb.is_joint_venture">
-                    <span class="period-progress"
-                      >{{ hb.current_progress || 0 }}/{{ hb.goal_value || 1 }}
-                      completions</span
-                    >
-                    <span *ngIf="isTodayActiveDay(hb)" class="period-reset"
-                      >&bull; resets in {{ countdowns[hb.id] || '...' }}</span
-                    >
-                    <span *ngIf="!isTodayActiveDay(hb)" class="period-reset rest-day"
-                      >&bull; rest day</span
-                    >
-                  </div>
-
-                  <!-- Joint venture status: who's checked in today, and whether
-                       today's streak bonus is still up for grabs. -->
-                  <div class="habit-period-status jv-status" *ngIf="hb.is_joint_venture">
-                    <span class="period-progress">{{ jvCheckedInCount(hb) }}/{{ jvTotalCoOwners(hb) }} checked in today</span>
-                    <span class="period-reset">&bull; resets in {{ countdowns[hb.id] || '...' }}</span>
-                    <span *ngIf="isJvCheckedInToday(hb) && jvCheckedInCount(hb) < jvTotalCoOwners(hb)" class="jv-waiting-on">
-                      Waiting on {{ jvWaitingOnNames(hb) }} for today's streak bonus
-                    </span>
-                  </div>
-
-                  <!-- Earnings Section (toggleable) - Now displayed below the main content -->
-                  <div
-                    class="earnings-section"
-                    *ngIf="showEarningsSection[hb.id]"
-                  >
-                    <div class="earnings-total">
-                      <div class="total-amount">
-                        ${{ getEarningsBreakdown(hb).totalEarnings | number:'1.2-2' }}
-                      </div>
-                      <div class="earnings-label">total per completion</div>
-
-                      <!-- Itemized Earnings Toggle Button -->
-                      <ion-button
-                        fill="clear"
-                        size="small"
-                        color="medium"
-                        (click)="toggleEarningsBreakdown(hb.id)"
-                      >
-                        <ion-icon
-                          [name]="showEarningsBreakdown[hb.id] ? 'chevron-up' : 'chevron-down'"
-                          slot="end"
-                        ></ion-icon>
-                        {{ showEarningsBreakdown[hb.id] ? 'Hide Details' :
-                        'Itemized' }}
-                      </ion-button>
-                    </div>
-
-                    <!-- Earnings Breakdown (Collapsible) -->
-                    <div
-                      class="earnings-breakdown"
-                      *ngIf="showEarningsBreakdown[hb.id]"
-                    >
-                      <div class="breakdown-item">
-                        <span class="breakdown-label">Base Pay:</span>
-                        <span class="breakdown-value"
-                          >${{ getEarningsBreakdown(hb).baseEarnings | number:'1.2-2'
-                          }}</span
-                        >
-                      </div>
-                      <div
-                        class="breakdown-item"
-                        *ngIf="getEarningsBreakdown(hb).stockBoost > 0"
-                      >
-                        <span class="breakdown-label">Stock Boost:</span>
-                        <span class="breakdown-value"
-                          >+${{ getEarningsBreakdown(hb).stockBoost | number:'1.2-2'
-                          }}</span
-                        >
-                      </div>
-                      <div
-                        class="breakdown-item"
-                        *ngIf="getEarningsBreakdown(hb).streakBonus > 0"
-                      >
-                        <span class="breakdown-label">Streak Bonus:</span>
-                        <span class="breakdown-value"
-                          >+${{ getEarningsBreakdown(hb).streakBonus | number:'1.2-2'
-                          }}</span
-                        >
-                      </div>
-                      <div class="breakdown-item breakdown-total">
-                        <span class="breakdown-label">Total:</span>
-                        <span class="breakdown-value"
-                          >${{ getEarningsBreakdown(hb).totalEarnings | number:'1.2-2'
-                          }}</span
-                        >
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Inline Year-Long Habit Grid (Expandable) -->
-                  <div *ngIf="expandedGrids[hb.id]" class="inline-habit-grid">
-                    <div>
-                      <!-- DEBUG: Display businessId -->
-                      <app-habit-grid
-                        [businessId]="hb.id"
-                        [businessName]="hb.business_name"
-                        [businessEmoji]="hb.business_icon"
-                        [businessType]="hb.business_types?.name || hb.business_name || ''"
-                        [businessCreatedAt]="hb.created_at"
-                        [isModal]="false"
-                        [showStats]="true"
-                        [useCalendarYear]="true"
-                      >
-                      </app-habit-grid>
-                      <app-stock-chart
-                        [businessId]="hb.id"
-                        [isStockView]="false"
-                        [days]="30"
-                        [currentStreak]="getEffectiveStreak(hb)"
-                      >
-                      </app-stock-chart>
-                    </div>
-                  </div>
-
-                  <!-- Daily Check-in Action -->
-                  <div class="checkin-action">
-                    <!-- Complete button moved to header area next to calendar button -->
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ng-template>
-
           <!-- To-Do Group -->
           <div *ngIf="todoHabitBusinesses.length > 0" class="habit-group-section">
             <h4 class="habit-group-title">To-Do</h4>
@@ -565,9 +151,21 @@
               <ng-container
                 *ngFor="let hb of todoHabitBusinesses; trackBy: trackByHabitBusinessId; let i = index; let last = last"
               >
-                <ng-container
-                  *ngTemplateOutlet="habitBusinessCard; context: { $implicit: hb, isFirst: i === 0, isLast: last }"
-                ></ng-container>
+                <app-habit-card
+                  [hb]="hb"
+                  [isFirst]="i === 0"
+                  [isLast]="last"
+                  [gridExpanded]="!!expandedGrids[hb.id]"
+                  [stockBoostPercent]="stockBoostByBusinessId[hb.id] || 0"
+                  [jvStatusRows]="jvStatusByBusinessId[hb.id] || []"
+                  [currentUserId]="currentUser?.id || null"
+                  [userCash]="userProfile?.cash || 0"
+                  [canDelete]="habitBusinesses.length > 1"
+                  (reorder)="moveHabitBusiness(hb, $event)"
+                  (toggleGrid)="toggleHabitGrid(hb)"
+                  (changed)="onCardChanged()"
+                  (offlineQueued)="onCardOfflineQueued()"
+                ></app-habit-card>
               </ng-container>
             </div>
           </div>
@@ -579,9 +177,21 @@
               <ng-container
                 *ngFor="let hb of doneHabitBusinesses; trackBy: trackByHabitBusinessId; let i = index; let last = last"
               >
-                <ng-container
-                  *ngTemplateOutlet="habitBusinessCard; context: { $implicit: hb, isFirst: i === 0, isLast: last }"
-                ></ng-container>
+                <app-habit-card
+                  [hb]="hb"
+                  [isFirst]="i === 0"
+                  [isLast]="last"
+                  [gridExpanded]="!!expandedGrids[hb.id]"
+                  [stockBoostPercent]="stockBoostByBusinessId[hb.id] || 0"
+                  [jvStatusRows]="jvStatusByBusinessId[hb.id] || []"
+                  [currentUserId]="currentUser?.id || null"
+                  [userCash]="userProfile?.cash || 0"
+                  [canDelete]="habitBusinesses.length > 1"
+                  (reorder)="moveHabitBusiness(hb, $event)"
+                  (toggleGrid)="toggleHabitGrid(hb)"
+                  (changed)="onCardChanged()"
+                  (offlineQueued)="onCardOfflineQueued()"
+                ></app-habit-card>
               </ng-container>
             </div>
           </div>

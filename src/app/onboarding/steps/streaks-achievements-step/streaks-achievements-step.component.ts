@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { trophy } from 'ionicons/icons';
@@ -11,7 +10,7 @@ import { MILESTONE_DEFINITIONS, GENERAL_ACHIEVEMENT_DEFINITIONS } from '../../..
   templateUrl: './streaks-achievements-step.component.html',
   styleUrls: ['../onboarding-step.scss'],
   standalone: true,
-  imports: [CommonModule, RouterLink, IonButton, IonIcon],
+  imports: [CommonModule, IonButton, IonIcon],
 })
 export class StreaksAchievementsStepComponent {
   @Output() next = new EventEmitter<void>();

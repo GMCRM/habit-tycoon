@@ -6,32 +6,26 @@ import { Subscription } from 'rxjs';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonCard, IonCardContent,
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon,
-  IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController, ModalController
+  IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { JointVentureService, JointVentureStatusRow } from '../services/joint-venture.service';
-import { OfflineQueuedError, OfflineQueueService } from '../services/offline-queue.service';
+import { OfflineQueueService } from '../services/offline-queue.service';
 import { HabitCacheService } from '../services/habit-cache.service';
 import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
-import { CountdownTickService } from '../services/countdown-tick.service';
-import { UpgradeModalComponent } from './upgrade-modal/upgrade-modal.component';
-import { EditHabitModalComponent } from './edit-habit-modal/edit-habit-modal.component';
-import { StockOwnersModalComponent } from '../shared/components/stock-owners-modal/stock-owners-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
-import { HabitGridComponent } from '../shared/components/habit-grid/habit-grid.component';
-import { StockChartComponent } from '../shared/components/stock-chart/stock-chart.component';
-import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
+import { HabitCardComponent } from '../shared/components/habit-card/habit-card.component';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, receiptOutline, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline } from 'ionicons/icons';
+import { alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, trendingUpOutline, wallet, cash, logoUsd, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitGridComponent, StockChartComponent, BusinessIconPipe],
+  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitCardComponent],
 })
 export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;
@@ -72,10 +66,6 @@ export class HomePage implements OnInit, OnDestroy {
   ];
   currentTagline = "";
 
-  // Countdown timer state
-  countdowns: Record<string, string> = {};
-  private tickSub?: Subscription;
-
   // Actions queued while offline, waiting to sync (see OfflineQueueService)
   pendingSyncCount = 0;
   private pendingSyncSub?: Subscription;
@@ -89,14 +79,12 @@ export class HomePage implements OnInit, OnDestroy {
     private habitUpdateService: HabitUpdateService,
     private toastController: ToastController,
     private alertController: AlertController,
-    private modalController: ModalController,
     private habitIntervalService: HabitIntervalService,
-    private countdownTickService: CountdownTickService,
     private offlineQueueService: OfflineQueueService,
     private habitCacheService: HabitCacheService,
     private jointVentureService: JointVentureService
   ) {
-    addIcons({ checkmarkCircle, alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, arrowUndo, create, trash, trendingUp, trendingUpOutline, chevronUp, chevronDown, wallet, cash, logoUsd, receiptOutline, arrowBack, settings, helpCircle, close, analytics, shield, people, informationCircleOutline });
+    addIcons({ alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, trendingUpOutline, wallet, cash, logoUsd, settings, helpCircle, close, analytics, shield });
     this.setRandomTagline();
   }
 
@@ -347,97 +335,11 @@ export class HomePage implements OnInit, OnDestroy {
     this.router.navigate(['/create-habit']);
   }
 
-  async completeHabitBusiness(habitBusiness: HabitBusiness) {
-    try {
-      // Call the actual habit completion service
-      const { earnings } = await this.habitBusinessService.completeHabit(habitBusiness.id);
-
-      // Show success toast instead of blocking alert
-      const toast = await this.toastController.create({
-        message: `🎉 Habit "${habitBusiness.business_name}" completed! +$${earnings.toFixed(2)} earned`,
-        duration: 3000,
-        position: 'top',
-        color: 'success'
-      });
-      await toast.present();
-      
-      // 🚀 REAL-TIME UPDATE: Emit completion event for immediate grid updates
-      this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-      
-      // Reload user profile to get updated cash
-      await this.loadCurrentUser();
-      
-      // Reload dashboard data to get updated stats and completion status
-      await this.loadDashboardData();
-
-    } catch (error) {
-      console.error('Error completing habit:', error);
-
-      const isOfflineQueued = error instanceof OfflineQueuedError;
-      const errorMessage = (error as any)?.message || 'Unknown error occurred';
-      const errorToast = await this.toastController.create({
-        message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to complete habit: ${errorMessage}`,
-        duration: 3000,
-        position: 'top',
-        color: isOfflineQueued ? 'warning' : 'danger'
-      });
-      await errorToast.present();
-
-      if (isOfflineQueued) {
-        this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-        await this.refreshAfterOfflineQueue();
-      }
-    }
-  }
-
-  /**
-   * Check if a habit has been completed for the current interval period.
-   */
-  isCompletedToday(habitBusiness: HabitBusiness): boolean {
-    return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
-  }
-
   /**
    * Check if a multi-completion habit has reached its goal for the current period.
    */
   isGoalCompleted(habitBusiness: HabitBusiness): boolean {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
-  }
-
-  // ─── Joint venture home-card helpers ───
-  // current_progress/goal_value are never used for a joint venture business
-  // (goal_value is pinned at 1, current_progress stays 0 — see
-  // complete_joint_venture_checkin) — isGoalCompleted() above would always
-  // read as "not completed" for one, so these read jvStatusByBusinessId
-  // (populated in loadDashboardData) instead.
-
-  private jvStatusRows(habitBusiness: HabitBusiness): JointVentureStatusRow[] {
-    return this.jvStatusByBusinessId[habitBusiness.id] || [];
-  }
-
-  isJvCheckedInToday(habitBusiness: HabitBusiness): boolean {
-    const mine = this.jvStatusRows(habitBusiness).find(r => r.co_owner_id === this.currentUser?.id);
-    return !!mine?.checked_in_today;
-  }
-
-  jvCheckedInCount(habitBusiness: HabitBusiness): number {
-    return this.jvStatusRows(habitBusiness).filter(r => r.checked_in_today).length;
-  }
-
-  jvTotalCoOwners(habitBusiness: HabitBusiness): number {
-    return this.jvStatusRows(habitBusiness).length;
-  }
-
-  /** Display names of co-owners who haven't checked in yet today (excluding this user). */
-  jvWaitingOnNames(habitBusiness: HabitBusiness): string {
-    const names = this.jvStatusRows(habitBusiness)
-      .filter(r => !r.checked_in_today && r.co_owner_id !== this.currentUser?.id)
-      .map(r => r.co_owner_name);
-    return names.join(', ');
-  }
-
-  isJvCreator(habitBusiness: HabitBusiness): boolean {
-    return habitBusiness.user_id === this.currentUser?.id;
   }
 
   /** Habit-businesses not yet completed for the current period, in display order. */
@@ -455,615 +357,23 @@ export class HomePage implements OnInit, OnDestroy {
     return hb.id;
   }
 
-  /** True when today is one of the habit's active days (or it's a daily habit). */
-  isTodayActiveDay(habitBusiness: HabitBusiness): boolean {
-    return this.habitIntervalService.isTodayActiveDay(habitBusiness);
-  }
-
-  /** Label of the next active day for a specific_days habit (e.g. "Monday"). */
-  getNextActiveDayLabel(habitBusiness: HabitBusiness): string {
-    return this.habitIntervalService.getNextActiveDayLabel(habitBusiness.active_days || []);
-  }
-
-  /** True current streak, correcting for a stale (not-yet-reset) streak column. */
-  getEffectiveStreak(habitBusiness: HabitBusiness): number {
-    return this.habitIntervalService.getEffectiveStreak(habitBusiness);
-  }
-
-  /** Active day DOW array for chip rendering (0=Sun…6=Sat). */
-  readonly allDows = [0, 1, 2, 3, 4, 5, 6];
-  readonly dayChipLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  readonly today = new Date();
-
   /**
-   * Undo habit completion for today
-   */
-  async undoHabitCompletion(habitBusiness: HabitBusiness) {
-    try {
-      // Call the undo completion service method directly
-      const { earnings } = await this.habitBusinessService.undoHabitCompletion(habitBusiness.id);
-
-      // Show success toast
-      const toast = await this.toastController.create({
-        message: `↩️ Completion undone for "${habitBusiness.business_name}"! -$${earnings.toFixed(2)} removed`,
-        duration: 3000,
-        position: 'top',
-        color: 'warning'
-      });
-      await toast.present();
-      
-      // 🚀 REAL-TIME UPDATE: Emit undo event for immediate grid updates
-      this.habitUpdateService.emitHabitUndo(habitBusiness.id);
-      
-      // Reload user profile to get updated cash
-      await this.loadCurrentUser();
-      
-      // Reload dashboard data to get updated stats and completion status
-      await this.loadDashboardData();
-      
-    } catch (error) {
-      console.error('Error undoing habit completion:', error);
-
-      const isOfflineQueued = error instanceof OfflineQueuedError;
-      const errorMessage = (error as any)?.message || 'Unknown error occurred';
-      const errorToast = await this.toastController.create({
-        message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to undo completion: ${errorMessage}`,
-        duration: 3000,
-        position: 'top',
-        color: isOfflineQueued ? 'warning' : 'danger'
-      });
-      await errorToast.present();
-
-      if (isOfflineQueued) {
-        this.habitUpdateService.emitHabitUndo(habitBusiness.id);
-        await this.refreshAfterOfflineQueue();
-      }
-    }
-  }
-
-  /**
-   * Open the 365-day habit grid modal for a specific habit business
-   */
-  /**
-   * Toggle the inline 365-day habit grid for a specific habit business
+   * Toggle the inline 365-day habit grid for a specific habit business.
+   * Only one card's grid is ever open at once.
    */
   toggleHabitGrid(habitBusiness: HabitBusiness) {
     const currentState = this.expandedGrids[habitBusiness.id] || false;
-
-    // Close all other grids first (only allow one open at a time)
     this.expandedGrids = {};
-
-    // Toggle the clicked grid
     this.expandedGrids[habitBusiness.id] = !currentState;
-  }
-
-  /** Routes the upgrade button to the group-payment flow for a joint venture, or the existing single-owner flow otherwise. */
-  async onUpgradeClick(habitBusiness: HabitBusiness) {
-    if (habitBusiness.is_joint_venture) {
-      await this.proposeJvUpgrade(habitBusiness);
-    } else {
-      await this.upgradeHabitBusiness(habitBusiness);
-    }
-  }
-
-  /** Routes the delete button to the majority-vote flow for a joint venture, or the existing single-owner Marketplace-listing flow otherwise. */
-  async onDeleteClick(habitBusiness: HabitBusiness) {
-    if (habitBusiness.is_joint_venture) {
-      await this.initiateJvDeletion(habitBusiness);
-    } else {
-      await this.deleteHabitBusiness(habitBusiness);
-    }
-  }
-
-  /**
-   * Joint venture upgrade: reuses the same UpgradeModalComponent tier-picker
-   * UI (with costDivisor set so it shows/gates on this co-owner's own share,
-   * not the full cost) — only what happens after a tier is picked differs:
-   * a group-payment proposal instead of an immediate in-place mutation.
-   */
-  async proposeJvUpgrade(habitBusiness: HabitBusiness) {
-    const UPGRADE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    if (habitBusiness.last_upgraded_at) {
-      const msRemaining = UPGRADE_COOLDOWN_MS - (Date.now() - new Date(habitBusiness.last_upgraded_at).getTime());
-      if (msRemaining > 0) {
-        const toast = await this.toastController.create({
-          message: `⏳ This business was just upgraded — you can upgrade it again in ${Math.ceil(msRemaining / (60 * 60 * 1000))}h.`,
-          duration: 3000, position: 'top', color: 'warning'
-        });
-        await toast.present();
-        return;
-      }
-    }
-
-    try {
-      const businessTypes = await this.habitBusinessService.getBusinessTypes();
-      const upgradeOptions = businessTypes.filter(bt => bt.base_cost > (habitBusiness.cost || 0) && bt.id !== habitBusiness.business_type_id);
-      if (upgradeOptions.length === 0) {
-        const toast = await this.toastController.create({ message: '🎉 You already have the best business type available!', duration: 3000, position: 'top', color: 'success' });
-        await toast.present();
-        return;
-      }
-
-      const costDivisor = this.jvTotalCoOwners(habitBusiness) || 1;
-      const modal = await this.modalController.create({
-        component: UpgradeModalComponent,
-        componentProps: {
-          habitBusiness,
-          upgradeOptions,
-          userCash: this.userProfile?.cash || 0,
-          currentBusinessValue: 0, // no trade-in credit for a joint venture — see propose_joint_venture_upgrade
-          costDivisor,
-          isJointVenture: true,
-          modalController: this.modalController,
-          toastController: this.toastController
-        },
-        cssClass: 'upgrade-modal'
-      });
-      await modal.present();
-      const { data } = await modal.onDidDismiss();
-      if (!data?.selectedBusinessType) return;
-
-      const { data: { user } } = await this.authService.getUser();
-      if (!user) return;
-
-      const result = await this.jointVentureService.proposeUpgrade(user.id, habitBusiness.id, data.selectedBusinessType.id);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to propose upgrade');
-      }
-
-      const toast = await this.toastController.create({
-        message: `🤝 Upgrade proposed! Your $${(result.initiator_share || 0).toFixed(2)} share is paid — waiting on the other co-owners.`,
-        duration: 4000, position: 'top', color: 'success'
-      });
-      await toast.present();
-      await this.loadCurrentUser();
-      await this.loadDashboardData();
-    } catch (error: any) {
-      const errorToast = await this.toastController.create({
-        message: `❌ ${error?.message || 'Failed to propose upgrade'}`,
-        duration: 3000, position: 'top', color: 'danger'
-      });
-      await errorToast.present();
-    }
-  }
-
-  /** Joint venture deletion: any co-owner can start a majority vote; their own click auto-counts as a "yes" ballot. */
-  async initiateJvDeletion(habitBusiness: HabitBusiness) {
-    const totalCoOwners = this.jvTotalCoOwners(habitBusiness);
-    const alert = await this.alertController.create({
-      header: 'Start a Deletion Vote?',
-      message: `"${habitBusiness.business_name}" is co-owned by ${totalCoOwners || 'several'} people. More than half must agree within 24 hours, or the vote expires and nothing changes. Your own vote counts as a "yes".`,
-      buttons: [
-        { text: 'Cancel', role: 'cancel' },
-        {
-          text: 'Start Vote',
-          role: 'destructive',
-          handler: () => {
-            (async () => {
-              try {
-                const { data: { user } } = await this.authService.getUser();
-                if (!user) return;
-                const result = await this.jointVentureService.initiateDeletionVote(user.id, habitBusiness.id);
-                if (!result.success) {
-                  throw new Error(result.error || 'Failed to start deletion vote');
-                }
-                const message = result.executed
-                  ? `🗑️ "${habitBusiness.business_name}" has been deleted — it's on the Marketplace, and proceeds will split evenly.`
-                  : `🗳️ Deletion vote started (1/${result.total_co_owners}) — waiting on the other co-owners.`;
-                const toast = await this.toastController.create({ message, duration: 4000, position: 'top', color: 'success' });
-                await toast.present();
-                await this.loadCurrentUser();
-                await this.loadDashboardData();
-              } catch (error: any) {
-                const errorToast = await this.toastController.create({
-                  message: `❌ ${error?.message || 'Failed to start deletion vote'}`,
-                  duration: 3000, position: 'top', color: 'danger'
-                });
-                await errorToast.present();
-              }
-            })();
-          }
-        }
-      ]
-    });
-    await alert.present();
-  }
-
-  /**
-   * Upgrade a habit business to a better business type
-   */
-  async upgradeHabitBusiness(habitBusiness: HabitBusiness) {
-    // Businesses can only be upgraded once every 24h (server-enforced too —
-    // this just avoids a round trip and gives a friendlier message).
-    const UPGRADE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    if (habitBusiness.last_upgraded_at) {
-      const msSinceUpgrade = Date.now() - new Date(habitBusiness.last_upgraded_at).getTime();
-      const msRemaining = UPGRADE_COOLDOWN_MS - msSinceUpgrade;
-      if (msRemaining > 0) {
-        const hoursRemaining = Math.ceil(msRemaining / (60 * 60 * 1000));
-        const toast = await this.toastController.create({
-          message: `⏳ This business was just upgraded — you can upgrade it again in ${hoursRemaining}h.`,
-          duration: 3000,
-          position: 'top',
-          color: 'warning'
-        });
-        await toast.present();
-        return;
-      }
-    }
-
-    try {
-      // Get all available business types to show upgrade options
-      const businessTypes = await this.habitBusinessService.getBusinessTypes();
-      
-      // Filter to show only business types that cost more than current one (upgrades)
-      const upgradeOptions = businessTypes.filter(bt => 
-        bt.base_cost > (habitBusiness.cost || 0) && 
-        bt.id !== habitBusiness.business_type_id
-      );
-      
-      if (upgradeOptions.length === 0) {
-        const toast = await this.toastController.create({
-          message: '🎉 You already have the best business type available!',
-          duration: 3000,
-          position: 'top',
-          color: 'success'
-        });
-        await toast.present();
-        return;
-      }
-      
-      // Current business sell value: base value (marketplace_base_value for a
-      // Marketplace-sourced business, otherwise 70% of original cost) boosted
-      // +1%/streak day up to +100%; falls back to the base value once the
-      // streak breaks and resets to 0.
-      const currentBusinessValue = this.habitBusinessService.getMarketplaceListingPrice(habitBusiness);
-      
-      // Open the professional upgrade modal
-      const modal = await this.modalController.create({
-        component: UpgradeModalComponent,
-        componentProps: {
-          habitBusiness: habitBusiness,
-          upgradeOptions: upgradeOptions,
-          userCash: this.userProfile?.cash || 0,
-          currentBusinessValue: currentBusinessValue,
-          modalController: this.modalController,
-          toastController: this.toastController
-        },
-        cssClass: 'upgrade-modal'
-      });
-      
-      await modal.present();
-      
-      const { data } = await modal.onDidDismiss();
-      
-      if (data && data.selectedBusinessType) {
-        await this.performUpgrade(habitBusiness, data.selectedBusinessType, data.upgradeCost);
-      }
-      
-    } catch (error) {
-      console.error('Error showing upgrade options:', error);
-      const errorToast = await this.toastController.create({
-        message: `❌ Failed to load upgrade options: ${error}`,
-        duration: 3000,
-        position: 'top',
-        color: 'danger'
-      });
-      await errorToast.present();
-    }
-  }
-
-  /**
-   * Perform the actual business upgrade
-   */
-  async performUpgrade(habitBusiness: HabitBusiness, newBusinessType: any, upgradeCost: number) {
-    try {
-      // Call the upgrade service method
-      const { listedAt } = await this.habitBusinessService.upgradeHabitBusiness(habitBusiness.id, newBusinessType.id, upgradeCost);
-
-      // Show success toast. The old business's Marketplace listing may be
-      // queued behind the seller's other recent listings (see
-      // create_marketplace_listing()) rather than appearing immediately.
-      const isQueued = listedAt ? new Date(listedAt).getTime() > Date.now() + 60000 : false;
-      const successToast = await this.toastController.create({
-        message: isQueued
-          ? `🎉 Upgraded to ${newBusinessType.icon} ${newBusinessType.name}! Your old "${habitBusiness.business_name}" is queued for the Marketplace${this.describeListingDelay(new Date(listedAt!))}.`
-          : `🎉 Upgraded to ${newBusinessType.icon} ${newBusinessType.name}! Your old "${habitBusiness.business_name}" is now listed on the Marketplace for friends to buy.`,
-        duration: 4500,
-        position: 'top',
-        color: 'success'
-      });
-      await successToast.present();
-      
-      // Reload user profile to get updated cash
-      await this.loadCurrentUser();
-      
-      // Reload dashboard data to show the upgraded business
-      await this.loadDashboardData();
-      
-    } catch (error) {
-      console.error('Error upgrading habit business:', error);
-      
-      const errorMessage = (error as any)?.message || 'Unknown error occurred';
-      const errorToast = await this.toastController.create({
-        message: `❌ Failed to upgrade business: ${errorMessage}`,
-        duration: 3000,
-        position: 'top',
-        color: 'danger'
-      });
-      await errorToast.present();
-    }
-  }
-  async editHabitBusiness(habitBusiness: HabitBusiness) {
-    try {
-      const modal = await this.modalController.create({
-        component: EditHabitModalComponent,
-        componentProps: {
-          habitBusiness,
-          modalController: this.modalController
-        },
-        breakpoints: [0, 1],
-        initialBreakpoint: 1
-      });
-
-      await modal.present();
-      const { data, role } = await modal.onWillDismiss();
-
-      if (role !== 'save' || !data) return;
-
-      try {
-        await this.habitBusinessService.updateHabitBusiness(habitBusiness.id, {
-          business_name: data.businessName,
-          habit_description: data.habitDescription,
-          recurrence_interval: data.recurrenceInterval,
-          goal_value: data.goalValue,
-          active_days: data.activeDays
-        });
-
-        const successToast = await this.toastController.create({
-          message: `✅ "${data.businessName}" updated successfully!`,
-          duration: 2000,
-          position: 'top',
-          color: 'success'
-        });
-        await successToast.present();
-        await this.loadDashboardData();
-      } catch (error) {
-        const errorToast = await this.toastController.create({
-          message: `❌ Failed to update: ${(error as any)?.message || 'Unknown error'}`,
-          duration: 3000,
-          position: 'top',
-          color: 'danger'
-        });
-        await errorToast.present();
-      }
-    } catch (error) {
-      console.error('Error opening edit modal:', error);
-    }
-  }
-
-  /**
-   * Show who owns shares of this business's stock, and how many each holds
-   */
-  async openStockOwnersModal(habitBusiness: HabitBusiness) {
-    const modal = await this.modalController.create({
-      component: StockOwnersModalComponent,
-      componentProps: {
-        businessName: habitBusiness.business_name,
-        habitBusinessId: habitBusiness.id,
-        modalController: this.modalController
-      },
-      cssClass: 'stock-owners-modal'
-    });
-    await modal.present();
-  }
-
-  /**
-   * A seller can only have a couple of Marketplace listings live at once
-   * (see create_marketplace_listing() — new listings queue >=12h apart
-   * behind the seller's other recent ones). Returns "" when a new listing
-   * would appear immediately, or a parenthetical like
-   * " (queued — appears in ~12h)" to embed in a sentence otherwise.
-   */
-  private describeListingDelay(listedAt: Date): string {
-    const msRemaining = listedAt.getTime() - Date.now();
-    if (msRemaining <= 60000) {
-      return '';
-    }
-    const totalMinutes = Math.round(msRemaining / 60000);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const parts: string[] = [];
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    return ` (queued — appears in ~${parts.join(' ')})`;
-  }
-
-  /**
-   * Delete (sell) a habit business with loss penalty
-   */
-  async deleteHabitBusiness(habitBusiness: HabitBusiness) {
-    try {
-      // Check if this would be the user's last habit business
-      if (this.habitBusinesses.length <= 1) {
-        const warningToast = await this.toastController.create({
-          message: '⚠️ Cannot delete your only habit business! You must have at least one active business.',
-          duration: 4000,
-          position: 'top',
-          color: 'warning'
-        });
-        await warningToast.present();
-        return;
-      }
-
-      // Preview the exact price this business will list for on the Marketplace
-      const listingPrice = this.habitBusinessService.getMarketplaceListingPrice(habitBusiness);
-
-      // Best-effort preview of whether this listing will be queued behind the
-      // seller's other recent listings (at most 2 of their listings are ever
-      // live at once, staggered >=12h apart — see create_marketplace_listing()).
-      const previewListedAt = this.currentUser
-        ? await this.habitBusinessService.previewNextListingTime(this.currentUser.id)
-        : new Date();
-      const queueNotice = this.describeListingDelay(previewListedAt);
-
-      // Show modern confirmation alert
-      const alert = await this.alertController.create({
-        header: '🗑️ Delete Habit',
-        message: `Are you sure you want to delete "${habitBusiness.business_name}"?\n\n🏪 It will be listed on the Marketplace for $${listingPrice.toFixed(2)} for 24 hours so a friend can buy it${queueNotice}.\n💰 You're guaranteed that $${listingPrice.toFixed(2)} either way — sooner if a friend buys it, otherwise automatically 24 hours after it lands on the Marketplace.\n\nThis action cannot be undone.`,
-        buttons: [
-          {
-            text: 'Cancel',
-            role: 'cancel'
-          },
-          {
-            text: 'Delete & List',
-            role: 'destructive',
-            handler: async () => {
-              try {
-                // Call the delete service method
-                const { listingPrice, listedAt } = await this.habitBusinessService.deleteHabitBusiness(habitBusiness.id);
-
-                // Show success toast
-                const isQueued = listedAt ? new Date(listedAt).getTime() > Date.now() + 60000 : false;
-                const successToast = await this.toastController.create({
-                  message: isQueued
-                    ? `📦 "${habitBusiness.business_name}" is queued — it'll hit the Marketplace for $${listingPrice.toFixed(2)}${this.describeListingDelay(new Date(listedAt!))}.`
-                    : `🏪 "${habitBusiness.business_name}" is listed on the Marketplace for $${listingPrice.toFixed(2)}!`,
-                  duration: 4000,
-                  position: 'top',
-                  color: 'success'
-                });
-                await successToast.present();
-                
-                // Reload user profile to get updated cash
-                await this.loadCurrentUser();
-                
-                // Reload dashboard data to remove the deleted business
-                await this.loadDashboardData();
-                
-              } catch (error) {
-                console.error('Error deleting habit business:', error);
-                
-                const errorMessage = (error as any)?.message || 'Unknown error occurred';
-                const errorToast = await this.toastController.create({
-                  message: `❌ Failed to sell habit business: ${errorMessage}`,
-                  duration: 3000,
-                  position: 'top',
-                  color: 'danger'
-                });
-                await errorToast.present();
-              }
-            }
-          }
-        ]
-      });
-
-      await alert.present();
-
-    } catch (error) {
-      console.error('Error creating delete alert:', error);
-    }
-  }
-
-  /**
-   * Calculate earnings breakdown for a habit business
-   */
-  getEarningsBreakdown(habitBusiness: HabitBusiness): {
-    baseEarnings: number;
-    streakBonus: number;
-    stockBoost: number;
-    totalEarnings: number;
-  } {
-    // The stored earnings_per_completion is the base rate without multipliers
-    const baseEarnings = habitBusiness.earnings_per_completion;
-    const currentStreak = this.habitIntervalService.getEffectiveStreak(habitBusiness);
-
-    // Calculate what the next completion will earn using Option A logic
-    // The service increments streak first, then applies conservative multiplier
-    // So we need to show earnings for (currentStreak + 1)
-    const nextStreak = currentStreak + 1;
-
-    // Stock ownership boost: 1% base pay per tradeable share purchased by investors,
-    // applied to base pay before the streak bonus
-    const stockBoostPercentage = this.stockBoostByBusinessId[habitBusiness.id] || 0;
-    const stockBoost = baseEarnings * (stockBoostPercentage / 100);
-    const boostedBaseEarnings = baseEarnings + stockBoost;
-
-    // Day 1: $1.00 (0x bonus), Day 2: $1.10 (0.1x bonus), Day 3: $1.20 (0.2x bonus), ...
-    // capped at +100% (2x total pay) so long streaks don't run away unbounded.
-    // Joint ventures earn DOUBLE the multiplier rate (20%/day, capped at
-    // +200%) — see complete_joint_venture_checkin — and this preview only
-    // reflects the streak-bonus top-up that lands once every co-owner has
-    // checked in for the day, not the base pay every check-in earns
-    // regardless of group state.
-    const streakMultiplier = nextStreak === 1
-      ? 0
-      : habitBusiness.is_joint_venture
-        ? Math.min((nextStreak - 1) * 0.2, 2)
-        : Math.min((nextStreak - 1) * 0.1, 1);
-    const baseTotal = boostedBaseEarnings + (boostedBaseEarnings * streakMultiplier);
-    const streakBonus = baseTotal - boostedBaseEarnings; // The bonus amount
-
-    const totalEarnings = baseTotal;
-
-    return {
-      baseEarnings,
-      streakBonus,
-      stockBoost,
-      totalEarnings
-    };
-  }
-
-  /**
-   * Toggle earnings breakdown visibility for a specific habit
-   */
-  toggleEarningsBreakdown(habitBusinessId: string) {
-    const currentState = this.showEarningsBreakdown[habitBusinessId] || false;
-    this.showEarningsBreakdown[habitBusinessId] = !currentState;
-  }
-
-  /**
-   * Toggle entire earnings section visibility for a specific habit
-   */
-  toggleEarningsVisibility(habitBusinessId: string) {
-    const currentState = this.showEarningsSection[habitBusinessId];
-    // Default to false (hidden) if not set, so first click shows it
-    this.showEarningsSection[habitBusinessId] = currentState === undefined ? true : !currentState;
   }
 
   // Track which habits have their 365-day grid expanded
   expandedGrids: { [key: string]: boolean } = {};
 
-  // Track which habits have their earnings breakdown expanded
-  showEarningsBreakdown: { [key: string]: boolean } = {};
-
-  // Track which habits have their entire earnings section visible
-  showEarningsSection: { [key: string]: boolean } = {};
-
   // Stock ownership pay-boost percentage per habit business (1% per share purchased by investors)
   stockBoostByBusinessId: { [habitBusinessId: string]: number } = {};
 
-  // Complete/undo button in-flight states (drives the completion pop animation)
-  completeButtonStates: { [key: string]: { isCompleting: boolean; isUndoing: boolean } } = {};
-
   ngOnInit() {
-    this.countdownTickService.register();
-    this.tickSub = this.countdownTickService.tick$.subscribe(() => {
-      this.habitBusinesses.forEach(hb => {
-        if (hb.is_joint_venture) {
-          // A joint venture's "today" is fixed to the creator's timezone
-          // (captured at funding time), not each viewer's own device
-          // timezone — see joint_venture_timezone / complete_joint_venture_checkin.
-          const secs = this.jointVentureService.getJvSecondsUntilReset(hb.joint_venture_timezone || 'UTC');
-          this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, '24h');
-          return;
-        }
-        const interval = this.habitIntervalService.resolveInterval(hb);
-        const secs = this.habitIntervalService.getSecondsUntilReset(interval, new Date(), hb.active_days);
-        this.countdowns[hb.id] = this.habitIntervalService.formatCountdown(secs, interval);
-      });
-    });
     this.pendingSyncSub = this.offlineQueueService.pendingCount$.subscribe(
       count => (this.pendingSyncCount = count)
     );
@@ -1078,197 +388,19 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.tickSub?.unsubscribe();
     this.pendingSyncSub?.unsubscribe();
     this.habitCreatedSub?.unsubscribe();
-    this.countdownTickService.unregister();
   }
 
-  /**
-   * Shared completion logic used when marking a habit complete
-   */
-  private async runCompleteHabit(habitBusiness: HabitBusiness) {
-    if (habitBusiness.is_joint_venture) {
-      // No "missed yesterday" backdating for joint ventures — retroactively
-      // flipping whether a past day was "full attendance" for a shared
-      // streak is a correctness minefield with unclear UX value, so this
-      // option simply isn't offered for a JV card.
-      await this.runJointVentureCheckIn(habitBusiness);
-      return;
-    }
-    // Show "missed yesterday" prompt for daily habits that weren't done yesterday
-    const missedYesterday = this.habitIntervalService.didMissYesterday(habitBusiness);
-    if (missedYesterday) {
-      await this.showMissedYesterdayAlert(habitBusiness);
-    } else {
-      await this.completeHabitBusiness(habitBusiness);
-    }
+  /** A habit-card action (complete/undo/delete/upgrade/edit/JV) landed successfully — refresh cash + the dashboard list. */
+  async onCardChanged() {
+    await this.loadCurrentUser();
+    await this.loadDashboardData();
   }
 
-  private async runJointVentureCheckIn(habitBusiness: HabitBusiness) {
-    try {
-      const result = await this.jointVentureService.checkIn(habitBusiness.id);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to check in');
-      }
-
-      const earnings = (result.earnings || 0).toFixed(2);
-      const remaining = (result.total || 0) - (result.checked_in || 0);
-      const message = result.finalized
-        ? `🎉 Everyone checked in! +$${earnings} earned — streak now ${result.streak} day${result.streak === 1 ? '' : 's'}!`
-        : `✅ You're in! +$${earnings} earned — waiting on ${remaining} more co-owner${remaining === 1 ? '' : 's'} for today's streak bonus.`;
-
-      const toast = await this.toastController.create({ message, duration: 4000, position: 'top', color: 'success' });
-      await toast.present();
-
-      this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-      await this.loadCurrentUser();
-      await this.loadDashboardData();
-    } catch (error: any) {
-      const errorToast = await this.toastController.create({
-        message: `❌ ${error?.message || 'Failed to check in'}`,
-        duration: 3000,
-        position: 'top',
-        color: 'danger'
-      });
-      await errorToast.present();
-    }
-  }
-
-  /**
-   * Instantly complete a habit on a single tap
-   */
-  async handleCompleteTap(habitBusiness: HabitBusiness, event: Event) {
-    event.preventDefault();
-
-    if (!this.completeButtonStates[habitBusiness.id]) {
-      this.completeButtonStates[habitBusiness.id] = { isCompleting: false, isUndoing: false };
-    }
-
-    const state = this.completeButtonStates[habitBusiness.id];
-    if (state.isCompleting) return;
-
-    state.isCompleting = true;
-    try {
-      await this.runCompleteHabit(habitBusiness);
-    } finally {
-      state.isCompleting = false;
-    }
-  }
-
-  /**
-   * Show a prompt when the user tries to complete a habit they missed yesterday.
-   * Lets them choose to mark yesterday or today as complete.
-   */
-  private async showMissedYesterdayAlert(habitBusiness: HabitBusiness): Promise<void> {
-    // The alert itself dismisses immediately on tap (buttons run their work
-    // in the background rather than blocking the dialog), but callers
-    // (handleCompleteTap) rely on this promise to know when it's safe to
-    // clear their "isCompleting" guard — resolving as soon as alert.present()
-    // does (instead of waiting for the background work) would re-enable the
-    // complete button before the pending completion actually finishes,
-    // allowing a second, overlapping tap.
-    return new Promise<void>((resolve) => {
-      let resolved = false;
-      const done = () => {
-        if (!resolved) {
-          resolved = true;
-          resolve();
-        }
-      };
-
-      // "Today" only makes sense as an option if today is actually a due day —
-      // for a specific_days habit resting today, there's nothing to complete today.
-      const showTodayOption = this.isTodayActiveDay(habitBusiness);
-
-      const buttons: any[] = [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          handler: () => done()
-        },
-        {
-          text: 'Yesterday',
-          handler: () => {
-            // Run async in background so the alert closes immediately
-            (async () => {
-              try {
-                await this.habitBusinessService.completeHabitYesterday(habitBusiness.id);
-                const toast = await this.toastController.create({
-                  message: `✅ "${habitBusiness.business_name}" marked complete for yesterday! Earnings added.`,
-                  duration: 3000,
-                  position: 'top',
-                  color: 'success'
-                });
-                await toast.present();
-                this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-                await this.loadCurrentUser();
-                await this.loadDashboardData();
-              } catch (error) {
-                const isOfflineQueued = error instanceof OfflineQueuedError;
-                const errorMessage = (error as any)?.message || 'Unknown error occurred';
-                const errorToast = await this.toastController.create({
-                  message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed: ${errorMessage}`,
-                  duration: 3000,
-                  position: 'top',
-                  color: isOfflineQueued ? 'warning' : 'danger'
-                });
-                await errorToast.present();
-
-                if (isOfflineQueued) {
-                  this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-                  await this.refreshAfterOfflineQueue();
-                }
-              } finally {
-                done();
-              }
-            })();
-          }
-        }
-      ];
-
-      if (showTodayOption) {
-        buttons.push({
-          text: 'Today',
-          handler: () => {
-            (async () => {
-              try {
-                await this.completeHabitBusiness(habitBusiness);
-              } finally {
-                done();
-              }
-            })();
-          }
-        });
-      }
-
-      this.alertController.create({
-        header: '⏰ Forgot to mark your habit yesterday?',
-        message: 'You missed marking this habit yesterday. Did you complete it? You can still mark it as complete.\n\nSelect which day to complete:',
-        buttons
-      }).then(alert => alert.present());
-    });
-  }
-
-  /**
-   * Instantly undo a habit completion on a single tap
-   */
-  async handleUndoTap(habitBusiness: HabitBusiness, event: Event) {
-    event.preventDefault();
-
-    if (!this.completeButtonStates[habitBusiness.id]) {
-      this.completeButtonStates[habitBusiness.id] = { isCompleting: false, isUndoing: false };
-    }
-
-    const state = this.completeButtonStates[habitBusiness.id];
-    if (state.isUndoing) return;
-
-    state.isUndoing = true;
-    try {
-      await this.undoHabitCompletion(habitBusiness);
-    } finally {
-      state.isUndoing = false;
-    }
+  /** A habit-card action was queued offline instead of completing immediately — reflect its optimistic cache update right away. */
+  async onCardOfflineQueued() {
+    await this.refreshAfterOfflineQueue();
   }
 
   /**
@@ -1359,19 +491,6 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Show a habit-business's description in a popup (the description text
-   * itself is hidden on the card; only a "Description" link is shown).
-   */
-  async showHabitDescription(habitBusiness: HabitBusiness) {
-    const alert = await this.alertController.create({
-      header: habitBusiness.business_name,
-      message: habitBusiness.habit_description || 'No description provided.',
-      buttons: ['OK'],
-    });
-    await alert.present();
-  }
-
-  /**
    * Show the exact value behind an abbreviated daily stat in a popup.
    */
   async showExactStatValue(label: string, value: number, isCurrency: boolean) {
@@ -1427,50 +546,6 @@ export class HomePage implements OnInit, OnDestroy {
       buttons: ['OK'],
     });
     await alert.present();
-  }
-
-  /**
-   * Undo the last completion for multi-completion habits
-   */
-  async undoLastCompletion(habitBusiness: HabitBusiness) {
-    try {
-      // Call the undo service
-      await this.habitBusinessService.undoHabitCompletion(habitBusiness.id);
-      
-      // Show success toast
-      const toast = await this.toastController.create({
-        message: `↩️ Undid completion for "${habitBusiness.business_name}"`,
-        duration: 2000,
-        position: 'top',
-        color: 'warning'
-      });
-      await toast.present();
-      
-      // Emit update event for real-time updates
-      this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-      
-      // Reload data to reflect changes
-      await this.loadCurrentUser();
-      await this.loadDashboardData();
-      
-    } catch (error) {
-      console.error('Error undoing completion:', error);
-
-      const isOfflineQueued = error instanceof OfflineQueuedError;
-      const errorMessage = (error as any)?.message || 'Unknown error';
-      const errorToast = await this.toastController.create({
-        message: isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to undo completion: ${errorMessage}`,
-        duration: 3000,
-        position: 'top',
-        color: isOfflineQueued ? 'warning' : 'danger'
-      });
-      await errorToast.present();
-
-      if (isOfflineQueued) {
-        this.habitUpdateService.emitHabitCompletion(habitBusiness.id);
-        await this.refreshAfterOfflineQueue();
-      }
-    }
   }
 
   /**

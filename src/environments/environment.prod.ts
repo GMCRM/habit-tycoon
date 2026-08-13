@@ -8,7 +8,9 @@ export const environment = {
   // is the real activation switch.
   revenueCatApiKey: '',
   // Apple requires working Terms of Use / Privacy Policy links on any
-  // subscription paywall. Fill these in before flipping app_config.onboarding_enabled on.
-  termsUrl: '',
-  privacyUrl: ''
+  // subscription paywall. These point at the /terms-of-service and
+  // /privacy-policy routes, served publicly via the GitHub Pages build of
+  // this same app (see .github/workflows/deploy.yml).
+  termsUrl: 'https://gmcrm.github.io/habit-tycoon/terms-of-service',
+  privacyUrl: 'https://gmcrm.github.io/habit-tycoon/privacy-policy'
 };

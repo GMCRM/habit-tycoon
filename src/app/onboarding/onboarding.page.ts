@@ -11,8 +11,9 @@ import { IncomeExplainerStepComponent } from './steps/income-explainer-step/inco
 import { ShopPreviewStepComponent } from './steps/shop-preview-step/shop-preview-step.component';
 import { SocialPreviewStepComponent } from './steps/social-preview-step/social-preview-step.component';
 import { StreaksAchievementsStepComponent } from './steps/streaks-achievements-step/streaks-achievements-step.component';
+import { TermsStepComponent } from './steps/terms-step/terms-step.component';
 
-const STEP_COUNT = 7;
+const STEP_COUNT = 8;
 
 @Component({
   selector: 'app-onboarding',
@@ -29,6 +30,7 @@ const STEP_COUNT = 7;
     ShopPreviewStepComponent,
     SocialPreviewStepComponent,
     StreaksAchievementsStepComponent,
+    TermsStepComponent,
   ],
 })
 export class OnboardingPage implements OnInit {
@@ -62,6 +64,7 @@ export class OnboardingPage implements OnInit {
     try {
       const { data: { session } } = await this.authService.getSession();
       if (session?.user) {
+        await this.authService.markTermsAccepted(session.user.id);
         await this.authService.markOnboardingComplete(session.user.id);
       }
     } catch (error) {

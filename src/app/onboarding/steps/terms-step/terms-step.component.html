@@ -1,0 +1,37 @@
+<div class="step-body">
+  <div class="step-icon">📜</div>
+  <h1 class="step-title">Just the legal bit</h1>
+  <p class="step-subtitle">
+    Before you head to your dashboard, take a second to review how Habit
+    Tycoon works and how your data is handled.
+  </p>
+
+  <div class="consent-row" (click)="accepted = !accepted">
+    <ion-checkbox
+      [(ngModel)]="accepted"
+      (click)="$event.stopPropagation()"
+      aria-label="I agree to the Terms of Service and Privacy Policy"
+    ></ion-checkbox>
+    <span class="consent-text">
+      I agree to the
+      <a *ngIf="termsUrl; else termsPlain" [href]="termsUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">Terms of Service</a>
+      <ng-template #termsPlain>Terms of Service</ng-template>
+      and
+      <a *ngIf="privacyUrl; else privacyPlain" [href]="privacyUrl" target="_blank" rel="noopener" (click)="$event.stopPropagation()">Privacy Policy</a>
+      <ng-template #privacyPlain>Privacy Policy</ng-template>.
+    </span>
+  </div>
+</div>
+
+<div class="step-footer">
+  <ion-button
+    expand="block"
+    color="primary"
+    class="step-cta"
+    [disabled]="!accepted"
+    (click)="continue()"
+  >
+    <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+    Agree &amp; Continue
+  </ion-button>
+</div>
