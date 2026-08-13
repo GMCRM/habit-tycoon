@@ -121,13 +121,12 @@ export class SettingsPage implements OnInit {
 
     this.isUpdatingProfile = true;
     try {
-      await this.authService.updateUserProfile(this.currentUser.id, {
-        name: this.username.trim()
-      });
+      const updated = await this.authService.updateUsername(this.username.trim());
+      this.username = updated?.name ?? this.username.trim();
       this.showToastMessage('Profile updated successfully!', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      this.showToastMessage('Failed to update profile', 'danger');
+      this.showToastMessage(error?.message || 'Failed to update profile', 'danger');
     } finally {
       this.isUpdatingProfile = false;
     }

@@ -441,7 +441,23 @@ export class AuthService {
       .update(updates)
       .eq('id', userId)
       .select();
-    
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Username changes go through this RPC rather than updateUserProfile()
+  // above: the update_username() function runs server-side (SECURITY
+  // DEFINER), validates/sanitizes the new name, and only ever touches the
+  // `name` column for the caller's own row -- a generic table update from
+  // the client could otherwise be pointed at cash/net_worth/email since the
+  // user_profiles RLS policy only checks row ownership, not which columns
+  // changed.
+  async updateUsername(newName: string) {
+    const { data, error } = await this.supabase.rpc('update_username', {
+      new_name: newName
+    });
+
     if (error) throw error;
     return data;
   }
