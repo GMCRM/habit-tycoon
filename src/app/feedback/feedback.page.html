@@ -1,0 +1,137 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>💬 Send Feedback</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" [scrollY]="false">
+  <div class="scrollable-content">
+    <div class="feedback-content">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="chatbubble-ellipses"></ion-icon>
+            We'd love to hear from you
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="intro-text">
+            Found something broken, or have an idea that would make Habit
+            Tycoon better? Let us know below — your message goes straight to
+            our team.
+          </p>
+
+          <div class="form-field">
+            <ion-item>
+              <ion-label position="stacked">What's this about?</ion-label>
+              <ion-select
+                [(ngModel)]="feedbackType"
+                placeholder="Choose one"
+                interface="popover"
+              >
+                <ion-select-option value="bug">🐞 Bug Report</ion-select-option>
+                <ion-select-option value="feature"
+                  >💡 Feature Request</ion-select-option
+                >
+              </ion-select>
+            </ion-item>
+          </div>
+
+          <!-- Bug report fields -->
+          <div *ngIf="feedbackType === 'bug'" class="conditional-fields">
+            <div class="form-field">
+              <ion-item>
+                <ion-label position="stacked">Steps to Reproduce</ion-label>
+                <ion-textarea
+                  [(ngModel)]="stepsToReproduce"
+                  placeholder="1. Go to...&#10;2. Tap on...&#10;3. See what happens"
+                  [autoGrow]="true"
+                  rows="3"
+                  [maxlength]="maxLongField"
+                ></ion-textarea>
+              </ion-item>
+            </div>
+
+            <div class="form-field">
+              <ion-item>
+                <ion-label position="stacked">Expected Result</ion-label>
+                <ion-textarea
+                  [(ngModel)]="expectedResult"
+                  placeholder="What did you expect to happen?"
+                  [autoGrow]="true"
+                  rows="2"
+                  [maxlength]="maxShortField"
+                ></ion-textarea>
+              </ion-item>
+            </div>
+
+            <div class="form-field">
+              <ion-item>
+                <ion-label position="stacked">Actual Result</ion-label>
+                <ion-textarea
+                  [(ngModel)]="actualResult"
+                  placeholder="What actually happened instead?"
+                  [autoGrow]="true"
+                  rows="2"
+                  [maxlength]="maxShortField"
+                ></ion-textarea>
+              </ion-item>
+            </div>
+          </div>
+
+          <!-- Feature request field -->
+          <div *ngIf="feedbackType === 'feature'" class="conditional-fields">
+            <div class="form-field">
+              <ion-item>
+                <ion-label position="stacked">Your Idea</ion-label>
+                <ion-textarea
+                  [(ngModel)]="featureDetails"
+                  placeholder="Explain the feature you think would make this app better"
+                  [autoGrow]="true"
+                  rows="5"
+                  [maxlength]="maxLongField"
+                ></ion-textarea>
+              </ion-item>
+            </div>
+          </div>
+
+          <ion-button
+            expand="block"
+            color="primary"
+            [disabled]="!canSubmit"
+            [class.loading-button]="isSubmitting"
+            (click)="submitFeedback()"
+          >
+            <ion-icon
+              [name]="feedbackType === 'bug' ? 'bug' : 'send'"
+              slot="start"
+            ></ion-icon>
+            {{ isSubmitting ? 'Sending...' : 'Submit Feedback' }}
+          </ion-button>
+
+          <p class="privacy-note">
+            <ion-icon name="lock-closed"></ion-icon>
+            Your feedback is delivered securely to our team and is never
+            shared publicly.
+          </p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <ion-toast
+    [isOpen]="showToast"
+    [message]="toastMessage"
+    [duration]="3500"
+    [color]="toastColor"
+    (didDismiss)="showToast = false"
+  ></ion-toast>
+</ion-content>
+
+<!-- Bottom Navigation -->
+<app-bottom-nav mainButton="home"></app-bottom-nav>

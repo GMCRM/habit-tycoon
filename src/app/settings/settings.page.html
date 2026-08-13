@@ -141,6 +141,30 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Support / Feedback Card -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="chatbubble-ellipses"></ion-icon>
+            Support
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="support-message">
+            Found a bug or have an idea for the app? We'd love to hear it.
+          </p>
+
+          <ion-button
+            expand="block"
+            color="secondary"
+            (click)="goToFeedback()"
+          >
+            <ion-icon name="chatbubble-ellipses" slot="start"></ion-icon>
+            Send Feedback
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Danger Zone Card -->
       <ion-card class="danger-zone-card">
         <ion-card-header>

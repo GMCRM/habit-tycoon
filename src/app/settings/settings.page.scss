@@ -407,6 +407,13 @@ ion-header {
   }
 }
 
+.support-message {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
 // Delete confirmation modal styling
 .delete-confirmation {
   .warning-section {

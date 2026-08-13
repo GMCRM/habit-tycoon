@@ -57,6 +57,11 @@ export const routes: Routes = [
     canActivate: [authGuard, onboardingRequiredGuard],
   },
   {
+    path: 'feedback',
+    loadComponent: () => import('./feedback/feedback.page').then( m => m.FeedbackPage),
+    canActivate: [authGuard, onboardingRequiredGuard],
+  },
+  {
     path: 'weekly-receipt',
     loadComponent: () => import('./weekly-receipt/weekly-receipt.page').then( m => m.WeeklyReceiptPage),
     canActivate: [authGuard, onboardingRequiredGuard],
