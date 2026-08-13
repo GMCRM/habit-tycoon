@@ -22,7 +22,14 @@ export class AuthService {
       const { data, error } = await this.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: this.getRedirectUrl()
+          redirectTo: this.getRedirectUrl(),
+          // Force Google's account chooser on every explicit sign-in click.
+          // Without this, Google silently reuses its own browser-side session
+          // (which our signOut() never touches) and skips straight back to the
+          // last account instead of letting the user pick a different one.
+          queryParams: {
+            prompt: 'select_account'
+          }
         }
       });
 
