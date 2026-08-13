@@ -193,6 +193,33 @@ ion-button {
   }
 }
 
+// Logout button styling - subtle steel-blue outline to match the game's glow treatment
+.logout-button {
+  --border-radius: 10px;
+  --border-width: 1.5px;
+  --border-color: rgba(120, 170, 255, 0.5);
+  --background: rgba(120, 170, 255, 0.08);
+  --color: #d6e4ff;
+  font-weight: 600;
+  transition: box-shadow 0.25s ease, transform 0.15s ease, background 0.25s ease;
+
+  ion-icon {
+    filter: drop-shadow(0 0 4px rgba(120, 170, 255, 0.5));
+  }
+
+  &:hover {
+    --background: rgba(120, 170, 255, 0.16);
+    --border-color: rgba(120, 170, 255, 0.8);
+    --box-shadow: 0 4px 14px rgba(120, 170, 255, 0.25);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    --background: rgba(120, 170, 255, 0.22);
+  }
+}
+
 // Loading state styling
 .loading-button {
   position: relative;
