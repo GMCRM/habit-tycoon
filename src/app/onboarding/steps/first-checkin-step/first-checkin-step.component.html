@@ -1,43 +1,74 @@
 <div class="step-body">
   <ng-container *ngIf="!result">
-    <div class="step-icon">{{ habit.business_icon }}</div>
-    <h1 class="step-title">Do your first check-in</h1>
+    <h1 class="step-title">Meet your habit card</h1>
     <p class="step-subtitle">
-      "{{ habit.business_name }}" is live. Tap the button once you've
-      actually done it — this is a real check-in and it pays out real
-      Habit Cash.
+      This is exactly what you'll see on your Home screen. "{{ habit.business_name }}" is
+      live — tap the green checkmark once you've actually done it. This is a real
+      check-in and it pays out real Habit Cash.
     </p>
-    <p class="step-subtitle" *ngIf="errorMessage">{{ errorMessage }}</p>
   </ng-container>
 
   <ng-container *ngIf="result">
-    <div class="step-icon">🎉</div>
     <h1 class="step-title">Nice work!</h1>
     <p class="step-subtitle">
-      You earned <strong>${{ result.earnings.toFixed(2) }}</strong> and
-      started a <strong>{{ result.streak }}-day streak</strong> on
-      "{{ habit.business_name }}".
+      You earned <strong>${{ result.earnings.toFixed(2) }}</strong> and started a
+      <strong>{{ result.streak }}-day streak</strong> on "{{ habit.business_name }}".
+      Your card stays right here — let's walk through what everything on it does.
     </p>
   </ng-container>
+
+  <div class="card-preview">
+    <app-habit-card
+      [hb]="habit"
+      [isFirst]="true"
+      [isLast]="true"
+      [gridExpanded]="gridExpanded"
+      [currentUserId]="currentUserId"
+      [userCash]="userCash"
+      [canDelete]="false"
+      (toggleGrid)="gridExpanded = !gridExpanded"
+      (changed)="onCardChanged()"
+      (offlineQueued)="onCardChanged()"
+    ></app-habit-card>
+  </div>
+
+  <div class="icon-walkthrough" *ngIf="result">
+    <div class="walkthrough-icon">
+      <ion-icon [name]="currentWalkStep.icon"></ion-icon>
+    </div>
+    <h3 class="walkthrough-label">{{ currentWalkStep.label }}</h3>
+    <p class="walkthrough-description">{{ currentWalkStep.description }}</p>
+
+    <div class="walkthrough-dots">
+      <span
+        *ngFor="let step of walkthroughSteps; let i = index"
+        class="dot"
+        [class.active]="i === walkthroughIndex"
+        (click)="goToWalkStep(i)"
+      ></span>
+    </div>
+  </div>
 </div>
 
-<div class="step-footer">
+<div class="step-footer" *ngIf="result">
   <ion-button
-    *ngIf="!result"
+    *ngIf="!isLastWalkStep"
+    expand="block"
+    color="primary"
+    class="step-cta"
+    (click)="nextWalkStep()"
+  >
+    Next
+    <ion-icon slot="end" name="arrow-forward"></ion-icon>
+  </ion-button>
+
+  <ion-button
+    *ngIf="isLastWalkStep"
     expand="block"
     color="success"
     class="step-cta"
-    [disabled]="completing"
-    (click)="completeNow()"
+    (click)="finish()"
   >
-    <ion-spinner *ngIf="completing" name="crescent"></ion-spinner>
-    <ng-container *ngIf="!completing">
-      <ion-icon slot="start" name="checkmark-circle"></ion-icon>
-      I did it — complete habit
-    </ng-container>
-  </ion-button>
-
-  <ion-button *ngIf="result" expand="block" color="primary" class="step-cta" (click)="continue()">
-    Continue
+    Got it, continue
   </ion-button>
 </div>

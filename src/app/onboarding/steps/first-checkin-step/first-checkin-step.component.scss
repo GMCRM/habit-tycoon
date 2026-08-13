@@ -1,0 +1,70 @@
+.card-preview {
+  margin: 8px 0 4px;
+
+  // The card is designed to sit on the app's dark background; drop the
+  // centered/flex-1 layout the shared step scss applies to everything else
+  // in .step-body so it renders at its natural size instead of stretching.
+  app-habit-card {
+    display: block;
+  }
+}
+
+.icon-walkthrough {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  margin-top: 4px;
+
+  .walkthrough-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(var(--ion-color-primary-rgb), 0.15);
+    margin-bottom: 10px;
+
+    ion-icon {
+      font-size: 24px;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .walkthrough-label {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .walkthrough-description {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .walkthrough-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 16px;
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18);
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+
+      &.active {
+        background: var(--ion-color-primary);
+        transform: scale(1.2);
+      }
+    }
+  }
+}
