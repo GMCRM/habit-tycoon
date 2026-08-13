@@ -1,7 +1,165 @@
-.leaderboard-row {
+.social-preview-frame {
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+// Mimics the real Social tab's ion-segment so the slide previews the
+// actual navigation the user will land on.
+.social-preview-tabs {
   display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.social-preview-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.1;
+
+  ion-icon {
+    font-size: 16px;
+  }
+
+  &.is-active {
+    color: #0b0b12;
+    background: var(--ion-color-primary);
+  }
+}
+
+.social-preview-body {
+  padding: 14px 14px 16px;
+  text-align: left;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 22px 26px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+
+  & + .leaderboard-row {
+    margin-top: 2px;
+  }
+
+  &.is-you {
+    background: rgba(255, 215, 0, 0.1);
+  }
+}
+
+.leaderboard-rank {
+  font-size: 13px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.leaderboard-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 215, 0, 0.16);
+  color: var(--ion-color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.leaderboard-name {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  .is-you & {
+    font-weight: 700;
+    color: #ffffff;
+  }
+}
+
+.leaderboard-worth {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-color-primary);
+}
+
+.social-preview-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+
+  ion-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+// Deliberately a fixed 3-up grid rather than a horizontal-scroll strip: this
+// slide already lives inside a swipeable onboarding carousel, so a second
+// horizontally-scrollable region here would fight that gesture.
+.social-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.social-feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px 6px 10px;
+  text-align: center;
+
+  strong {
+    font-size: 12.5px;
+    color: #ffffff;
+  }
+
+  p {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.social-feature-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 215, 0, 0.14);
+  color: var(--ion-color-primary);
+  margin-bottom: 2px;
+
+  ion-icon {
+    font-size: 16px;
+  }
 }

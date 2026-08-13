@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { people, trophy, storefront } from 'ionicons/icons';
+import { people, medalOutline, notificationsOutline, storefront, trendingUp } from 'ionicons/icons';
 import { AuthService } from '../../../services/auth.service';
 import { SocialService } from '../../../services/social.service';
 
@@ -10,6 +10,8 @@ interface LeaderboardPreviewEntry {
   name: string;
   net_worth: number;
 }
+
+const RANK_BADGES = ['🥇', '🥈', '🥉'];
 
 @Component({
   selector: 'app-social-preview-step',
@@ -21,11 +23,12 @@ interface LeaderboardPreviewEntry {
 export class SocialPreviewStepComponent implements OnInit {
   @Output() next = new EventEmitter<void>();
 
-  leaderboard: LeaderboardPreviewEntry[] = [];
-  loading = true;
+  // Seeded with "You" so the preview always has something to show while the
+  // real leaderboard loads, and gracefully if the user has no friends yet.
+  leaderboard: LeaderboardPreviewEntry[] = [{ name: 'You', net_worth: 0 }];
 
   constructor(private authService: AuthService, private socialService: SocialService) {
-    addIcons({ people, trophy, storefront });
+    addIcons({ people, medalOutline, notificationsOutline, storefront, trendingUp });
   }
 
   async ngOnInit() {
@@ -33,12 +36,16 @@ export class SocialPreviewStepComponent implements OnInit {
       const { data: { user } } = await this.authService.getUser();
       if (user) {
         const leaderboard = await this.socialService.getFriendsLeaderboard(user.id);
-        this.leaderboard = (leaderboard || []).slice(0, 3);
+        if (leaderboard && leaderboard.length > 1) {
+          this.leaderboard = leaderboard.slice(0, 3);
+        }
       }
     } catch (error) {
       console.error('❌ SocialPreviewStep: failed to load leaderboard preview:', error);
-    } finally {
-      this.loading = false;
     }
+  }
+
+  rankBadge(index: number): string {
+    return RANK_BADGES[index] ?? `#${index + 1}`;
   }
 }
