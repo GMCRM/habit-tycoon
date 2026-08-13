@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { people, medalOutline, notificationsOutline, storefront } from 'ionicons/icons';
+import { people, medalOutline, notificationsOutline, storefront, trendingUp } from 'ionicons/icons';
 import { AuthService } from '../../../services/auth.service';
 import { SocialService } from '../../../services/social.service';
 
@@ -28,7 +28,7 @@ export class SocialPreviewStepComponent implements OnInit {
   leaderboard: LeaderboardPreviewEntry[] = [{ name: 'You', net_worth: 0 }];
 
   constructor(private authService: AuthService, private socialService: SocialService) {
-    addIcons({ people, medalOutline, notificationsOutline, storefront });
+    addIcons({ people, medalOutline, notificationsOutline, storefront, trendingUp });
   }
 
   async ngOnInit() {
