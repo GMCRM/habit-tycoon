@@ -6,7 +6,7 @@ import {
   IonContent, IonHeader, IonTitle, IonToolbar,
   IonCard, IonCardContent, IonSegment, IonSegmentButton,
   IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
-  IonAccordion, IonAccordionGroup, IonItem,
+  IonAccordion, IonAccordionGroup, IonItem, IonToggle,
   ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { Subscription } from 'rxjs';
@@ -38,7 +38,7 @@ import {
     IonContent, IonHeader, IonTitle, IonToolbar,
     IonCard, IonSegment, IonSegmentButton,
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
-    IonAccordion, IonAccordionGroup, IonItem,
+    IonAccordion, IonAccordionGroup, IonItem, IonToggle,
     BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe,
     JointVentureNotificationCardComponent
   ],
@@ -597,6 +597,32 @@ export class SocialPage implements OnInit, OnDestroy {
     });
 
     await alert.present();
+  }
+
+  // Toggling either setting only affects this specific friend's ability to
+  // view/buy the current user's *single-owner* businesses going forward —
+  // stocks already purchased are unaffected, and joint ventures (having
+  // multiple co-owners) always stay visible to friends regardless of this
+  // toggle.
+  async onFriendVisibilityToggle(friend: Friend, field: 'show_stocks' | 'show_marketplace', checked: boolean) {
+    if (!this.currentUser) return;
+
+    const previous = friend[field];
+    friend[field] = checked;
+
+    try {
+      await this.socialService.setFriendVisibility(this.currentUser.id, friend.friend_profile.id, { [field]: checked });
+    } catch (error) {
+      console.error('Error updating friend visibility setting:', error);
+      friend[field] = previous;
+
+      const toast = await this.toastController.create({
+        message: 'Failed to update setting',
+        duration: 3000,
+        color: 'danger'
+      });
+      await toast.present();
+    }
   }
 
   formatTimeAgo(date: string, _tick = this.timeRefreshTick): string {

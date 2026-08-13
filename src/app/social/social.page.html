@@ -92,6 +92,26 @@
                     <ion-icon name="trash-outline"></ion-icon>
                   </ion-button>
                 </div>
+                <div class="friend-visibility-settings">
+                  <div class="visibility-row">
+                    <ion-label>
+                      Let them see my stocks
+                    </ion-label>
+                    <ion-toggle
+                      [checked]="friend.show_stocks"
+                      (ionChange)="onFriendVisibilityToggle(friend, 'show_stocks', $event.detail.checked)"
+                    ></ion-toggle>
+                  </div>
+                  <div class="visibility-row">
+                    <ion-label>
+                      Let them see my marketplace listings
+                    </ion-label>
+                    <ion-toggle
+                      [checked]="friend.show_marketplace"
+                      (ionChange)="onFriendVisibilityToggle(friend, 'show_marketplace', $event.detail.checked)"
+                    ></ion-toggle>
+                  </div>
+                </div>
               </ion-card-content>
             </ion-card>
           </div>

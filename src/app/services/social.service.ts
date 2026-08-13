@@ -18,6 +18,15 @@ export interface Friend {
     cash: number;
     net_worth: number;
   };
+  // Whether this friend can see the current user's stocks / marketplace
+  // listings. Defaults to true (visible) when no row exists yet.
+  show_stocks: boolean;
+  show_marketplace: boolean;
+}
+
+export interface FriendVisibilitySettings {
+  show_stocks: boolean;
+  show_marketplace: boolean;
 }
 
 export interface SocialPost {
@@ -214,15 +223,68 @@ export class SocialService {
       );
 
       // Remove duplicates based on friend profile ID
-      const uniqueFriends = enrichedFriends.filter((friend, index, self) => 
+      const uniqueFriends = enrichedFriends.filter((friend, index, self) =>
         index === self.findIndex(f => f.friend_profile.id === friend.friend_profile.id)
       );
 
-      return uniqueFriends;
+      // Merge in this user's per-friend stock/marketplace visibility toggles
+      // (defaults to visible when no row exists for a given friend yet).
+      const visibilityMap = await this.getFriendVisibilitySettings(
+        userId,
+        uniqueFriends.map(f => f.friend_profile.id)
+      );
+
+      return uniqueFriends.map(friend => ({
+        ...friend,
+        show_stocks: visibilityMap[friend.friend_profile.id]?.show_stocks ?? true,
+        show_marketplace: visibilityMap[friend.friend_profile.id]?.show_marketplace ?? true
+      }));
     } catch (error) {
       console.error('Error loading friends:', error);
       return [];
     }
+  }
+
+  // Per-friend visibility settings (stocks / marketplace), keyed by friend id.
+  async getFriendVisibilitySettings(userId: string, friendIds: string[]): Promise<Record<string, FriendVisibilitySettings>> {
+    if (friendIds.length === 0) {
+      return {};
+    }
+
+    try {
+      const { data, error } = await this.supabase
+        .from('friend_visibility_settings')
+        .select('friend_id, show_stocks, show_marketplace')
+        .eq('owner_id', userId)
+        .in('friend_id', friendIds);
+
+      if (error) {
+        console.error('Error loading friend visibility settings:', error);
+        return {};
+      }
+
+      const map: Record<string, FriendVisibilitySettings> = {};
+      for (const row of data || []) {
+        map[row.friend_id] = { show_stocks: row.show_stocks, show_marketplace: row.show_marketplace };
+      }
+      return map;
+    } catch (error) {
+      console.error('Error loading friend visibility settings:', error);
+      return {};
+    }
+  }
+
+  // Toggle whether a specific friend can see the current user's stocks and/or
+  // marketplace listings. Only the fields present in `updates` are changed.
+  async setFriendVisibility(userId: string, friendId: string, updates: Partial<FriendVisibilitySettings>): Promise<void> {
+    const { error } = await this.supabase
+      .from('friend_visibility_settings')
+      .upsert(
+        { owner_id: userId, friend_id: friendId, ...updates, updated_at: new Date().toISOString() },
+        { onConflict: 'owner_id,friend_id' }
+      );
+
+    if (error) throw error;
   }
 
   // Get pending friend requests (incoming)

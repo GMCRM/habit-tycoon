@@ -467,6 +467,34 @@ ion-content {
       }
     }
   }
+
+  .friend-visibility-settings {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    .visibility-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+
+      &:not(:last-child) {
+        margin-bottom: 8px;
+      }
+
+      ion-label {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85rem;
+        flex: 1;
+      }
+
+      ion-toggle {
+        flex-shrink: 0;
+        --track-background-checked: var(--ion-color-primary);
+      }
+    }
+  }
 }
 
 // Leaderboard section — single unified card
