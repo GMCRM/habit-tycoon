@@ -193,6 +193,33 @@ ion-button {
   }
 }
 
+// Logout button styling - subtle steel-blue outline to match the game's glow treatment
+.logout-button {
+  --border-radius: 10px;
+  --border-width: 1.5px;
+  --border-color: rgba(120, 170, 255, 0.5);
+  --background: rgba(120, 170, 255, 0.08);
+  --color: #d6e4ff;
+  font-weight: 600;
+  transition: box-shadow 0.25s ease, transform 0.15s ease, background 0.25s ease;
+
+  ion-icon {
+    filter: drop-shadow(0 0 4px rgba(120, 170, 255, 0.5));
+  }
+
+  &:hover {
+    --background: rgba(120, 170, 255, 0.16);
+    --border-color: rgba(120, 170, 255, 0.8);
+    --box-shadow: 0 4px 14px rgba(120, 170, 255, 0.25);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    --background: rgba(120, 170, 255, 0.22);
+  }
+}
+
 // Loading state styling
 .loading-button {
   position: relative;
@@ -324,53 +351,6 @@ ion-header {
   ion-button {
     height: 44px;
     font-size: 0.95rem;
-  }
-}
-
-// Google account info card styling
-.google-info-card {
-  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
-  border: 2px solid #4169E1;
-  box-shadow: 0 8px 32px rgba(65, 105, 225, 0.4);
-  
-  ion-card-title {
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    
-    ion-icon {
-      font-size: 1.5rem;
-      color: #FFD700;
-    }
-  }
-}
-
-.google-info {
-  .google-message {
-    color: #ffffff;
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 12px;
-  }
-
-  .google-tip {
-    color: #b8c6db;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin-bottom: 0;
-  }
-
-  .google-link {
-    color: #FFD700;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: #FFF;
-      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
-    }
   }
 }
 

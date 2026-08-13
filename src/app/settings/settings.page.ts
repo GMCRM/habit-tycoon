@@ -23,7 +23,7 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning, logOut, chatbubbleEllipses } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, logOutOutline, chatbubbleEllipses } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -83,7 +83,7 @@ export class SettingsPage implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOut,chatbubbleEllipses});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOutOutline,chatbubbleEllipses});
   }
 
   async ngOnInit() {
@@ -121,13 +121,12 @@ export class SettingsPage implements OnInit {
 
     this.isUpdatingProfile = true;
     try {
-      await this.authService.updateUserProfile(this.currentUser.id, {
-        name: this.username.trim()
-      });
+      const updated = await this.authService.updateUsername(this.username.trim());
+      this.username = updated?.name ?? this.username.trim();
       this.showToastMessage('Profile updated successfully!', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      this.showToastMessage('Failed to update profile', 'danger');
+      this.showToastMessage(error?.message || 'Failed to update profile', 'danger');
     } finally {
       this.isUpdatingProfile = false;
     }
