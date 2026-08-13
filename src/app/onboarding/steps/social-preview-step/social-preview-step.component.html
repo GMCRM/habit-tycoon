@@ -2,24 +2,64 @@
   <div class="step-icon">🧑‍🤝‍🧑</div>
   <h1 class="step-title">You're not playing alone</h1>
   <p class="step-subtitle">
-    The Social tab has a friends leaderboard, and a friends-only Marketplace
-    where you can buy and sell businesses with people you know.
+    The Social tab connects you with friends — race them on the leaderboard,
+    trade on a friends-only Marketplace, and nudge each other to keep streaks alive.
   </p>
 
-  <div class="info-card" *ngIf="!loading && leaderboard.length > 1">
-    <p><strong><ion-icon name="trophy"></ion-icon> Leaderboard preview</strong></p>
-    <div *ngFor="let entry of leaderboard; let i = index" class="leaderboard-row">
-      <span>#{{ i + 1 }} {{ entry.name }}</span>
-      <span>${{ entry.net_worth | number:'1.0-0' }}</span>
+  <div class="social-preview-frame">
+    <div class="social-preview-tabs">
+      <div class="social-preview-tab is-active">
+        <ion-icon name="medal-outline"></ion-icon>
+        <span>Leaderboard</span>
+      </div>
+      <div class="social-preview-tab">
+        <ion-icon name="notifications-outline"></ion-icon>
+        <span>Notifications</span>
+      </div>
+      <div class="social-preview-tab">
+        <ion-icon name="people"></ion-icon>
+        <span>Friends</span>
+      </div>
+      <div class="social-preview-tab">
+        <ion-icon name="storefront"></ion-icon>
+        <span>Marketplace</span>
+      </div>
+    </div>
+
+    <div class="social-preview-body">
+      <div
+        *ngFor="let entry of leaderboard; let i = index"
+        class="leaderboard-row"
+        [class.is-you]="entry.name === 'You'"
+      >
+        <span class="leaderboard-rank">{{ rankBadge(i) }}</span>
+        <span class="leaderboard-avatar">{{ entry.name.charAt(0) }}</span>
+        <span class="leaderboard-name">{{ entry.name }}</span>
+        <span class="leaderboard-worth">${{ entry.net_worth | number:'1.0-0' }}</span>
+      </div>
+
+      <p class="social-preview-hint" *ngIf="leaderboard.length <= 1">
+        <ion-icon name="people"></ion-icon>
+        Add friends to fill out the board and start competing.
+      </p>
     </div>
   </div>
 
-  <div class="info-card" *ngIf="!loading && leaderboard.length <= 1">
-    <p><ion-icon name="people"></ion-icon> Add friends later to start a leaderboard and trade businesses on the Marketplace.</p>
-  </div>
-
-  <div class="info-card">
-    <p><ion-icon name="storefront"></ion-icon> <strong>Marketplace</strong> — when a friend upgrades or sells a business, it can show up here for you to buy.</p>
+  <div class="feature-row">
+    <div class="feature-chip">
+      <span class="feature-chip-icon"><ion-icon name="storefront"></ion-icon></span>
+      <div class="feature-chip-copy">
+        <strong>Marketplace</strong>
+        <p>When a friend upgrades or sells a business, it can show up here for you to buy.</p>
+      </div>
+    </div>
+    <div class="feature-chip">
+      <span class="feature-chip-icon"><ion-icon name="notifications-outline"></ion-icon></span>
+      <div class="feature-chip-copy">
+        <strong>Reminders</strong>
+        <p>Poke a friend who's slipping on a streak, or get nudged back into the game yourself.</p>
+      </div>
+    </div>
   </div>
 </div>
 
