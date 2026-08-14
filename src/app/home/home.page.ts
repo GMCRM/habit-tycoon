@@ -342,14 +342,30 @@ export class HomePage implements OnInit, OnDestroy {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(habitBusiness);
   }
 
+  /**
+   * Whether a habit-business should show in the "Done" group. For joint
+   * ventures this is the current user's own check-in for today, not
+   * whether every co-owner has checked in — a JV habit shouldn't sit in
+   * the way of a user's remaining to-dos just because a co-owner hasn't
+   * gotten to it yet.
+   */
+  isDoneForDisplay(habitBusiness: HabitBusiness): boolean {
+    if (habitBusiness.is_joint_venture) {
+      const rows = this.jvStatusByBusinessId[habitBusiness.id] || [];
+      const mine = rows.find(r => r.co_owner_id === this.currentUser?.id);
+      return !!mine?.checked_in_today;
+    }
+    return this.isGoalCompleted(habitBusiness);
+  }
+
   /** Habit-businesses not yet completed for the current period, in display order. */
   get todoHabitBusinesses(): HabitBusiness[] {
-    return this.habitBusinesses.filter(hb => !this.isGoalCompleted(hb));
+    return this.habitBusinesses.filter(hb => !this.isDoneForDisplay(hb));
   }
 
   /** Habit-businesses completed for the current period, in display order. */
   get doneHabitBusinesses(): HabitBusiness[] {
-    return this.habitBusinesses.filter(hb => this.isGoalCompleted(hb));
+    return this.habitBusinesses.filter(hb => this.isDoneForDisplay(hb));
   }
 
   /** *ngFor trackBy for habit-business cards — keeps DOM nodes stable across reloads (fresh objects each fetch) instead of destroying/recreating every card. */
@@ -552,7 +568,7 @@ export class HomePage implements OnInit, OnDestroy {
    * Move a habit-business up or down within its own group (to-do or done).
    */
   async moveHabitBusiness(habitBusiness: HabitBusiness, direction: 'up' | 'down') {
-    const group = this.isGoalCompleted(habitBusiness) ? this.doneHabitBusinesses : this.todoHabitBusinesses;
+    const group = this.isDoneForDisplay(habitBusiness) ? this.doneHabitBusinesses : this.todoHabitBusinesses;
     const groupIndex = group.findIndex(hb => hb.id === habitBusiness.id);
     const targetGroupIndex = direction === 'up' ? groupIndex - 1 : groupIndex + 1;
 
