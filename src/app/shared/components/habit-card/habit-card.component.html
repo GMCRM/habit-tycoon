@@ -61,21 +61,6 @@
       ></ion-icon>
     </div>
 
-    <!-- Show completed status if goal is fully completed but no undo available
-         (either zero progress left to undo, or it's a rest day — rest days show
-         in Done regardless of whether the habit was actually completed) -->
-    <ion-button
-      *ngIf="isGoalCompleted() && ((hb.current_progress || 0) === 0 || !isTodayActiveDay())"
-      fill="outline"
-      color="medium"
-      size="small"
-      disabled
-    >
-      <ion-icon
-        name="checkmark-circle"
-        slot="icon-only"
-      ></ion-icon>
-    </ion-button>
   </div>
 
   <!-- Joint venture check-in (top-right corner): no backdating — see
@@ -107,15 +92,6 @@
       <span class="progress-badge">{{ jvUndoSecondsRemaining() }}s</span>
     </div>
 
-    <ion-button
-      *ngIf="isJvCheckedInToday() && !canUndoJvCheckIn()"
-      fill="outline"
-      color="medium"
-      size="small"
-      disabled
-    >
-      <ion-icon name="checkmark-circle" slot="icon-only"></ion-icon>
-    </ion-button>
   </div>
 
   <div class="item-content">
