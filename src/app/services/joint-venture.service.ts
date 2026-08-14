@@ -33,6 +33,12 @@ export interface JointVentureCheckinResult {
   total?: number;
 }
 
+export interface JointVentureUndoResult {
+  success: boolean;
+  error?: string;
+  earnings?: number;
+}
+
 export interface JointVentureUpgradeResult {
   success: boolean;
   error?: string;
@@ -65,6 +71,8 @@ export interface JointVentureStatusRow {
   co_owner_name: string;
   is_creator: boolean;
   checked_in_today: boolean;
+  /** When this co-owner checked in today, or null if they haven't — drives the client-side undo-window countdown. */
+  checked_in_at: string | null;
 }
 
 /** One co-owner's own view of a proposal/upgrade they're a party to. */
@@ -170,6 +178,18 @@ export class JointVentureService {
     return data as JointVentureCheckinResult;
   }
 
+  /** Undo today's check-in — server-enforced 60s grace window, see undo_joint_venture_checkin. */
+  async undoCheckIn(habitBusinessId: string): Promise<JointVentureUndoResult> {
+    const { data, error } = await this.supabase.rpc('undo_joint_venture_checkin', {
+      p_habit_business_id: habitBusinessId
+    });
+    if (error) {
+      console.error('Error undoing joint venture check-in:', error);
+      throw error;
+    }
+    return data as JointVentureUndoResult;
+  }
+
   /** Every joint venture business this user co-owns (creator or invitee) — merge with getUserHabitBusinesses() and dedupe by id. */
   async getJointVentureBusinessesForCoOwner(userId: string): Promise<HabitBusiness[]> {
     const { data, error } = await this.supabase
@@ -207,7 +227,8 @@ export class JointVentureService {
       co_owner_id: row.co_owner_id,
       co_owner_name: row.co_owner_name,
       is_creator: row.is_creator,
-      checked_in_today: row.checked_in_today
+      checked_in_today: row.checked_in_today,
+      checked_in_at: row.checked_in_at ?? null
     }));
   }
 

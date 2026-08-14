@@ -60,6 +60,9 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   showEarningsBreakdown = false;
   countdown = '...';
 
+  /** How long after a joint-venture check-in the undo button stays available. */
+  private readonly JV_UNDO_WINDOW_MS = 60 * 1000;
+
   readonly allDows = [0, 1, 2, 3, 4, 5, 6];
   readonly dayChipLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   readonly today = new Date();
@@ -143,6 +146,22 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     return this.hb.user_id === this.currentUserId;
   }
 
+  private jvMyStatusRow(): JointVentureStatusRow | undefined {
+    return this.jvStatusRows.find(r => r.co_owner_id === this.currentUserId);
+  }
+
+  /** Seconds left in the undo grace window, 0 once it's expired or there's nothing to undo. */
+  jvUndoSecondsRemaining(): number {
+    const checkedInAt = this.jvMyStatusRow()?.checked_in_at;
+    if (!checkedInAt) return 0;
+    const elapsedMs = Date.now() - new Date(checkedInAt).getTime();
+    return Math.max(0, Math.ceil((this.JV_UNDO_WINDOW_MS - elapsedMs) / 1000));
+  }
+
+  canUndoJvCheckIn(): boolean {
+    return this.isJvCheckedInToday() && this.jvUndoSecondsRemaining() > 0;
+  }
+
   moveUp() {
     this.reorder.emit('up');
   }
@@ -179,6 +198,18 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     this.undoing = true;
     try {
       await this.undoHabitCompletion();
+    } finally {
+      this.undoing = false;
+    }
+  }
+
+  /** Undo a joint-venture check-in on a single tap, while still inside the grace window. */
+  async handleJvUndoTap(event: Event) {
+    event.preventDefault();
+    if (this.undoing) return;
+    this.undoing = true;
+    try {
+      await this.undoJvCheckIn();
     } finally {
       this.undoing = false;
     }
@@ -233,6 +264,20 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       this.changed.emit();
     } catch (error: any) {
       await this.toast(`❌ ${error?.message || 'Failed to check in'}`, 'danger');
+    }
+  }
+
+  private async undoJvCheckIn() {
+    try {
+      const result = await this.jointVentureService.undoCheckIn(this.hb.id);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to undo check-in');
+      }
+      await this.toast(`↩️ Check-in undone for "${this.hb.business_name}"! -$${(result.earnings || 0).toFixed(2)} removed`, 'warning');
+      this.habitUpdateService.emitHabitUndo(this.hb.id);
+      this.changed.emit();
+    } catch (error: any) {
+      await this.toast(`❌ ${error?.message || 'Failed to undo check-in'}`, 'danger');
     }
   }
 

@@ -100,9 +100,12 @@
     </ion-button>
   </div>
 
-  <!-- Joint venture check-in (top-right corner): no undo, no backdating —
-       see runJointVentureCheckIn(). Checked-in state comes from
-       jvStatusRows, not current_progress (never touched for a joint venture). -->
+  <!-- Joint venture check-in (top-right corner): no backdating — see
+       runJointVentureCheckIn(). Checked-in state comes from jvStatusRows,
+       not current_progress (never touched for a joint venture). A same-day
+       check-in can be undone for 60s after it's made (see
+       jvUndoSecondsRemaining()/undoJvCheckIn()) to cover an accidental tap
+       while scrolling; after that it locks in like a solo habit's does. -->
   <div class="corner-controls corner-top-right" *ngIf="hb.is_joint_venture">
     <div
       *ngIf="!isJvCheckedInToday()"
@@ -114,8 +117,20 @@
       <ion-icon name="checkmark-circle" class="button-icon"></ion-icon>
     </div>
 
+    <!-- Just checked in — still inside the undo grace window -->
+    <div
+      *ngIf="canUndoJvCheckIn()"
+      class="hold-complete-button is-undo-mode"
+      [class.is-undoing]="undoing"
+      aria-label="Undo check-in"
+      (click)="handleJvUndoTap($event)"
+    >
+      <ion-icon name="arrow-undo" class="button-icon"></ion-icon>
+      <span class="progress-badge">{{ jvUndoSecondsRemaining() }}s</span>
+    </div>
+
     <ion-button
-      *ngIf="isJvCheckedInToday()"
+      *ngIf="isJvCheckedInToday() && !canUndoJvCheckIn()"
       fill="outline"
       color="medium"
       size="small"
