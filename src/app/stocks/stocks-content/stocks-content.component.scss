@@ -604,24 +604,13 @@
             letter-spacing: 0.5px;
             margin-bottom: 4px;
           }
-          
-          .profit-loss {
-            font-size: 0.9rem;
-            font-weight: 600;
+        }
 
-            &.profit {
-              color: #10dc60;
-            }
-
-            &.loss {
-              color: #f53d3d;
-            }
-
-            .invested-note {
-              font-weight: 500;
-              color: rgba(255, 255, 255, 0.55);
-            }
-          }
+        .earnings-section-actions {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 4px;
         }
 
         .checkin-action {
@@ -1463,10 +1452,6 @@
           
           .earnings-label {
             font-size: 0.7rem;
-          }
-          
-          .profit-loss {
-            font-size: 0.8rem;
           }
         }
         

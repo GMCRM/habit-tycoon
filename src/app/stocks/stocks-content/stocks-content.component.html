@@ -565,29 +565,31 @@
                     ${{ (holding.currentPrice || 0) | number: '1.2-2' }}
                   </div>
                   <div class="earnings-label">current price</div>
-                  <div
-                    class="profit-loss"
-                    [class.profit]="holding.profitLoss >= 0"
-                    [class.loss]="holding.profitLoss < 0"
-                  >
-                    {{ (holding.profitLoss || 0) >= 0 ? '+$' : '-$' }}{{
-                    absValue(holding.profitLoss || 0) | number: '1.2-2' }}
-                    <span class="invested-note"
-                      >(${{ (holding.totalInvested || 0) | number: '1.2-2' }} invested)</span
-                    >
-                  </div>
                 </div>
 
-                <!-- Stockholders Action -->
-                <ion-button
-                  fill="clear"
-                  color="tertiary"
-                  size="small"
-                  (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
-                  style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                >
-                  <ion-icon name="people" slot="icon-only"></ion-icon>
-                </ion-button>
+                <div class="earnings-section-actions">
+                  <!-- Stockholders Action -->
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
+                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                  >
+                    <ion-icon name="people" slot="icon-only"></ion-icon>
+                  </ion-button>
+
+                  <!-- Full Stat Breakdown Action -->
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    (click)="showHoldingStatsBreakdown(holding)"
+                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                  >
+                    <ion-icon name="stats-chart" slot="icon-only"></ion-icon>
+                  </ion-button>
+                </div>
 
                 <div class="holding-actions-row">
                   <ion-button
