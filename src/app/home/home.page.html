@@ -73,8 +73,8 @@
         </div>
       </div>
 
-      <!-- Simple fallback if no user -->
-      <div *ngIf="!currentUser" class="guest-view">
+      <!-- Simple fallback if no user (only after auth check completes, to avoid a flash before login state is known) -->
+      <div *ngIf="hasCheckedAuth && !currentUser" class="guest-view">
         <h2>Welcome to Habit Tycoon! 💰</h2>
         <p>Your adventure awaits...</p>
         <ion-button routerLink="/login" color="primary">
