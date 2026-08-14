@@ -496,6 +496,10 @@ button, span, div, ion-button {
       border-radius: 12px;
       margin: 12px 0;
       padding: 16px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
 
       .skeleton-icon-wrap {
         display: flex;
