@@ -657,6 +657,12 @@ export class SocialPage implements OnInit, OnDestroy {
     await this.loadSocialData();
   }
 
+  /** Called after a joint-venture notification card is deleted — the card already deleted itself server-side. */
+  async onJointVentureNotificationDeleted(notificationId: string) {
+    this.notifications = this.notifications.filter(n => n.id !== notificationId);
+    this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
+  }
+
   async markNotificationAsRead(notificationId: string) {
     try {
       await this.socialService.markPokeAsRead(notificationId);

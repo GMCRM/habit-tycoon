@@ -30,8 +30,11 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
   @Input() notification: any;
   /** Emitted after any action resolves successfully — parent should reload its notifications list + badge count. */
   @Output() resolved = new EventEmitter<void>();
+  /** Emitted after the notification itself is deleted — parent should remove it from its list. */
+  @Output() deleted = new EventEmitter<void>();
 
   acting = false;
+  deleting = false;
   now = Date.now();
   private tickSub?: Subscription;
 
@@ -197,6 +200,39 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
     } catch (e: any) {
       await this.finishAction(false, e?.message || 'Failed to cast vote');
     }
+  }
+
+  async onDelete() {
+    if (this.deleting || this.acting) return;
+
+    const alert = await this.alertController.create({
+      header: 'Delete Notification',
+      message: 'Remove this notification?',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: async () => {
+            this.deleting = true;
+            try {
+              await this.socialService.deleteNotification(this.notification.id);
+              this.deleted.emit();
+            } catch (e: any) {
+              this.deleting = false;
+              const toast = await this.toastController.create({
+                message: e?.message || 'Failed to delete notification',
+                duration: 3000,
+                color: 'danger',
+                position: 'top'
+              });
+              await toast.present();
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   private async confirmDecline(message: string): Promise<boolean> {

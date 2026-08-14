@@ -1,6 +1,17 @@
 <div class="jv-notification-card" [class.unread]="!notification.is_read">
   <ion-badge *ngIf="!notification.is_read" color="primary" class="new-badge">New</ion-badge>
 
+  <ion-button
+    fill="clear"
+    size="small"
+    color="danger"
+    class="jv-delete-button"
+    [disabled]="deleting"
+    (click)="onDelete()"
+  >
+    <ion-icon name="trash-outline"></ion-icon>
+  </ion-button>
+
   <!-- Icon: largest element, front and center — mirrors the home-screen habit-business card -->
   <div class="jv-hero">
     <div class="jv-icon-wrap">

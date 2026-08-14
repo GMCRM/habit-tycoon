@@ -24,6 +24,16 @@
   right: 10px;
 }
 
+.jv-delete-button {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  margin: 0;
+  --padding-start: 6px;
+  --padding-end: 6px;
+  height: 32px;
+}
+
 .jv-hero {
   display: flex;
   justify-content: center;

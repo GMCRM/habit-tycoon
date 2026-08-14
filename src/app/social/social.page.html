@@ -237,6 +237,7 @@
                 *ngIf="isJointVentureNotification(notification)"
                 [notification]="notification"
                 (resolved)="onJointVentureNotificationResolved()"
+                (deleted)="onJointVentureNotificationDeleted(notification.id)"
               ></app-joint-venture-notification-card>
 
             <ion-card
