@@ -301,6 +301,28 @@ button, span, div, ion-button {
 
   }
 
+  // Placeholders shown in place of the name/tagline/amounts while the profile
+  // is still loading — sized to match the real content so nothing reflows
+  // when it swaps in, and the surrounding box never has to mount/unmount.
+  .welcome-name-skeleton {
+    width: 140px;
+    height: 1.7rem;
+    border-radius: 4px;
+  }
+
+  .tagline-skeleton {
+    width: 65%;
+    height: 0.9rem;
+    border-radius: 4px;
+  }
+
+  .amount-skeleton {
+    width: 56px;
+    height: 1.4rem;
+    border-radius: 4px;
+    margin: 0 auto;
+  }
+
   .cash-display {
     display: flex;
     gap: 12px;

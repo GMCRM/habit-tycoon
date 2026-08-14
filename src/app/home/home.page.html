@@ -35,18 +35,28 @@
         📡 {{ pendingSyncCount }} action{{ pendingSyncCount === 1 ? '' : 's' }} waiting to sync — will complete automatically when you're back online.
       </div>
 
-      <!-- User Stats Header -->
-      <div *ngIf="currentUser" class="user-info">
+      <!-- User Stats Header: always mounted so the box never disappears/reappears —
+           only the data inside swaps from a skeleton to the real value once loaded. -->
+      <div class="user-info">
         <div class="welcome-section">
           <div class="welcome-text">
-            <h2>
+            <h2 *ngIf="currentUser; else welcomeNameSkeleton">
               Welcome back,
               <span>
                 {{ userProfile?.name || currentUser?.user_metadata?.['name'] ||
                 'Entrepreneur' }}!
               </span>
             </h2>
-            <p>{{ currentTagline }}</p>
+            <ng-template #welcomeNameSkeleton>
+              <h2>
+                Welcome back,
+                <span><ion-skeleton-text animated class="welcome-name-skeleton"></ion-skeleton-text></span>
+              </h2>
+            </ng-template>
+            <p *ngIf="currentUser; else taglineSkeleton">{{ currentTagline }}</p>
+            <ng-template #taglineSkeleton>
+              <p><ion-skeleton-text animated class="tagline-skeleton"></ion-skeleton-text></p>
+            </ng-template>
           </div>
         </div>
         <div class="cash-display">
@@ -56,7 +66,10 @@
             (click)="showExactCashValue('Net Worth', userProfile?.net_worth || 0)"
           >
             <div class="stat-text">
-              <div class="networth-amount clickable">${{ getDisplayedNetWorth() }}</div>
+              <div class="networth-amount clickable" *ngIf="currentUser; else networthSkeleton">${{ getDisplayedNetWorth() }}</div>
+              <ng-template #networthSkeleton>
+                <ion-skeleton-text animated class="amount-skeleton"></ion-skeleton-text>
+              </ng-template>
               <div class="networth-label">NET WORTH</div>
             </div>
           </div>
@@ -66,7 +79,10 @@
             (click)="showExactCashValue('Habit Cash', userProfile?.cash || 0)"
           >
             <div class="stat-text">
-              <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
+              <div class="cash-amount clickable" *ngIf="currentUser; else cashSkeleton">${{ getDisplayedCash() }}</div>
+              <ng-template #cashSkeleton>
+                <ion-skeleton-text animated class="amount-skeleton"></ion-skeleton-text>
+              </ng-template>
               <div class="cash-label">HABIT CASH</div>
             </div>
           </div>
