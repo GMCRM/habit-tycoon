@@ -113,6 +113,26 @@
         </ion-card-content>
       </ion-card>
 
+      <!-- Sound Settings Card -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="volume-high"></ion-icon>
+            Sound
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-item lines="none">
+            <ion-label>Sound Effects</ion-label>
+            <ion-toggle
+              slot="end"
+              [checked]="soundEffectsEnabled"
+              (ionChange)="onSoundEffectsToggle($event)"
+            ></ion-toggle>
+          </ion-item>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Support / Feedback Card -->
       <ion-card>
         <ion-card-header>

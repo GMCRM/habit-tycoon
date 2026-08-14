@@ -13,6 +13,7 @@ import { OfflineQueuedError } from '../../../services/offline-queue.service';
 import { HabitUpdateService } from '../../../services/habit-update.service';
 import { HabitIntervalService } from '../../../services/habit-interval.service';
 import { CountdownTickService } from '../../../services/countdown-tick.service';
+import { SoundService } from '../../../services/sound.service';
 import { HabitGridComponent } from '../habit-grid/habit-grid.component';
 import { StockChartComponent } from '../stock-chart/stock-chart.component';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
@@ -75,6 +76,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     private habitUpdateService: HabitUpdateService,
     private habitIntervalService: HabitIntervalService,
     private countdownTickService: CountdownTickService,
+    private soundService: SoundService,
     private toastController: ToastController,
     private alertController: AlertController,
     private modalController: ModalController,
@@ -234,6 +236,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   private async completeHabitBusiness() {
     try {
       const { earnings } = await this.habitBusinessService.completeHabit(this.hb.id);
+      this.soundService.playComplete();
       await this.toast(`🎉 Habit "${this.hb.business_name}" completed! +$${earnings.toFixed(2)} earned`, 'success');
       this.habitUpdateService.emitHabitCompletion(this.hb.id);
       this.changed.emit();
@@ -259,6 +262,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       const message = result.finalized
         ? `🎉 Everyone checked in! +$${earnings} earned — streak now ${result.streak} day${result.streak === 1 ? '' : 's'}!`
         : `✅ You're in! +$${earnings} earned — waiting on ${remaining} more co-owner${remaining === 1 ? '' : 's'} for today's streak bonus.`;
+      this.soundService.playComplete();
       await this.toast(message, 'success', 4000);
       this.habitUpdateService.emitHabitCompletion(this.hb.id);
       this.changed.emit();
@@ -305,6 +309,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
             (async () => {
               try {
                 await this.habitBusinessService.completeHabitYesterday(this.hb.id);
+                this.soundService.playComplete();
                 await this.toast(`✅ "${this.hb.business_name}" marked complete for yesterday! Earnings added.`, 'success');
                 this.habitUpdateService.emitHabitCompletion(this.hb.id);
                 this.changed.emit();
@@ -350,6 +355,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   private async undoHabitCompletion() {
     try {
       const { earnings } = await this.habitBusinessService.undoHabitCompletion(this.hb.id);
+      this.soundService.playUndo();
       await this.toast(`↩️ Completion undone for "${this.hb.business_name}"! -$${earnings.toFixed(2)} removed`, 'warning');
       this.habitUpdateService.emitHabitUndo(this.hb.id);
       this.changed.emit();
@@ -368,6 +374,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   async undoLastCompletion() {
     try {
       await this.habitBusinessService.undoHabitCompletion(this.hb.id);
+      this.soundService.playUndo();
       await this.toast(`↩️ Undid completion for "${this.hb.business_name}"`, 'warning', 2000);
       this.habitUpdateService.emitHabitCompletion(this.hb.id);
       this.changed.emit();

@@ -2,10 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  IonContent, 
-  IonHeader, 
-  IonTitle, 
-  IonToolbar, 
+  IonContent,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -17,13 +17,15 @@ import {
   IonIcon,
   IonToast,
   IonModal,
-  IonTextarea
+  IonTextarea,
+  IonToggle
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
+import { SoundService } from '../services/sound.service';
 import { Router, RouterLink } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
-import { save, person, lockClosed, logoGoogle, trash, warning, logOutOutline, chatbubbleEllipses, documentText } from 'ionicons/icons';
+import { save, person, lockClosed, logoGoogle, trash, warning, logOutOutline, chatbubbleEllipses, documentText, volumeHigh } from 'ionicons/icons';
 
 @Component({
   selector: 'app-settings',
@@ -49,6 +51,7 @@ import { save, person, lockClosed, logoGoogle, trash, warning, logOutOutline, ch
     IonToast,
     IonModal,
     IonTextarea,
+    IonToggle,
     BottomNavComponent,
     RouterLink
   ]
@@ -80,15 +83,28 @@ export class SettingsPage implements OnInit {
   currentUser: any = null;
   isGoogleUser = false; // New property to track if user signed in with Google
 
+  // Sound effects
+  soundEffectsEnabled = true;
+
   constructor(
     private authService: AuthService,
+    private soundService: SoundService,
     private router: Router
   ) {
-    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOutOutline,chatbubbleEllipses,documentText});
+    addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOutOutline,chatbubbleEllipses,documentText,volumeHigh});
   }
 
   async ngOnInit() {
     await this.loadUserData();
+    this.soundEffectsEnabled = await this.soundService.isEnabled();
+  }
+
+  async onSoundEffectsToggle(event: CustomEvent) {
+    this.soundEffectsEnabled = event.detail.checked;
+    await this.soundService.setEnabled(this.soundEffectsEnabled);
+    if (this.soundEffectsEnabled) {
+      this.soundService.playComplete();
+    }
   }
 
   async loadUserData() {
