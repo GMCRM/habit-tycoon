@@ -73,15 +73,6 @@
         </div>
       </div>
 
-      <!-- Simple fallback if no user (only after auth check completes, to avoid a flash before login state is known) -->
-      <div *ngIf="hasCheckedAuth && !currentUser" class="guest-view">
-        <h2>Welcome to Habit Tycoon! 💰</h2>
-        <p>Your adventure awaits...</p>
-        <ion-button routerLink="/login" color="primary">
-          Login to Start
-        </ion-button>
-      </div>
-
       <!-- Stats Grid: all 3 cards shown together at every screen size -->
       <div class="stats-grid ion-margin-bottom">
         <ion-card
