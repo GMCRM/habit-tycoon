@@ -16,6 +16,16 @@
 
   <h3 class="jv-business-name">{{ businessName }}</h3>
 
+  <!-- Description is hidden by default; tap to view it in a popup, same as the home-screen habit card -->
+  <button
+    *ngIf="metadata.habit_description"
+    type="button"
+    class="description-toggle"
+    (click)="showHabitDescription()"
+  >
+    <ion-icon name="information-circle-outline"></ion-icon>Description
+  </button>
+
   <p class="jv-message">{{ notification.message }}</p>
 
   <p *ngIf="isActionable && expiresInLabel" class="jv-expiry">

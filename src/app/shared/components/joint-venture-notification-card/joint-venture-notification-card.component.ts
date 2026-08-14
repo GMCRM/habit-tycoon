@@ -8,7 +8,7 @@ import { AuthService } from '../../../services/auth.service';
 import { CountdownTickService } from '../../../services/countdown-tick.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, closeCircle, cashOutline, trashOutline, peopleCircle, timeOutline } from 'ionicons/icons';
+import { checkmarkCircle, closeCircle, cashOutline, trashOutline, peopleCircle, timeOutline, informationCircleOutline } from 'ionicons/icons';
 
 /**
  * Renders the four joint-venture notification types (invite, upgrade
@@ -43,7 +43,7 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
     private toastController: ToastController,
     private alertController: AlertController
   ) {
-    addIcons({ checkmarkCircle, closeCircle, cashOutline, trashOutline, peopleCircle, timeOutline });
+    addIcons({ checkmarkCircle, closeCircle, cashOutline, trashOutline, peopleCircle, timeOutline, informationCircleOutline });
   }
 
   ngOnInit() {
@@ -95,6 +95,16 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
       case 'vote_expired': return '⌛ Vote expired — business stays';
       default: return '';
     }
+  }
+
+  /** Show this joint venture's habit description in a popup, same pattern as the home-screen habit card. */
+  async showHabitDescription() {
+    const alert = await this.alertController.create({
+      header: this.businessName,
+      message: this.metadata.habit_description || 'No description provided.',
+      buttons: ['OK'],
+    });
+    await alert.present();
   }
 
   private async currentUserId(): Promise<string | null> {
