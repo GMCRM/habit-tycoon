@@ -277,6 +277,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       if (!result.success) {
         throw new Error(result.error || 'Failed to undo check-in');
       }
+      this.soundService.playUndo();
       await this.toast(`↩️ Check-in undone for "${this.hb.business_name}"! -$${(result.earnings || 0).toFixed(2)} removed`, 'warning');
       this.habitUpdateService.emitHabitUndo(this.hb.id);
       this.changed.emit();
