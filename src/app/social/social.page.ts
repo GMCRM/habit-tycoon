@@ -1069,7 +1069,9 @@ export class SocialPage implements OnInit, OnDestroy {
     try {
       const ownedBusinesses = await this.habitBusinessService.getUserHabitBusinesses(this.currentUser.id);
       eligibleBusinesses = ownedBusinesses.filter(
-        hb => (hb.business_types?.base_cost ?? hb.cost) <= purchase.base_cost
+        // Joint ventures upgrade only via the group-payment flow (JointVentureService.proposeUpgrade()),
+        // never this single-owner merge — see resolve_marketplace_purchase()'s own is_joint_venture guard.
+        hb => !hb.is_joint_venture && (hb.business_types?.base_cost ?? hb.cost) <= purchase.base_cost
       );
     } catch (error) {
       console.error('Error loading businesses eligible for merge:', error);
