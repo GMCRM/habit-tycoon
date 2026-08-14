@@ -215,12 +215,26 @@ export class HabitIntervalService {
     // one full period elapsed with zero activity. Streak is broken.
     if (lastCompleted < previousWindow.start) return 0;
 
-    // Last activity falls inside the previous period's window. Since nothing
-    // has run reset_outdated_habits() since, current_progress still holds
-    // that period's final tally — use it to tell whether that period's goal
-    // was actually met, mirroring reset_outdated_habits() server-side.
+    // Last activity falls inside the previous period's window, so an actual
+    // completion happened then. If reset_outdated_habits() hasn't run yet for
+    // that rollover, current_progress still holds that period's final tally —
+    // use it to tell whether the goal was actually met, mirroring
+    // reset_outdated_habits() server-side.
+    //
+    // But current_progress === 0 here is a special case, not "0 attempts
+    // that period": a real completion set last_completed_at inside this
+    // window, which always bumps current_progress to at least 1 at the time,
+    // so progress can only have come back down to exactly 0 since via
+    // reset_outdated_habits() itself. That RPC only ever zeroes progress
+    // without touching streak when the period's goal WAS met (a missed goal
+    // zeroes streak too, which would have already returned above via the
+    // storedStreak === 0 check) — so reaching this point with progress === 0
+    // means the reset already ran and correctly preserved storedStreak.
+    // Treating it as "0 < goalValue → broken" would re-break a streak the
+    // server just finished confirming intact.
     const goalValue = habit.goal_value || 1;
     const currentProgress = habit.current_progress || 0;
+    if (currentProgress === 0) return storedStreak;
     return currentProgress >= goalValue ? storedStreak : 0;
   }
 
