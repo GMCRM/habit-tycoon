@@ -201,7 +201,11 @@
         >
           <div class="skeleton-card" *ngFor="let i of [0, 1]">
             <div class="skeleton-icon-wrap">
-              <ion-skeleton-text animated class="skeleton-icon"></ion-skeleton-text>
+              <ion-skeleton-text
+                animated
+                class="skeleton-icon"
+                style="width: 88px; height: 88px; --border-radius: 22%;"
+              ></ion-skeleton-text>
             </div>
             <ion-skeleton-text animated class="skeleton-title"></ion-skeleton-text>
             <div class="skeleton-stats">
