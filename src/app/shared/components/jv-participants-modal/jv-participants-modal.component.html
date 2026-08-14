@@ -1,0 +1,77 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="people" color="tertiary"></ion-icon>
+        Joint Venture
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="jv-participants-modal-content">
+  <div class="business-name-header">{{ businessName }}</div>
+
+  <div class="progress-summary" *ngIf="statusRows.length > 0">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" [style.width.%]="progressPercent()"></div>
+    </div>
+    <span class="progress-label">{{ checkedInCount() }}/{{ statusRows.length }} checked in today</span>
+  </div>
+
+  <div *ngIf="statusRows.length === 0" class="empty-state">
+    No participants found for this joint venture.
+  </div>
+
+  <div *ngIf="statusRows.length > 0" class="participants-list">
+    <div
+      class="participant-row"
+      *ngFor="let row of sortedRows()"
+      [class.checked-in]="row.checked_in_today"
+    >
+      <div class="participant-info">
+        <ion-icon name="person-circle" class="participant-avatar"></ion-icon>
+        <div class="participant-meta">
+          <span class="participant-name">
+            {{ row.co_owner_name }}
+            <span *ngIf="row.co_owner_id === currentUserId" class="you-tag">(You)</span>
+          </span>
+          <ion-badge *ngIf="row.is_creator" color="warning" class="creator-badge">Creator</ion-badge>
+        </div>
+      </div>
+
+      <div class="participant-status">
+        <span *ngIf="row.checked_in_today" class="status-pill status-done">
+          <ion-icon name="checkmark-circle"></ion-icon>Checked In
+        </span>
+
+        <ng-container *ngIf="!row.checked_in_today">
+          <span class="status-pill status-pending">
+            <ion-icon name="time-outline"></ion-icon>Pending
+          </span>
+
+          <ion-button
+            *ngIf="row.co_owner_id !== currentUserId"
+            fill="outline"
+            color="tertiary"
+            size="small"
+            class="remind-button"
+            [disabled]="isSending(row.co_owner_id) || isSent(row.co_owner_id)"
+            (click)="sendReminder(row)"
+          >
+            <ion-spinner *ngIf="isSending(row.co_owner_id)" name="crescent"></ion-spinner>
+            <ng-container *ngIf="!isSending(row.co_owner_id)">
+              <ion-icon [name]="isSent(row.co_owner_id) ? 'checkmark' : 'notifications-outline'" slot="start"></ion-icon>
+              {{ isSent(row.co_owner_id) ? 'Sent' : 'Remind' }}
+            </ng-container>
+          </ion-button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</ion-content>

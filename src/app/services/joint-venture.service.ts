@@ -211,6 +211,20 @@ export class JointVentureService {
     }));
   }
 
+  /** Nudge a specific co-owner who hasn't checked in today — shows up as a notification on their Social tab. */
+  async sendReminder(fromUserId: string, toUserId: string, habitBusinessId: string): Promise<{ success: boolean; error?: string }> {
+    const { data, error } = await this.supabase.rpc('send_joint_venture_reminder', {
+      p_from_user_id: fromUserId,
+      p_to_user_id: toUserId,
+      p_habit_business_id: habitBusinessId
+    });
+    if (error) {
+      console.error('Error sending joint venture reminder:', error);
+      throw error;
+    }
+    return data as { success: boolean; error?: string };
+  }
+
   // ─── Upgrade ───
 
   async proposeUpgrade(initiatorId: string, habitBusinessId: string, newBusinessTypeId: number): Promise<JointVentureUpgradeResult> {

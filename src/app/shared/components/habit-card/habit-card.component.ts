@@ -19,6 +19,7 @@ import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { UpgradeModalComponent } from '../../../home/upgrade-modal/upgrade-modal.component';
 import { EditHabitModalComponent } from '../../../home/edit-habit-modal/edit-habit-modal.component';
 import { StockOwnersModalComponent } from '../stock-owners-modal/stock-owners-modal.component';
+import { JvParticipantsModalComponent } from '../jv-participants-modal/jv-participants-modal.component';
 
 /**
  * The habit-business card shown on the home screen — reused as-is (same
@@ -542,6 +543,22 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error opening edit modal:', error);
     }
+  }
+
+  /** Show every co-owner's check-in status for today, with a per-person "Remind" nudge for anyone who hasn't checked in. */
+  async openJvParticipantsModal() {
+    const modal = await this.modalController.create({
+      component: JvParticipantsModalComponent,
+      componentProps: {
+        businessName: this.hb.business_name,
+        habitBusinessId: this.hb.id,
+        statusRows: this.jvStatusRows,
+        currentUserId: this.currentUserId,
+        modalController: this.modalController
+      },
+      cssClass: 'jv-participants-modal'
+    });
+    await modal.present();
   }
 
   /** Show who owns shares of this business's stock, and how many each holds */

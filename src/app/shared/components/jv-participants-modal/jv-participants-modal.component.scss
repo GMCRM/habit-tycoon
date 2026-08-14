@@ -1,0 +1,156 @@
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.jv-participants-modal-content {
+  --background: var(--ion-color-light);
+}
+
+.business-name-header {
+  padding: 16px 16px 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.progress-summary {
+  padding: 10px 16px 4px;
+
+  .progress-bar-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--ion-color-tertiary), var(--ion-color-success));
+    transition: width 0.3s ease;
+  }
+
+  .progress-label {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.empty-state {
+  padding: 24px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.participants-list {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.participant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--business-item-background);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease;
+
+  &.checked-in {
+    border-color: rgba(0, 255, 136, 0.3);
+  }
+}
+
+.participant-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.participant-avatar {
+  font-size: 26px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.participant-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.participant-name {
+  font-weight: 500;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  .you-tag {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 400;
+    font-size: 0.85em;
+  }
+}
+
+.creator-badge {
+  font-size: 0.6rem;
+}
+
+.participant-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  ion-icon {
+    font-size: 0.85rem;
+  }
+
+  &.status-done {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--ion-color-success);
+  }
+
+  &.status-pending {
+    background: rgba(255, 140, 0, 0.15);
+    color: var(--streak-color);
+  }
+}
+
+.remind-button {
+  margin: 0;
+  height: 28px;
+  --border-radius: 999px;
+  font-size: 0.68rem;
+
+  ion-spinner {
+    width: 14px;
+    height: 14px;
+  }
+}

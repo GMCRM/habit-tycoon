@@ -147,9 +147,15 @@
         </div>
       </div>
       <h3 class="business-name">{{ hb.business_name }}</h3>
-      <span *ngIf="hb.is_joint_venture" class="jv-badge">
+      <button
+        *ngIf="hb.is_joint_venture"
+        type="button"
+        class="jv-badge"
+        aria-label="View joint venture participants"
+        (click)="openJvParticipantsModal()"
+      >
         <ion-icon name="people"></ion-icon>Joint Venture
-      </span>
+      </button>
       <span *ngIf="hb.id.startsWith('local-')" class="pending-sync-chip">📡 Pending sync</span>
 
       <!-- Description is hidden by default; tap to view it in a popup -->
