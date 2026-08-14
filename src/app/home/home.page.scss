@@ -487,15 +487,44 @@ button, span, div, ion-button {
   }
   
   // Loading state styling (shown while habit-businesses are still being fetched,
-  // so the empty state doesn't flash before real data arrives)
+  // so the empty state doesn't flash before real data arrives). Shaped like the
+  // habit-card it's standing in for, so the swap-in doesn't jump around.
   .loading-state {
-    text-align: center;
-    padding: 40px 20px;
+    .skeleton-card {
+      background: var(--business-item-background);
+      border: var(--business-item-border);
+      border-radius: 12px;
+      margin: 12px 0;
+      padding: 16px;
 
-    ion-spinner {
-      width: 32px;
-      height: 32px;
-      color: var(--ion-color-medium);
+      .skeleton-icon-wrap {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+
+      .skeleton-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+      }
+
+      .skeleton-title {
+        width: 60%;
+        height: 20px;
+        margin: 0 auto 16px;
+      }
+
+      .skeleton-stats {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+
+        .skeleton-stat {
+          width: 70px;
+          height: 32px;
+        }
+      }
     }
   }
 

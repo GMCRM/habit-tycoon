@@ -199,7 +199,16 @@
           *ngIf="(!habitBusinesses || habitBusinesses.length === 0) && (!hasCheckedAuth || isLoading)"
           class="loading-state"
         >
-          <ion-spinner name="crescent"></ion-spinner>
+          <div class="skeleton-card" *ngFor="let i of [0, 1]">
+            <div class="skeleton-icon-wrap">
+              <ion-skeleton-text animated class="skeleton-icon"></ion-skeleton-text>
+            </div>
+            <ion-skeleton-text animated class="skeleton-title"></ion-skeleton-text>
+            <div class="skeleton-stats">
+              <ion-skeleton-text animated class="skeleton-stat"></ion-skeleton-text>
+              <ion-skeleton-text animated class="skeleton-stat"></ion-skeleton-text>
+            </div>
+          </div>
         </div>
 
         <div
