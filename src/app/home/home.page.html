@@ -141,9 +141,7 @@
 
       <!-- My Habit-Businesses - NO CARD BACKGROUND -->
       <div class="my-habit-businesses ion-margin-bottom">
-        <div
-          *ngIf="habitBusinesses && habitBusinesses.length > 0; else noHabitBusinesses"
-        >
+        <div *ngIf="habitBusinesses && habitBusinesses.length > 0">
           <!-- To-Do Group -->
           <div *ngIf="todoHabitBusinesses.length > 0" class="habit-group-section">
             <h4 class="habit-group-title">To-Do</h4>
@@ -197,31 +195,39 @@
           </div>
         </div>
 
-        <ng-template #noHabitBusinesses>
-          <div class="empty-state">
-            <ion-icon name="business" size="large" color="medium"></ion-icon>
-            <h3>No habit-businesses yet</h3>
-            <p>
-              Create your first habit-business to start earning money from your
-              habits!
-            </p>
-            <p class="tip">
-              💡
-              <em
-                >Each habit comes with its own business - buy the business, do
-                the habit, earn money!</em
-              >
-            </p>
-            <ion-button
-              fill="solid"
-              color="success"
-              (click)="createNewHabitBusiness()"
+        <div
+          *ngIf="(!habitBusinesses || habitBusinesses.length === 0) && (!hasCheckedAuth || isLoading)"
+          class="loading-state"
+        >
+          <ion-spinner name="crescent"></ion-spinner>
+        </div>
+
+        <div
+          *ngIf="(!habitBusinesses || habitBusinesses.length === 0) && hasCheckedAuth && !isLoading"
+          class="empty-state"
+        >
+          <ion-icon name="business" size="large" color="medium"></ion-icon>
+          <h3>No habit-businesses yet</h3>
+          <p>
+            Create your first habit-business to start earning money from your
+            habits!
+          </p>
+          <p class="tip">
+            💡
+            <em
+              >Each habit comes with its own business - buy the business, do
+              the habit, earn money!</em
             >
-              <ion-icon name="add" slot="start"></ion-icon>
-              Create Habit-Business
-            </ion-button>
-          </div>
-        </ng-template>
+          </p>
+          <ion-button
+            fill="solid"
+            color="success"
+            (click)="createNewHabitBusiness()"
+          >
+            <ion-icon name="add" slot="start"></ion-icon>
+            Create Habit-Business
+          </ion-button>
+        </div>
       </div>
     </div>
   </div>

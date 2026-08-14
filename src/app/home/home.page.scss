@@ -486,6 +486,19 @@ button, span, div, ion-button {
     }
   }
   
+  // Loading state styling (shown while habit-businesses are still being fetched,
+  // so the empty state doesn't flash before real data arrives)
+  .loading-state {
+    text-align: center;
+    padding: 40px 20px;
+
+    ion-spinner {
+      width: 32px;
+      height: 32px;
+      color: var(--ion-color-medium);
+    }
+  }
+
   // Empty state styling
   .empty-state {
     text-align: center;

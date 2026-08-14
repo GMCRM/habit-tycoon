@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonCard, IonCardContent,
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon,
-  IonList, IonItem, IonLabel, IonBadge, IonInput, ToastController, AlertController
+  IonList, IonItem, IonLabel, IonBadge, IonInput, IonSpinner, ToastController, AlertController
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
@@ -25,7 +25,7 @@ import { alertCircle, refresh, construct, addCircle, business, calendar, calenda
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitCardComponent],
+  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonInput, IonSpinner, CommonModule, FormsModule, RouterLink, BottomNavComponent, HabitCardComponent],
 })
 export class HomePage implements OnInit, OnDestroy {
   currentUser: any = null;
