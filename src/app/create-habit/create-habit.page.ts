@@ -51,6 +51,8 @@ export class CreateHabitPage implements OnInit {
   activeDays: number[] = [1, 2, 3, 4, 5]; // Mon–Fri default
   goalValue = 1;
 
+  readonly scheduleInterfaceOptions = { cssClass: 'schedule-select-popover' };
+
   // Friends selected for a joint venture. v1 scope restricts a joint venture
   // to a plain daily habit — see joint_venture_habit_shape_check.
   selectedFriendIds: string[] = [];

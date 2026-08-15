@@ -98,6 +98,7 @@
                 [(ngModel)]="recurrenceInterval"
                 placeholder="Select schedule"
                 interface="popover"
+                [interfaceOptions]="scheduleInterfaceOptions"
                 [disabled]="isJointVenture"
               >
                 <ion-select-option value="24h">Every Day 🔥</ion-select-option>

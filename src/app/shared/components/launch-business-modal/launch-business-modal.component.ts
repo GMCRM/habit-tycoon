@@ -52,6 +52,8 @@ export class LaunchBusinessModalComponent implements OnInit {
   readonly dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   readonly dayDows   = [0, 1, 2, 3, 4, 5, 6];
 
+  readonly scheduleInterfaceOptions = { cssClass: 'schedule-select-popover' };
+
   constructor(
     private habitBusinessService: HabitBusinessService,
     private jointVentureService: JointVentureService,
