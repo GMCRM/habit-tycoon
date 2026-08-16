@@ -1,0 +1,86 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="stats-chart" color="primary"></ion-icon>
+        Stat Breakdown
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="stat-breakdown-content">
+  <div class="business-banner">
+    <img
+      *ngIf="data.businessIcon | businessIconSrc as iconSrc"
+      [src]="iconSrc"
+      [alt]="data.businessName"
+      class="business-icon-img"
+    />
+    <div *ngIf="!(data.businessIcon | businessIconSrc)" class="business-icon-emoji">
+      {{ data.businessIcon || '📈' }}
+    </div>
+    <div class="business-name">{{ data.businessName }}</div>
+  </div>
+
+  <div class="hero-card" [class.profit]="isProfit" [class.loss]="!isProfit">
+    <div class="hero-label">Current Value</div>
+    <div class="hero-value">${{ fmt(data.currentValue) }}</div>
+    <div class="hero-pl">
+      <ion-icon [name]="isProfit ? 'arrow-up' : 'arrow-down'"></ion-icon>
+      <span>{{ isProfit ? '+' : '-' }}${{ fmt(data.profitLoss) }}</span>
+      <span class="hero-pl-percent">({{ isProfit ? '+' : '-' }}{{ fmt(profitLossPercent) }}%)</span>
+    </div>
+  </div>
+
+  <div class="stat-list">
+    <div class="stat-row">
+      <div class="stat-icon"><ion-icon name="layers"></ion-icon></div>
+      <div class="stat-text">
+        <div class="stat-label">Shares Owned</div>
+        <div class="stat-value">{{ data.sharesOwned }}</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-icon"><ion-icon name="pricetag"></ion-icon></div>
+      <div class="stat-text">
+        <div class="stat-label">Avg. Purchase Price</div>
+        <div class="stat-value">${{ fmt(data.averagePurchasePrice) }}<span class="unit">/share</span></div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-icon"><ion-icon name="trending-up"></ion-icon></div>
+      <div class="stat-text">
+        <div class="stat-label">Current Price</div>
+        <div class="stat-value">${{ fmt(data.currentPrice) }}<span class="unit">/share</span></div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-icon"><ion-icon name="wallet"></ion-icon></div>
+      <div class="stat-text">
+        <div class="stat-label">Total Invested</div>
+        <div class="stat-value">${{ fmt(data.totalInvested) }}</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-icon"><ion-icon name="gift"></ion-icon></div>
+      <div class="stat-text">
+        <div class="stat-label">Total Dividends Earned</div>
+        <div class="stat-value dividends">${{ fmt(data.totalDividendsEarned) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <ion-button expand="block" fill="solid" color="primary" class="close-button" (click)="dismiss()">
+    Close
+  </ion-button>
+</ion-content>

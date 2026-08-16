@@ -157,6 +157,20 @@
   -ms-overflow-style: none;
 }
 
+/* Stock Stat Breakdown Modal */
+.stock-stat-breakdown-modal .modal-wrapper {
+  --height: auto;
+  --max-height: 90vh;
+  --max-width: 420px;
+  --width: 92%;
+  --border-radius: 20px;
+}
+
+.stock-stat-breakdown-modal .modal-wrapper .modal-shadow {
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
 /* Custom Alert Styles */
 .alert-wrapper {
   --max-width: 400px;

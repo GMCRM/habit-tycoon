@@ -12,6 +12,7 @@ import {
 import { HabitGridComponent } from '../../shared/components/habit-grid/habit-grid.component';
 import { StockChartComponent } from '../../shared/components/stock-chart/stock-chart.component';
 import { StockOwnersModalComponent } from '../../shared/components/stock-owners-modal/stock-owners-modal.component';
+import { StockStatBreakdownModalComponent } from '../../shared/components/stock-stat-breakdown-modal/stock-stat-breakdown-modal.component';
 import { HabitBusinessService } from '../../services/habit-business.service';
 import { HabitIntervalService } from '../../services/habit-interval.service';
 import { OfflineQueuedError } from '../../services/offline-queue.service';
@@ -800,29 +801,26 @@ export class StocksContentComponent implements OnInit {
    */
   async showHoldingStatsBreakdown(holding: Portfolio) {
     const currentValue = (holding.sharesOwned || 0) * (holding.currentPrice || 0);
-    const profitLoss = holding.profitLoss || 0;
-    const profitLossSign = profitLoss >= 0 ? '+' : '-';
-    const profitLossColor = profitLoss >= 0 ? '#10dc60' : '#f53d3d';
-    const fmt = (n: number) =>
-      Math.abs(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    const alert = await this.alertController.create({
-      header: holding.businessName,
-      subHeader: 'Stock Stat Breakdown',
-      message: `
-        <div style="text-align: left;">
-          <p><strong>Shares owned:</strong> ${holding.sharesOwned}</p>
-          <p><strong>Avg. purchase price:</strong> $${fmt(holding.averagePurchasePrice)}/share</p>
-          <p><strong>Current price:</strong> $${fmt(holding.currentPrice)}/share</p>
-          <p><strong>Current value:</strong> $${fmt(currentValue)}</p>
-          <p><strong>Total invested:</strong> $${fmt(holding.totalInvested)}</p>
-          <p><strong>Profit/Loss:</strong> <span style="color: ${profitLossColor}">${profitLossSign}$${fmt(profitLoss)}</span></p>
-          <p><strong>Total dividends earned:</strong> $${fmt(holding.totalDividendsEarned)}</p>
-        </div>
-      `,
-      buttons: ['OK'],
+    const modal = await this.modalController.create({
+      component: StockStatBreakdownModalComponent,
+      componentProps: {
+        modalController: this.modalController,
+        data: {
+          businessName: holding.businessName,
+          businessIcon: holding.businessIcon,
+          sharesOwned: holding.sharesOwned,
+          averagePurchasePrice: holding.averagePurchasePrice,
+          currentPrice: holding.currentPrice,
+          currentValue,
+          totalInvested: holding.totalInvested,
+          profitLoss: holding.profitLoss || 0,
+          totalDividendsEarned: holding.totalDividendsEarned
+        }
+      },
+      cssClass: 'stock-stat-breakdown-modal'
     });
-    await alert.present();
+    await modal.present();
   }
 
   /**
