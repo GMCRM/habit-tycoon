@@ -14,7 +14,7 @@ export interface StockStatBreakdownData {
   businessName: string;
   businessIcon: string;
   sharesOwned: number;
-  averagePurchasePrice: number;
+  basePurchasePrice: number;
   currentPrice: number;
   currentValue: number;
   totalInvested: number;

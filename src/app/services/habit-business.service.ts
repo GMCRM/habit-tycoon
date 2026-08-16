@@ -2253,6 +2253,7 @@ export class HabitBusinessService {
           ownerId: holding.owner_id || holding.business_owner_id, // Add owner ID
           sharesOwned: holding.shares_owned,
           averagePurchasePrice: holding.average_purchase_price,
+          basePrice: holding.base_price,
           currentPrice: holding.current_stock_price,
           totalInvested: holding.total_invested,
           currentValue: holding.current_value,
