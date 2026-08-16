@@ -613,6 +613,11 @@
           gap: 4px;
         }
 
+        // Stockholders / stats icon-only buttons (people, stats-chart)
+        ion-button[fill="clear"] ion-icon[slot="icon-only"] {
+          font-size: 1.6rem;
+        }
+
         .checkin-action {
           margin-top: 8px;
 
