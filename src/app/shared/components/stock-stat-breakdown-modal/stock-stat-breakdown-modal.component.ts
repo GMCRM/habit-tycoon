@@ -150,7 +150,7 @@ export class StockStatBreakdownModalComponent implements OnInit, OnDestroy {
     return `~${days} day${days === 1 ? '' : 's'} ${hours} hour${hours === 1 ? '' : 's'}`;
   }
 
-  fmt(n: number): string {
+  fmt(n: number | undefined): string {
     return Math.abs(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
