@@ -22,14 +22,21 @@
 }
 
 .business-icon-img {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 22%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 22px rgba(255, 215, 0, 0.32);
 }
 
 .business-icon-emoji {
-  font-size: 40px;
+  width: 64px;
+  height: 64px;
+  font-size: 48px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .business-name {
