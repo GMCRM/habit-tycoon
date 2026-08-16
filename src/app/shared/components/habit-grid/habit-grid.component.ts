@@ -1127,7 +1127,10 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
   private calculateStats() {
     const todayStr = this.getLocalDateString();
-    const validData = this.data.filter(d => d.date <= todayStr);
+    const createdStr = this.businessCreatedAt
+      ? this.getLocalDateStringFromDate(new Date(this.businessCreatedAt))
+      : null;
+    const validData = this.data.filter(d => d.date <= todayStr && (!createdStr || d.date >= createdStr));
     
     this.totalDays = validData.length;
     this.completedDays = validData.filter(d => d.completed).length;
