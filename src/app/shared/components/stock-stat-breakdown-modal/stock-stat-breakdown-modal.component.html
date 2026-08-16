@@ -47,11 +47,21 @@
       </div>
     </div>
 
-    <div class="stat-row">
+    <div class="stat-row" [class.ramping]="isRampingToBase">
       <div class="stat-icon"><ion-icon name="pricetag"></ion-icon></div>
       <div class="stat-text">
         <div class="stat-label">Base Purchase Price<span class="stat-hint">price if streak breaks</span></div>
         <div class="stat-value">${{ fmt(data.basePurchasePrice) }}<span class="unit">/share</span></div>
+
+        <div class="ramp-progress" *ngIf="isRampingToBase">
+          <div class="ramp-progress-bar">
+            <div class="ramp-progress-fill" [style.width.%]="percentOfBase"></div>
+          </div>
+          <div class="ramp-progress-text">
+            <ion-icon name="hourglass"></ion-icon>
+            <span>A recent upgrade raised the base price. Currently at {{ fmt(percentOfBase) }}% of it &mdash; reaches full base in {{ formatDaysToBase() }}.</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -60,14 +70,6 @@
       <div class="stat-text">
         <div class="stat-label">Current Price</div>
         <div class="stat-value">${{ fmt(data.currentPrice) }}<span class="unit">/share</span></div>
-      </div>
-    </div>
-
-    <div class="stat-row" *ngIf="isRampingToBase">
-      <div class="stat-icon"><ion-icon name="hourglass"></ion-icon></div>
-      <div class="stat-text">
-        <div class="stat-label">Growing To Base<span class="stat-hint">after a recent upgrade</span></div>
-        <div class="stat-value">+{{ fmt(growthNeededPercent) }}%<span class="unit">· {{ formatDaysToBase() }}</span></div>
       </div>
     </div>
 

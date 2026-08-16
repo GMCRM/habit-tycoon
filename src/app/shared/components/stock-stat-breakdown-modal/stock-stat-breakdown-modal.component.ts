@@ -65,11 +65,12 @@ export class StockStatBreakdownModalComponent {
     return current < base && !!this.data?.rampStartPrice;
   }
 
-  get growthNeededPercent(): number {
+  /** How far the current price has climbed toward the base price, 0-100. */
+  get percentOfBase(): number {
     const current = this.data?.currentPrice || 0;
     const base = this.data?.basePurchasePrice || 0;
-    if (!current) return 0;
-    return ((base - current) / current) * 100;
+    if (!base) return 100;
+    return Math.min(100, Math.max(0, (current / base) * 100));
   }
 
   /**

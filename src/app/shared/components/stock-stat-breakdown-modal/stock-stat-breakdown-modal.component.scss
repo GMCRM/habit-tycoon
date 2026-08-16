@@ -114,6 +114,55 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px 14px;
+
+  &.ramping {
+    align-items: flex-start;
+    border-color: rgba(var(--ion-color-warning-rgb), 0.3);
+
+    .stat-icon {
+      margin-top: 1px;
+    }
+  }
+}
+
+.ramp-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ramp-progress-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.ramp-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--ion-color-warning), var(--ion-color-primary));
+  transition: width 0.3s ease;
+}
+
+.ramp-progress-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+
+  ion-icon {
+    font-size: 13px;
+    color: var(--ion-color-warning);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
 }
 
 .stat-icon {
