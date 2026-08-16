@@ -1011,8 +1011,8 @@
           position: absolute;
           top: 12px;
           left: 12px;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
           margin-right: 0;
           z-index: 10;
         }
@@ -1021,10 +1021,10 @@
           position: absolute;
           top: 12px;
           left: 12px;
-          font-size: 1.8rem;
+          font-size: 2.2rem;
           min-width: auto;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1033,33 +1033,33 @@
           border: 1px solid rgba(255, 215, 0, 0.3);
           z-index: 10;
         }
-        
+
         .business-info {
           margin-left: 0;
           padding-left: 0;
           width: 100%;
-          
+
           .business-name {
-            margin-left: 48px; // Make room for top-left emoji
+            margin-left: 60px; // Make room for top-left emoji
             margin-bottom: 4px;
             font-size: 1.1rem;
           }
-          
+
           .owner-section {
-            margin-left: 48px; // Make room for top-left emoji
+            margin-left: 60px; // Make room for top-left emoji
             margin-bottom: 8px;
-            
+
             .owner-label {
               font-size: 0.7rem;
             }
-            
+
             .owner-name {
               font-size: 0.9rem;
             }
           }
-          
+
           .habit-description {
-            margin-left: 48px; // Make room for top-left emoji
+            margin-left: 60px; // Make room for top-left emoji
             margin-bottom: 8px;
             font-size: 0.9rem;
           }
