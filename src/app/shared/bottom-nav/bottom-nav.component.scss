@@ -9,12 +9,12 @@
   border-radius: 30px;
   overflow: hidden;
 
-  // iOS26 Liquid Glass recipe (rdlabo/ionic-theme-ios26), matching the real
-  // white/light system material (frosted, not tinted) instead of our previous
-  // dark-navy approximation.
-  @include api.glass-background($opacity: 0.72, $blur: 20px, $saturate: 160%);
-  --ios26-glass-background-rgb: 255, 255, 255;
-  --ios26-glass-border-color-rgb: 255, 255, 255;
+  // iOS26 Liquid Glass recipe (rdlabo/ionic-theme-ios26) tuned to our near-max
+  // see-through preference and dark/gold brand colors instead of its
+  // frosted-white default.
+  @include api.glass-background($opacity: 0.1, $blur: 20px, $saturate: 160%);
+  --ios26-glass-background-rgb: 23, 23, 51;
+  --ios26-glass-border-color-rgb: 255, 215, 0;
   --ios26-glass-box-shadow-color-rgb: 0, 0, 0;
 }
 
@@ -38,16 +38,13 @@
   width: calc((100% - 40px) / 3);
   height: 44px;
   border-radius: 16px;
-  // A brighter, slightly elevated white against the container's own white
-  // glass — same trick the reference photo uses to show a "selected" pill:
-  // depth/shadow does the work, not a color shift.
-  background: rgba(255, 255, 255, 0.55);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(10px) saturate(180%);
   -webkit-backdrop-filter: blur(10px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 215, 0, 0.4);
   box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.18),
-    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
   opacity: 0;
   transform: translateX(100%) scale(0.85);
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
@@ -148,11 +145,8 @@
 }
 
 .nav-button {
-  // Dark neutral unselected + a deep, saturated gold for selected — legible
-  // against the white glass, playing the same role blue plays in Apple's own
-  // Liquid Glass tab bars while keeping our gold brand accent.
-  --color: rgba(30, 30, 40, 0.55);
-  --color-selected: #b8860b;
+  --color: rgba(255, 219, 26, 0.55);
+  --color-selected: #ffdb1a;
   position: relative;
   z-index: 1;
   flex: 1;
@@ -165,11 +159,11 @@
 }
 
 .nav-button.active {
-  --color: #b8860b;
+  --color: #ffdb1a;
 }
 
 .nav-button.active ion-icon {
-  filter: drop-shadow(0 0 6px rgba(184, 134, 11, 0.5));
+  filter: drop-shadow(0 0 6px rgba(255, 219, 26, 0.65));
   transform: translateY(-1px);
 }
 
@@ -189,7 +183,7 @@
 }
 
 .nav-button:hover {
-  --color: #b8860b;
+  --color: #FFD700;
 }
 
 .nav-button ion-icon {
