@@ -30,10 +30,10 @@
 
   <div class="hero-card" [class.profit]="isProfit" [class.loss]="!isProfit">
     <div class="hero-label">Current Value</div>
-    <div class="hero-value">${{ fmt(data.currentValue) }}</div>
+    <div class="hero-value">${{ fmt(liveCurrentValue) }}</div>
     <div class="hero-pl">
       <ion-icon [name]="isProfit ? 'arrow-up' : 'arrow-down'"></ion-icon>
-      <span>{{ isProfit ? '+' : '-' }}${{ fmt(data.profitLoss) }}</span>
+      <span>{{ isProfit ? '+' : '-' }}${{ fmt(liveProfitLoss) }}</span>
       <span class="hero-pl-percent">({{ isProfit ? '+' : '-' }}{{ fmt(profitLossPercent) }}%)</span>
     </div>
   </div>
@@ -69,7 +69,7 @@
       <div class="stat-icon"><ion-icon name="trending-up"></ion-icon></div>
       <div class="stat-text">
         <div class="stat-label">Current Price</div>
-        <div class="stat-value">${{ fmt(data.currentPrice) }}<span class="unit">/share</span></div>
+        <div class="stat-value">${{ fmt(livePrice) }}<span class="unit">/share</span></div>
       </div>
     </div>
 

@@ -64,13 +64,13 @@ export class StockStatBreakdownModalComponent implements OnInit, OnDestroy {
   }
 
   get isProfit(): boolean {
-    return (this.data?.profitLoss || 0) >= 0;
+    return this.liveProfitLoss >= 0;
   }
 
   get profitLossPercent(): number {
     const invested = this.data?.totalInvested || 0;
     if (!invested) return 0;
-    return ((this.data?.profitLoss || 0) / invested) * 100;
+    return (this.liveProfitLoss / invested) * 100;
   }
 
   /**
@@ -78,14 +78,26 @@ export class StockStatBreakdownModalComponent implements OnInit, OnDestroy {
    * this modal loaded with. The ramp grows linearly with real elapsed time
    * (see update_stock_price_by_streak in the backend), so this stays accurate
    * without another data fetch: livePrice = current + 0.5/day * anchor * elapsed.
+   * Equal to data.currentPrice whenever the stock isn't mid-ramp.
    */
-  private get livePrice(): number {
+  get livePrice(): number {
     const current = this.data?.currentPrice || 0;
     const base = this.data?.basePurchasePrice || 0;
     const anchor = this.data?.rampStartPrice || 0;
     if (!anchor) return current;
     const elapsedDays = (this.nowMs - this.loadedAt) / (1000 * 60 * 60 * 24);
     return Math.min(base, current + RAMP_DAILY_RATE * anchor * elapsedDays);
+  }
+
+  /** Current value of the holding, kept in sync with the live ramping price. */
+  get liveCurrentValue(): number {
+    return (this.data?.sharesOwned || 0) * this.livePrice;
+  }
+
+  /** Profit/loss, kept in sync with the live ramping price. */
+  get liveProfitLoss(): number {
+    const invested = this.data?.totalInvested || 0;
+    return this.liveCurrentValue - invested;
   }
 
   /**
