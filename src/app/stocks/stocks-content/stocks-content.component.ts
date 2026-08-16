@@ -64,6 +64,7 @@ interface Portfolio {
   sharesOwned: number;
   averagePurchasePrice: number;
   basePrice: number;
+  rampStartPrice: number;
   currentPrice: number;
   totalInvested: number;
   currentValue: number;
@@ -812,6 +813,7 @@ export class StocksContentComponent implements OnInit {
           businessIcon: holding.businessIcon,
           sharesOwned: holding.sharesOwned,
           basePurchasePrice: holding.basePrice,
+          rampStartPrice: holding.rampStartPrice,
           currentPrice: holding.currentPrice,
           currentValue,
           totalInvested: holding.totalInvested,

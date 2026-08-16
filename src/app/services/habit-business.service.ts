@@ -2254,6 +2254,7 @@ export class HabitBusinessService {
           sharesOwned: holding.shares_owned,
           averagePurchasePrice: holding.average_purchase_price,
           basePrice: holding.base_price,
+          rampStartPrice: holding.ramp_start_price,
           currentPrice: holding.current_stock_price,
           totalInvested: holding.total_invested,
           currentValue: holding.current_value,

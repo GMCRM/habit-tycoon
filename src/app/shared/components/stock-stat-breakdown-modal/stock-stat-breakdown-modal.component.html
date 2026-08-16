@@ -63,6 +63,14 @@
       </div>
     </div>
 
+    <div class="stat-row" *ngIf="isRampingToBase">
+      <div class="stat-icon"><ion-icon name="hourglass"></ion-icon></div>
+      <div class="stat-text">
+        <div class="stat-label">Growing To Base<span class="stat-hint">after a recent upgrade</span></div>
+        <div class="stat-value">+{{ fmt(growthNeededPercent) }}%<span class="unit">· {{ formatDaysToBase() }}</span></div>
+      </div>
+    </div>
+
     <div class="stat-row">
       <div class="stat-icon"><ion-icon name="wallet"></ion-icon></div>
       <div class="stat-text">
