@@ -5,7 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import {
   IonContent, IonHeader, IonTitle, IonToolbar,
   IonCard, IonCardContent, IonSegment, IonSegmentButton,
-  IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
+  IonButton, IonIcon, IonLabel, IonBadge, IonSkeletonText,
   IonAccordion, IonAccordionGroup, IonItem, IonToggle,
   ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
@@ -37,7 +37,7 @@ import {
     imports: [
     IonContent, IonHeader, IonTitle, IonToolbar,
     IonCard, IonSegment, IonSegmentButton,
-    IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSpinner,
+    IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSkeletonText,
     IonAccordion, IonAccordionGroup, IonItem, IonToggle,
     BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe,
     JointVentureNotificationCardComponent

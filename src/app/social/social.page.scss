@@ -398,19 +398,6 @@ ion-content {
   }
 }
 
-// Loading state for cash leaderboard
-.cash-loading {
-  display: flex;
-  justify-content: center;
-  padding: 40px 0;
-
-  ion-spinner {
-    color: var(--ion-color-primary);
-    width: 36px;
-    height: 36px;
-  }
-}
-
 .friend-card {
   background: var(--business-item-background);
   border: var(--business-item-border);
@@ -816,28 +803,6 @@ ion-badge {
   border-radius: 50%;
   margin-left: 6px; // Increased spacing
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); // Add depth
-}
-
-// Loading state
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 400px;
-  
-  ion-spinner {
-    color: var(--ion-color-primary);
-    --color: var(--ion-color-primary);
-    transform: scale(1.5);
-    margin-bottom: 20px;
-  }
-  
-  p {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1rem;
-    margin: 0;
-  }
 }
 
 // Notifications Tab Styling
@@ -1279,4 +1244,140 @@ ion-badge {
       }
     }
   }
+}
+
+// Skeleton loading placeholders — sized to match the real content each one
+// stands in for, so nothing reflows when it swaps in. Every tab keeps its
+// header/segment/card chrome mounted at all times; only the data inside
+// swaps from skeleton to real value, mirroring the Home page pattern.
+.skeleton-card {
+  pointer-events: none;
+
+  &:hover {
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.1) !important;
+  }
+}
+
+.skeleton-header-count {
+  display: inline-block;
+  width: 110px;
+  height: 1.4rem;
+  border-radius: 4px;
+}
+
+// Friends tab
+.skeleton-friend-name {
+  width: 140px;
+  height: 1.2rem;
+  border-radius: 4px;
+}
+
+.skeleton-toggle-label {
+  flex: 1;
+  width: 75%;
+  height: 0.85rem;
+  border-radius: 4px;
+}
+
+.skeleton-toggle {
+  flex-shrink: 0;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+}
+
+// Notifications tab
+.skeleton-notif-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-top: 2px;
+}
+
+.skeleton-notif-message {
+  width: 85%;
+  height: 0.95rem;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-notif-time {
+  width: 35%;
+  height: 0.8rem;
+  border-radius: 4px;
+}
+
+// Leaderboard tab
+.skeleton-rank {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.skeleton-user-name {
+  width: 130px;
+  height: 1.2rem;
+  border-radius: 4px;
+  margin: 0 auto 6px;
+}
+
+.skeleton-user-stat {
+  width: 110px;
+  height: 1rem;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+
+// Marketplace tab
+.skeleton-listing-icon {
+  flex-shrink: 0;
+  width: 106px;
+  height: 106px;
+  border-radius: 22%;
+}
+
+.skeleton-listing-title {
+  width: 65%;
+  height: 1.1rem;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.skeleton-listing-seller {
+  width: 40%;
+  height: 0.8rem;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-listing-price {
+  width: 70px;
+  height: 1rem;
+  border-radius: 4px;
+}
+
+@media (min-width: 768px) {
+  .skeleton-listing-icon {
+    width: 130px;
+    height: 130px;
+  }
+}
+
+// Fade the real content in once it swaps in for a skeleton, so the
+// transition reads as smooth/instant rather than an abrupt content pop.
+@keyframes social-content-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-content {
+  animation: social-content-fade-in 0.3s ease both;
 }

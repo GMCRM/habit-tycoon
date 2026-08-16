@@ -18,19 +18,11 @@
 <ion-content [fullscreen]="true" [scrollY]="false">
   <div class="scrollable-content">
     <div class="page-container">
-      <!-- Loading State -->
-      <div *ngIf="isLoading" class="loading-container">
-        <ion-spinner name="crescent"></ion-spinner>
-        <p>Loading social data...</p>
+      <!-- Friends, notifications, leaderboard, and marketplace all need a live
+           connection — unlike habit tracking, this data isn't cached locally. -->
+      <div *ngIf="isOffline" class="offline-social-banner">
+        📡 You're offline — friends, leaderboard, and marketplace will refresh once you're back online.
       </div>
-
-      <!-- Main Content -->
-      <div *ngIf="!isLoading">
-        <!-- Friends, notifications, leaderboard, and marketplace all need a live
-             connection — unlike habit tracking, this data isn't cached locally. -->
-        <div *ngIf="isOffline" class="offline-social-banner">
-          📡 You're offline — friends, leaderboard, and marketplace will refresh once you're back online.
-        </div>
 
         <!-- Segment Navigation -->
         <ion-segment
@@ -68,67 +60,96 @@
           class="tab-content friends-tab"
         >
           <div class="friends-header">
-            <h2>{{ friends.length }} Friends</h2>
+            <h2 *ngIf="!isLoading; else friendsCountSkeleton">{{ friends.length }} Friends</h2>
+            <ng-template #friendsCountSkeleton>
+              <ion-skeleton-text animated class="skeleton-header-count"></ion-skeleton-text>
+            </ng-template>
             <ion-button fill="solid" color="primary" (click)="addFriend()">
               <ion-icon name="person-add" slot="start"></ion-icon>
               Add Friend
             </ion-button>
           </div>
 
-          <div *ngIf="friends.length > 0; else noFriends" class="friends-list">
-            <ion-card *ngFor="let friend of friends; trackBy: trackById" class="friend-card">
+          <!-- Skeleton placeholders while the initial friends list is still loading —
+               shaped like real friend cards so the swap-in doesn't jump around. -->
+          <div *ngIf="isLoading && friends.length === 0" class="friends-list">
+            <ion-card class="friend-card skeleton-card" *ngFor="let i of [0, 1, 2]">
               <ion-card-content>
                 <div class="friend-info">
                   <div class="friend-details">
-                    <h3>{{ friend.friend_profile?.name }}</h3>
+                    <ion-skeleton-text animated class="skeleton-friend-name"></ion-skeleton-text>
                   </div>
-                  <ion-button
-                    fill="clear"
-                    size="small"
-                    color="danger"
-                    (click)="removeFriend(friend)"
-                    class="delete-button"
-                  >
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </ion-button>
                 </div>
                 <div class="friend-visibility-settings">
                   <div class="visibility-row">
-                    <ion-label>
-                      Let them see my stocks
-                    </ion-label>
-                    <ion-toggle
-                      [checked]="friend.show_stocks"
-                      (ionChange)="onFriendVisibilityToggle(friend, 'show_stocks', $event.detail.checked)"
-                    ></ion-toggle>
+                    <ion-skeleton-text animated class="skeleton-toggle-label"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-toggle"></ion-skeleton-text>
                   </div>
                   <div class="visibility-row">
-                    <ion-label>
-                      Let them see my marketplace listings
-                    </ion-label>
-                    <ion-toggle
-                      [checked]="friend.show_marketplace"
-                      (ionChange)="onFriendVisibilityToggle(friend, 'show_marketplace', $event.detail.checked)"
-                    ></ion-toggle>
+                    <ion-skeleton-text animated class="skeleton-toggle-label"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-toggle"></ion-skeleton-text>
                   </div>
                 </div>
               </ion-card-content>
             </ion-card>
           </div>
 
-          <ng-template #noFriends>
-            <div class="empty-state">
-              <ion-icon name="people"></ion-icon>
-              <h3>No friends yet</h3>
-              <p>
-                Add friends to see their habit progress and compete together!
-              </p>
-              <ion-button fill="solid" color="primary" (click)="addFriend()">
-                <ion-icon name="person-add" slot="start"></ion-icon>
-                Add Your First Friend
-              </ion-button>
+          <ng-container *ngIf="!isLoading || friends.length > 0">
+            <div *ngIf="friends.length > 0; else noFriends" class="friends-list fade-in-content">
+              <ion-card *ngFor="let friend of friends; trackBy: trackById" class="friend-card">
+                <ion-card-content>
+                  <div class="friend-info">
+                    <div class="friend-details">
+                      <h3>{{ friend.friend_profile?.name }}</h3>
+                    </div>
+                    <ion-button
+                      fill="clear"
+                      size="small"
+                      color="danger"
+                      (click)="removeFriend(friend)"
+                      class="delete-button"
+                    >
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                  <div class="friend-visibility-settings">
+                    <div class="visibility-row">
+                      <ion-label>
+                        Let them see my stocks
+                      </ion-label>
+                      <ion-toggle
+                        [checked]="friend.show_stocks"
+                        (ionChange)="onFriendVisibilityToggle(friend, 'show_stocks', $event.detail.checked)"
+                      ></ion-toggle>
+                    </div>
+                    <div class="visibility-row">
+                      <ion-label>
+                        Let them see my marketplace listings
+                      </ion-label>
+                      <ion-toggle
+                        [checked]="friend.show_marketplace"
+                        (ionChange)="onFriendVisibilityToggle(friend, 'show_marketplace', $event.detail.checked)"
+                      ></ion-toggle>
+                    </div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
             </div>
-          </ng-template>
+
+            <ng-template #noFriends>
+              <div class="empty-state fade-in-content" *ngIf="!isLoading">
+                <ion-icon name="people"></ion-icon>
+                <h3>No friends yet</h3>
+                <p>
+                  Add friends to see their habit progress and compete together!
+                </p>
+                <ion-button fill="solid" color="primary" (click)="addFriend()">
+                  <ion-icon name="person-add" slot="start"></ion-icon>
+                  Add Your First Friend
+                </ion-button>
+              </div>
+            </ng-template>
+          </ng-container>
         </div>
 
         <!-- Notifications Tab -->
@@ -149,8 +170,28 @@
             </ion-button>
           </div>
 
+          <!-- Skeleton placeholders while notifications/requests are still loading —
+               shaped like real notification cards so the swap-in doesn't jump around. -->
+          <div
+            *ngIf="isLoading && notifications.length === 0 && pendingRequests.length === 0 && sentRequests.length === 0"
+            class="notifications-list"
+          >
+            <ion-card class="notification-card skeleton-card" *ngFor="let i of [0, 1, 2]">
+              <ion-card-content>
+                <div class="notification-content">
+                  <ion-skeleton-text animated class="skeleton-notif-icon"></ion-skeleton-text>
+                  <div class="notification-details">
+                    <ion-skeleton-text animated class="skeleton-notif-message"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-notif-time"></ion-skeleton-text>
+                  </div>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </div>
+
+          <ng-container *ngIf="!isLoading || notifications.length > 0 || pendingRequests.length > 0 || sentRequests.length > 0">
           <!-- Incoming Friend Requests (shown at top of notifications) -->
-          <div *ngIf="pendingRequests.length > 0" class="requests-section">
+          <div *ngIf="pendingRequests.length > 0" class="requests-section fade-in-content">
             <h3 class="requests-section-title">
               📬 Friend Requests ({{ pendingRequests.length }})
             </h3>
@@ -197,7 +238,7 @@
           </div>
 
           <!-- Sent Requests -->
-          <div *ngIf="sentRequests.length > 0" class="requests-section">
+          <div *ngIf="sentRequests.length > 0" class="requests-section fade-in-content">
             <h3 class="requests-section-title">
               📤 Sent Requests ({{ sentRequests.length }})
             </h3>
@@ -227,7 +268,7 @@
 
           <div
             *ngIf="notifications.length > 0; else noNotifications"
-            class="notifications-list"
+            class="notifications-list fade-in-content"
           >
             <ng-container *ngFor="let notification of notifications; trackBy: trackById">
               <!-- Joint venture notifications (invite, upgrade request, deletion vote,
@@ -333,8 +374,8 @@
 
           <ng-template #noNotifications>
             <div
-              *ngIf="pendingRequests.length === 0 && sentRequests.length === 0"
-              class="empty-state"
+              *ngIf="pendingRequests.length === 0 && sentRequests.length === 0 && !isLoading"
+              class="empty-state fade-in-content"
             >
               <ion-icon name="notifications-outline"></ion-icon>
               <h3>No notifications</h3>
@@ -344,6 +385,7 @@
               </p>
             </div>
           </ng-template>
+          </ng-container>
         </div>
 
         <!-- Leaderboard Tab -->
@@ -375,34 +417,51 @@
 
           <!-- Net Worth View -->
           <ng-container *ngIf="leaderboardView === 'networth'">
-            <ion-card
-              *ngIf="friendsLeaderboard.length > 0; else noLeaderboard"
-              class="leaderboard-list-card"
-            >
+            <!-- Skeleton placeholders while the initial leaderboard is still loading —
+                 shaped like real leaderboard rows so the swap-in doesn't jump around. -->
+            <ion-card *ngIf="isLoading && friendsLeaderboard.length === 0" class="leaderboard-list-card">
               <ion-card-content>
-                <div
-                  *ngFor="let user of friendsLeaderboard; trackBy: trackById; let last = last"
-                  class="leaderboard-row"
-                  [class.current-user]="user.name === 'You'"
-                >
-                  <div class="rank-badge" [class.top-three]="user.rank <= 3">
-                    <span *ngIf="user.rank === 1">🥇</span>
-                    <span *ngIf="user.rank === 2">🥈</span>
-                    <span *ngIf="user.rank === 3">🥉</span>
-                    <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
-                  </div>
-
+                <div class="leaderboard-row" *ngFor="let i of [0, 1, 2]; let last = last">
+                  <ion-skeleton-text animated class="skeleton-rank"></ion-skeleton-text>
                   <div class="user-info">
-                    <h3>{{ user.name }}</h3>
-                    <p class="net-worth">
-                      Net Worth: ${{ (user.net_worth || 0) | number:'1.2-2' }}
-                    </p>
+                    <ion-skeleton-text animated class="skeleton-user-name"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-user-stat"></ion-skeleton-text>
                   </div>
-
                   <div *ngIf="!last" class="leaderboard-divider"></div>
                 </div>
               </ion-card-content>
             </ion-card>
+
+            <ng-container *ngIf="!isLoading || friendsLeaderboard.length > 0">
+              <ion-card
+                *ngIf="friendsLeaderboard.length > 0; else noLeaderboard"
+                class="leaderboard-list-card fade-in-content"
+              >
+                <ion-card-content>
+                  <div
+                    *ngFor="let user of friendsLeaderboard; trackBy: trackById; let last = last"
+                    class="leaderboard-row"
+                    [class.current-user]="user.name === 'You'"
+                  >
+                    <div class="rank-badge" [class.top-three]="user.rank <= 3">
+                      <span *ngIf="user.rank === 1">🥇</span>
+                      <span *ngIf="user.rank === 2">🥈</span>
+                      <span *ngIf="user.rank === 3">🥉</span>
+                      <span *ngIf="user.rank > 3">#{{ user.rank }}</span>
+                    </div>
+
+                    <div class="user-info">
+                      <h3>{{ user.name }}</h3>
+                      <p class="net-worth">
+                        Net Worth: ${{ (user.net_worth || 0) | number:'1.2-2' }}
+                      </p>
+                    </div>
+
+                    <div *ngIf="!last" class="leaderboard-divider"></div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+            </ng-container>
           </ng-container>
 
           <!-- Habit Cash Earned View -->
@@ -427,14 +486,23 @@
 
             <!-- Weekly Cash Earned -->
             <ng-container *ngIf="cashMetricFilter === 'cash'">
-              <!-- Loading spinner -->
-              <div *ngIf="isLoadingCash" class="cash-loading">
-                <ion-spinner name="crescent"></ion-spinner>
-              </div>
+              <!-- Skeleton placeholders while this metric is (re)loading -->
+              <ion-card *ngIf="isLoadingCash" class="leaderboard-list-card">
+                <ion-card-content>
+                  <div class="leaderboard-row" *ngFor="let i of [0, 1, 2]; let last = last">
+                    <ion-skeleton-text animated class="skeleton-rank"></ion-skeleton-text>
+                    <div class="user-info">
+                      <ion-skeleton-text animated class="skeleton-user-name"></ion-skeleton-text>
+                      <ion-skeleton-text animated class="skeleton-user-stat"></ion-skeleton-text>
+                    </div>
+                    <div *ngIf="!last" class="leaderboard-divider"></div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
 
               <ion-card
                 *ngIf="!isLoadingCash && cashLeaderboard.length > 0; else noCashLeaderboard"
-                class="leaderboard-list-card"
+                class="leaderboard-list-card fade-in-content"
               >
                 <ion-card-content>
                   <div
@@ -480,14 +548,23 @@
 
             <!-- Weekly Habits Completed -->
             <ng-container *ngIf="cashMetricFilter === 'completed'">
-              <!-- Loading spinner -->
-              <div *ngIf="isLoadingCompleted" class="cash-loading">
-                <ion-spinner name="crescent"></ion-spinner>
-              </div>
+              <!-- Skeleton placeholders while this metric is (re)loading -->
+              <ion-card *ngIf="isLoadingCompleted" class="leaderboard-list-card">
+                <ion-card-content>
+                  <div class="leaderboard-row" *ngFor="let i of [0, 1, 2]; let last = last">
+                    <ion-skeleton-text animated class="skeleton-rank"></ion-skeleton-text>
+                    <div class="user-info">
+                      <ion-skeleton-text animated class="skeleton-user-name"></ion-skeleton-text>
+                      <ion-skeleton-text animated class="skeleton-user-stat"></ion-skeleton-text>
+                    </div>
+                    <div *ngIf="!last" class="leaderboard-divider"></div>
+                  </div>
+                </ion-card-content>
+              </ion-card>
 
               <ion-card
                 *ngIf="!isLoadingCompleted && completedLeaderboard.length > 0; else noCompletedLeaderboard"
-                class="leaderboard-list-card"
+                class="leaderboard-list-card fade-in-content"
               >
                 <ion-card-content>
                   <div
@@ -654,13 +731,26 @@
             </ion-card-content>
           </ion-card>
 
-          <div *ngIf="isLoadingMarketplace" class="cash-loading">
-            <ion-spinner name="crescent"></ion-spinner>
+          <!-- Skeleton placeholders while listings are (re)loading — shaped like
+               real listing cards so the swap-in doesn't jump around. -->
+          <div *ngIf="isLoadingMarketplace || (isLoading && marketplaceListings.length === 0)" class="marketplace-list">
+            <ion-card class="marketplace-listing-card skeleton-card" *ngFor="let i of [0, 1, 2]">
+              <ion-card-content>
+                <div class="listing-info">
+                  <ion-skeleton-text animated class="skeleton-listing-icon"></ion-skeleton-text>
+                  <div class="listing-details">
+                    <ion-skeleton-text animated class="skeleton-listing-title"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-listing-seller"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-listing-price"></ion-skeleton-text>
+                  </div>
+                </div>
+              </ion-card-content>
+            </ion-card>
           </div>
 
           <div
-            *ngIf="!isLoadingMarketplace && marketplaceListings.length > 0; else noListings"
-            class="marketplace-list"
+            *ngIf="!isLoadingMarketplace && !isLoading && marketplaceListings.length > 0; else noListings"
+            class="marketplace-list fade-in-content"
           >
             <ion-card
               *ngFor="let listing of marketplaceListings; trackBy: trackById"
@@ -713,7 +803,7 @@
           </div>
 
           <ng-template #noListings>
-            <div class="empty-state" *ngIf="!isLoadingMarketplace">
+            <div class="empty-state fade-in-content" *ngIf="!isLoadingMarketplace && !isLoading">
               <ion-icon name="storefront"></ion-icon>
               <h3>No listings right now</h3>
               <p>
@@ -724,8 +814,6 @@
           </ng-template>
           </ng-container>
         </div>
-      </div>
-      <!-- End main content -->
     </div>
   </div>
 </ion-content>
