@@ -51,9 +51,13 @@
       <div class="stat-icon"><ion-icon name="pricetag"></ion-icon></div>
       <div class="stat-text">
         <div class="stat-label">Base Purchase Price<span class="stat-hint">price if streak breaks</span></div>
-        <div class="stat-value">${{ fmt(data.basePurchasePrice) }}<span class="unit">/share</span></div>
+        <div class="stat-value">${{ fmt(isRampingToBase ? livePrice : data.basePurchasePrice) }}<span class="unit">/share</span></div>
 
         <div class="ramp-progress" *ngIf="isRampingToBase">
+          <div class="ramp-range">
+            <span class="ramp-range-start">${{ fmt(data.rampStartPrice) }}</span>
+            <span class="ramp-range-end">${{ fmt(data.basePurchasePrice) }}</span>
+          </div>
           <div class="ramp-progress-bar">
             <div class="ramp-progress-fill" [style.width.%]="percentOfBase"></div>
           </div>
