@@ -13,6 +13,33 @@ import { SocialService } from '../../services/social.service';
 
 type NavSection = 'social' | 'center' | 'receipt';
 
+// This component remounts fresh on every page navigation (it's not a shared
+// layout element), so the native-tabs capability check is cached at module
+// scope. Without this, every navigation would re-run the async Device.getInfo()
+// check from scratch and briefly flash the CSS bar before hiding it again,
+// even though the native pill (which persists across pages) was already there.
+let nativeTabsCapable: boolean | null = null;
+let nativeTabsCapabilityCheck: Promise<boolean> | null = null;
+
+function checkNativeTabsCapable(): Promise<boolean> {
+  if (nativeTabsCapable !== null) {
+    return Promise.resolve(nativeTabsCapable);
+  }
+  if (!nativeTabsCapabilityCheck) {
+    nativeTabsCapabilityCheck = Device.getInfo()
+      .then(info => info.platform === 'ios' && !!info.iOSVersion && info.iOSVersion >= 260000)
+      .catch(() => false)
+      .then(result => {
+        nativeTabsCapable = result;
+        return result;
+      });
+  }
+  return nativeTabsCapabilityCheck;
+}
+// Kick the check off as soon as this module loads rather than waiting for the
+// first component to mount, so it's more likely to already be resolved by then.
+checkNativeTabsCapable();
+
 @Component({
   selector: 'app-bottom-nav',
   templateUrl: './bottom-nav.component.html',
@@ -25,7 +52,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   @Input() mainButton: 'add' | 'home' = 'add';
   notificationBadgeCount = 0;
   activeSection: NavSection = 'center';
-  useNativeTabs = false;
+  // Seeded synchronously from the cached check so a second (or 30th) page
+  // mount never renders the CSS bar before flipping it off a moment later.
+  useNativeTabs = nativeTabsCapable === true;
 
   private badgeCountSubscription?: Subscription;
   private routerSubscription?: Subscription;
@@ -59,6 +88,10 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Run before the auth/badge work below so the (usually already-cached)
+    // native-tabs check resolves as early as possible in the page's lifecycle.
+    await this.setupNativeTabs();
+
     try {
       const { data: { user } } = await this.authService.getUser();
       if (user) {
@@ -67,8 +100,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('❌ BottomNav: Failed to load notification badge count:', error);
     }
-
-    await this.setupNativeTabs();
   }
 
   ngOnDestroy() {
@@ -81,8 +112,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   // everything else (older iOS, Android, web) keeps the existing CSS glass bar.
   private async setupNativeTabs() {
     try {
-      const deviceInfo = await Device.getInfo();
-      if (deviceInfo.platform !== 'ios' || !deviceInfo.iOSVersion || deviceInfo.iOSVersion < 260000) {
+      const capable = await checkNativeTabsCapable();
+      if (!capable) {
+        this.useNativeTabs = false;
         return;
       }
 
