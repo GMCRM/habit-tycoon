@@ -1,4 +1,5 @@
 // Adventure Capitalist inspired styling
+@use '@rdlabo/ionic-theme-ios26/src/styles/utils/api.scss';
 
 // Global fixes for Safari bullet point issue on buttons
 button, span, div, ion-button {
@@ -82,22 +83,25 @@ button, span, div, ion-button {
     }
   }
 
-  // Icon-only square buttons: glass boxes with a soft colored glow behind the icon
+  // Icon-only square buttons: real Liquid Glass (rdlabo/ionic-theme-ios26's
+  // glass-background mixin) instead of a hand-rolled gradient/border/shadow.
   .icon-box-btn {
     --border-radius: 8px;
     --padding-start: 0;
     --padding-end: 0;
     --padding-top: 0;
     --padding-bottom: 0;
-    --background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+    --background: transparent;
     width: 40px;
     height: 40px;
     min-height: 40px;
     max-height: 40px;
     margin-inline: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.3);
+    @include api.glass-background($opacity: 0.14, $blur: 14px, $saturate: 160%);
+    --ios26-glass-background-rgb: 255, 255, 255;
+    --ios26-glass-border-color-rgb: 255, 255, 255;
+    --ios26-glass-box-shadow-color-rgb: 0, 0, 0;
 
     ion-icon {
       font-size: 1.2rem;

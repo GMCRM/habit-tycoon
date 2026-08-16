@@ -6,39 +6,10 @@ import { filter } from 'rxjs/operators';
 import { IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { add, people, trophy, home } from 'ionicons/icons';
-import { Device } from '@capacitor/device';
-import { TabsBar } from 'stay-liquid';
 import { AuthService } from '../../services/auth.service';
 import { SocialService } from '../../services/social.service';
 
 type NavSection = 'social' | 'center' | 'receipt';
-
-// This component remounts fresh on every page navigation (it's not a shared
-// layout element), so the native-tabs capability check is cached at module
-// scope. Without this, every navigation would re-run the async Device.getInfo()
-// check from scratch and briefly flash the CSS bar before hiding it again,
-// even though the native pill (which persists across pages) was already there.
-let nativeTabsCapable: boolean | null = null;
-let nativeTabsCapabilityCheck: Promise<boolean> | null = null;
-
-function checkNativeTabsCapable(): Promise<boolean> {
-  if (nativeTabsCapable !== null) {
-    return Promise.resolve(nativeTabsCapable);
-  }
-  if (!nativeTabsCapabilityCheck) {
-    nativeTabsCapabilityCheck = Device.getInfo()
-      .then(info => info.platform === 'ios' && !!info.iOSVersion && info.iOSVersion >= 260000)
-      .catch(() => false)
-      .then(result => {
-        nativeTabsCapable = result;
-        return result;
-      });
-  }
-  return nativeTabsCapabilityCheck;
-}
-// Kick the check off as soon as this module loads rather than waiting for the
-// first component to mount, so it's more likely to already be resolved by then.
-checkNativeTabsCapable();
 
 @Component({
   selector: 'app-bottom-nav',
@@ -52,13 +23,9 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   @Input() mainButton: 'add' | 'home' = 'add';
   notificationBadgeCount = 0;
   activeSection: NavSection = 'center';
-  // Seeded synchronously from the cached check so a second (or 30th) page
-  // mount never renders the CSS bar before flipping it off a moment later.
-  useNativeTabs = nativeTabsCapable === true;
 
   private badgeCountSubscription?: Subscription;
   private routerSubscription?: Subscription;
-  private nativeTabListener?: { remove: () => void };
 
   constructor(
     private router: Router,
@@ -72,25 +39,13 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     this.updateActiveSection(this.router.url);
     this.routerSubscription = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(event => {
-        this.updateActiveSection(event.urlAfterRedirects);
-        if (this.useNativeTabs) {
-          TabsBar.select({ id: this.activeSection }).catch(() => {});
-        }
-      });
+      .subscribe(event => this.updateActiveSection(event.urlAfterRedirects));
 
     // Subscribe first so this instance (and any other bottom-nav instance on screen)
     // reflects reads/dismissals from the social page immediately, not just on next load.
     this.badgeCountSubscription = this.socialService.notificationBadgeCount$.subscribe(count => {
       this.notificationBadgeCount = count;
-      if (this.useNativeTabs) {
-        TabsBar.setBadge({ id: 'social', value: count > 0 ? count : null }).catch(() => {});
-      }
     });
-
-    // Run before the auth/badge work below so the (usually already-cached)
-    // native-tabs check resolves as early as possible in the page's lifecycle.
-    await this.setupNativeTabs();
 
     try {
       const { data: { user } } = await this.authService.getUser();
@@ -105,58 +60,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.badgeCountSubscription?.unsubscribe();
     this.routerSubscription?.unsubscribe();
-    this.nativeTabListener?.remove();
-  }
-
-  // iOS 26+ gets the real native Liquid Glass tab bar via the stay-liquid plugin;
-  // everything else (older iOS, Android, web) keeps the existing CSS glass bar.
-  private async setupNativeTabs() {
-    try {
-      const capable = await checkNativeTabsCapable();
-      if (!capable) {
-        this.useNativeTabs = false;
-        return;
-      }
-
-      await TabsBar.configure({
-        visible: true,
-        initialId: this.activeSection,
-        items: [
-          {
-            id: 'social',
-            title: 'Social',
-            systemIcon: 'person.2.fill',
-            badge: this.notificationBadgeCount > 0 ? this.notificationBadgeCount : null
-          },
-          {
-            id: 'center',
-            systemIcon: this.mainButton === 'home' ? 'house.fill' : 'plus.circle.fill'
-          },
-          {
-            id: 'receipt',
-            title: 'Awards',
-            systemIcon: 'trophy.fill'
-          }
-        ],
-        selectedIconColor: '#FFDB1A',
-        unselectedIconColor: 'rgba(255, 219, 26, 0.55)'
-      });
-
-      this.nativeTabListener = await TabsBar.addListener('selected', ({ id }) => {
-        if (id === 'social') {
-          this.openSocial();
-        } else if (id === 'receipt') {
-          this.openWeeklyReceipt();
-        } else {
-          this.addHabitBusiness();
-        }
-      });
-
-      this.useNativeTabs = true;
-    } catch (error) {
-      console.error('❌ BottomNav: Failed to initialize native Liquid Glass tab bar:', error);
-      this.useNativeTabs = false;
-    }
   }
 
   private updateActiveSection(url: string) {

@@ -1,6 +1,4 @@
-.bottom-nav-container.hidden {
-  display: none;
-}
+@use '@rdlabo/ionic-theme-ios26/src/styles/utils/api.scss';
 
 .bottom-nav-container {
   position: fixed;
@@ -8,15 +6,16 @@
   left: 14px;
   right: 14px;
   z-index: 1000;
-  background: linear-gradient(135deg, rgba(36, 36, 77, 0.08) 0%, rgba(23, 23, 51, 0.08) 100%);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 215, 0, 0.35);
   border-radius: 30px;
   overflow: hidden;
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  // iOS26 Liquid Glass recipe (rdlabo/ionic-theme-ios26) tuned to our near-max
+  // see-through preference and dark/gold brand colors instead of its
+  // frosted-white default.
+  @include api.glass-background($opacity: 0.1, $blur: 20px, $saturate: 160%);
+  --ios26-glass-background-rgb: 23, 23, 51;
+  --ios26-glass-border-color-rgb: 255, 215, 0;
+  --ios26-glass-box-shadow-color-rgb: 0, 0, 0;
 }
 
 .custom-tab-bar {
