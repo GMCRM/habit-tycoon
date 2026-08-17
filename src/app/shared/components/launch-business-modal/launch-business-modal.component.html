@@ -31,6 +31,28 @@
         <div class="cash-subtitle">Turn a daily habit into a business</div>
       </div>
 
+      <!-- Team Up (optional) — pick friends first; costs below become your split share -->
+      <div class="form-section team-up-section">
+        <div class="section-header">
+          <ion-icon name="people-circle"></ion-icon>
+          <h3>Team Up?</h3>
+        </div>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          color="tertiary"
+          (click)="openFriendPicker()"
+        >
+          <ion-icon name="people-circle" slot="start"></ion-icon>
+          Choose Friends ({{ selectedFriendIds.length }} selected)
+        </ion-button>
+
+        <p *ngIf="isJointVenture" class="jv-note jv-owner-note">
+          Splitting {{ jvOwnerCount }} ways — with ${{ userProfile?.cash | number:'1.2-2' }}, you can help launch businesses up to ${{ jvMaxUnlockedCost | number:'1.2-2' }}.
+        </p>
+      </div>
+
       <!-- Step 1: Name -->
       <div class="form-section">
         <div class="section-header">
@@ -111,44 +133,7 @@
         </div>
       </div>
 
-      <!-- Step 3: Team Up (optional) -->
-      <div class="form-section">
-        <div class="section-header">
-          <ion-icon name="people-circle"></ion-icon>
-          <h3>Team Up?</h3>
-        </div>
-
-        <ion-item lines="none" class="jv-toggle-item">
-          <ion-icon name="people-circle" slot="start" color="tertiary"></ion-icon>
-          <ion-label>
-            <h3>Joint Venture</h3>
-            <p>Co-found a business with friends — split the cost, split the fun</p>
-          </ion-label>
-          <ion-toggle
-            slot="end"
-            [checked]="isJointVenture"
-            (ionChange)="onJointVentureToggle($event.detail.checked)"
-          ></ion-toggle>
-        </ion-item>
-
-        <div *ngIf="isJointVenture" class="jv-details">
-          <p class="jv-note">Joint ventures are always a simple daily habit — everyone checks in once a day. Pick your friends first — the Investment Package below will show your split share.</p>
-
-          <ion-button
-            expand="block"
-            fill="outline"
-            color="tertiary"
-            (click)="openFriendPicker()"
-          >
-            <ion-icon name="people-circle" slot="start"></ion-icon>
-            Choose Friends ({{ selectedFriendIds.length }} selected)
-          </ion-button>
-
-          <p *ngIf="jvOwnerCount >= 2" class="jv-note jv-owner-note">Splitting {{ jvOwnerCount }} ways — each business below shows your share.</p>
-        </div>
-      </div>
-
-      <!-- Step 4: Investment Package -->
+      <!-- Step 3: Investment Package -->
       <div class="form-section">
         <div class="section-header">
           <ion-icon name="trophy"></ion-icon>
@@ -176,7 +161,7 @@
               <div class="investment-info">
                 <div class="investment-name">{{ type.name }}</div>
                 <div class="investment-cost" [class.unaffordable]="!canAffordType(type)">
-                  <ng-container *ngIf="isJointVenture && jvOwnerCount >= 2; else soloCost">
+                  <ng-container *ngIf="isJointVenture; else soloCost">
                     <span class="original-cost">${{ type.base_cost | number }}</span>
                     <span class="split-cost">${{ shareForType(type) | number:'1.2-2' }} your share</span>
                   </ng-container>
@@ -188,7 +173,7 @@
                 </div>
                 <div class="jv-hint" *ngIf="!canAffordType(type)">
                   <ion-icon name="people-circle"></ion-icon>
-                  <ng-container *ngIf="isJointVenture && jvOwnerCount >= 2; else needFriendsHint">Add more friends to unlock</ng-container>
+                  <ng-container *ngIf="isJointVenture; else needFriendsHint">Add more friends to unlock</ng-container>
                   <ng-template #needFriendsHint>Split with friends to unlock</ng-template>
                 </div>
               </div>
@@ -224,16 +209,16 @@
             </span>
           </div>
           <div class="summary-item cost">
-            <span class="summary-label">{{ isJointVenture && jvOwnerCount >= 2 ? 'Your Share:' : 'Initial Cost:' }}</span>
-            <span class="summary-value">-${{ (isJointVenture && jvOwnerCount >= 2 ? jvCreatorShare : selectedBusinessType?.base_cost) | number:'1.2-2' }}</span>
+            <span class="summary-label">{{ isJointVenture ? 'Your Share:' : 'Initial Cost:' }}</span>
+            <span class="summary-value">-${{ (isJointVenture ? jvCreatorShare : selectedBusinessType?.base_cost) | number:'1.2-2' }}</span>
           </div>
           <div class="summary-item earning">
             <span class="summary-label">Revenue / Completion:</span>
-            <span class="summary-value">+${{ (isJointVenture && jvOwnerCount >= 2 ? jvBasePayShare : selectedBusinessType?.base_pay) | number:'1.2-2' }}</span>
+            <span class="summary-value">+${{ (isJointVenture ? jvBasePayShare : selectedBusinessType?.base_pay) | number:'1.2-2' }}</span>
           </div>
         </div>
 
-        <div *ngIf="isJointVenture && jvOwnerCount >= 2" class="jv-split-summary">
+        <div *ngIf="isJointVenture" class="jv-split-summary">
           <div class="summary-item">
             <span class="summary-label">Co-owners:</span>
             <span class="summary-value">{{ jvOwnerCount }} people</span>

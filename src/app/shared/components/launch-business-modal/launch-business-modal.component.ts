@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons, IonFooter,
-  IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner, IonToggle
+  IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, BusinessType } from '../../../services/habit-business.service';
 import { JointVentureService } from '../../../services/joint-venture.service';
@@ -22,7 +22,7 @@ import { rocket, close, checkmarkCircle, document, trophy, lockClosed, warning, 
   imports: [
     CommonModule, FormsModule,
     IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons, IonFooter,
-    IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner, IonToggle,
+    IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner,
     BusinessIconPipe
   ]
 })
@@ -46,7 +46,7 @@ export class LaunchBusinessModalComponent implements OnInit {
   // Joint venture: friends who want to share the exact same habit split the
   // cost evenly and all co-own a single business. v1 scope restricts a
   // joint venture to a plain daily habit — see joint_venture_habit_shape_check.
-  isJointVenture = false;
+  // Picking any friends is what turns Joint Venture mode on — see `isJointVenture`.
   selectedFriendIds: string[] = [];
 
   readonly dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -134,9 +134,24 @@ export class LaunchBusinessModalComponent implements OnInit {
     return (this.userProfile?.cash ?? 0) >= this.shareForType(businessType);
   }
 
+  /** Joint Venture mode is implicit: as soon as at least one friend is chosen, it's on. */
+  get isJointVenture(): boolean {
+    return this.selectedFriendIds.length > 0;
+  }
+
   /** Total co-owners once launched: this player + everyone selected in the friend picker. */
   get jvOwnerCount(): number {
     return this.selectedFriendIds.length + 1;
+  }
+
+  /**
+   * The most expensive business this player's cash can unlock via a Joint
+   * Venture split, assuming the cost is shared evenly across the current
+   * owner count: cash * owners >= cost  <=>  cost / owners <= cash. This is
+   * the number the Investment Package tiles below light up against.
+   */
+  get jvMaxUnlockedCost(): number {
+    return Math.round((this.userProfile?.cash ?? 0) * this.jvOwnerCount * 100) / 100;
   }
 
   /** Every non-initiating co-owner's share — same rounding rule the server uses. */
@@ -169,19 +184,6 @@ export class LaunchBusinessModalComponent implements OnInit {
     return Math.ceil(this.jvBasePayShare * (1 + this.jvMaxStreakMultiplierPercent / 100) * 100) / 100;
   }
 
-  onJointVentureToggle(checked: boolean) {
-    this.isJointVenture = checked;
-    if (checked) {
-      // v1 scope: a joint venture is always a plain daily habit — lock the
-      // schedule/completions-per-day inputs rather than hide them, so it's
-      // clear why they're fixed.
-      this.recurrenceInterval = '24h';
-      this.goalValue = 1;
-    } else {
-      this.selectedFriendIds = [];
-    }
-  }
-
   async openFriendPicker() {
     const modal = await this.modalController.create({
       component: FriendPickerModalComponent,
@@ -194,18 +196,25 @@ export class LaunchBusinessModalComponent implements OnInit {
     const { data } = await modal.onDidDismiss();
     if (data?.selectedFriendIds) {
       this.selectedFriendIds = data.selectedFriendIds;
+      if (this.isJointVenture) {
+        // v1 scope: a joint venture is always a plain daily habit — lock the
+        // schedule/completions-per-day inputs rather than hide them, so it's
+        // clear why they're fixed.
+        this.recurrenceInterval = '24h';
+        this.goalValue = 1;
+      }
     }
   }
 
   get canAfford(): boolean {
     if (!this.userProfile || !this.selectedBusinessType) return false;
     if (this.isJointVenture) {
-      return this.selectedFriendIds.length === 0 || this.userProfile.cash >= this.jvCreatorShare;
+      return this.userProfile.cash >= this.jvCreatorShare;
     }
     return this.userProfile.cash >= this.selectedBusinessType.base_cost;
   }
 
-  /** Everything except the joint-venture friend selection — gates whether the Summary section (and its Joint Venture toggle) is shown at all. */
+  /** Gates whether the Summary section is shown, and the Launch button. */
   get baseFormValid(): boolean {
     const daysValid = this.recurrenceInterval !== 'specific_days' || this.activeDays.length > 0;
     return !!(this.selectedBusinessType &&
@@ -216,10 +225,8 @@ export class LaunchBusinessModalComponent implements OnInit {
               this.goalValue > 0 && this.goalValue <= 20);
   }
 
-  /** Gates the Launch button — also requires at least one friend chosen once Joint Venture is toggled on. */
   get isFormValid(): boolean {
-    const jvValid = !this.isJointVenture || this.selectedFriendIds.length >= 1;
-    return this.baseFormValid && jvValid;
+    return this.baseFormValid;
   }
 
   dismiss() {
@@ -228,11 +235,7 @@ export class LaunchBusinessModalComponent implements OnInit {
 
   async createHabitBusiness() {
     if (!this.isFormValid) {
-      if (this.isJointVenture && this.selectedFriendIds.length === 0) {
-        await this.showToast('Choose at least one friend to co-found this business with', 'warning');
-      } else {
-        await this.showToast('Please fill in all fields', 'warning');
-      }
+      await this.showToast('Please fill in all fields', 'warning');
       return;
     }
 

@@ -422,47 +422,20 @@
   font-style: italic;
 }
 
-.jv-toggle-item {
-  --background: transparent;
-  --padding-start: 0;
-  --inner-padding-end: 0;
-
-  ion-label {
-    h3 {
-      color: var(--cash-color);
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin: 0 0 2px 0;
-    }
-
-    p {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.78rem;
-      margin: 0;
-    }
-  }
-
-  ion-icon[slot="start"] {
-    font-size: 1.6rem;
-    margin-right: 12px;
-  }
+.team-up-section {
+  border-color: rgba(var(--ion-color-tertiary-rgb), 0.35);
 }
 
-.jv-details {
-  margin-top: 10px;
+.jv-note {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 10px 0 0 0;
+  line-height: 1.4;
+}
 
-  .jv-note {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin: 0 0 10px 0;
-    line-height: 1.4;
-  }
-
-  .jv-owner-note {
-    margin: 10px 0 0 0;
-    color: var(--ion-color-tertiary);
-    font-weight: 600;
-  }
+.jv-owner-note {
+  color: var(--ion-color-tertiary);
+  font-weight: 600;
 }
 
 .jv-split-summary {
