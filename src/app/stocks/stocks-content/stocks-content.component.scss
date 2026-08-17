@@ -654,6 +654,47 @@
     }
   }
   
+  // Skeleton placeholders shown while stocks/portfolio are still loading —
+  // shaped like a real habit-business-item so the swap-in doesn't jump around.
+  .skeleton-stock-item {
+    .item-content {
+      align-items: center;
+    }
+
+    .skeleton-business-icon {
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      border-radius: 22%;
+      margin-right: 12px;
+    }
+
+    .business-info {
+      width: 100%;
+
+      .skeleton-business-name {
+        width: 55%;
+        height: 20px;
+        margin: 0 auto 10px;
+      }
+
+      .skeleton-owner-name {
+        width: 35%;
+        height: 14px;
+        margin: 0 auto 16px;
+      }
+
+      .habit-stats {
+        justify-content: center;
+
+        .skeleton-stat-value {
+          width: 60px;
+          height: 28px;
+        }
+      }
+    }
+  }
+
   // Empty state styling - matches homepage
   .empty-state {
     text-align: center;
@@ -1271,6 +1312,13 @@
         }
       }
     }
+  }
+
+  // Skeleton item stacks and centers on mobile, same as the real card layout
+  // above — but the skeleton icon has no absolute-positioning rule to pull
+  // it into place, so it needs the parent to center it directly instead.
+  .skeleton-stock-item .item-content {
+    align-items: center;
   }
 
   // Mobile-specific business item adjustments

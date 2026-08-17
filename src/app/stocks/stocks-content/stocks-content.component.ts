@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   IonContent, IonHeader, IonTitle, IonToolbar,
   IonCard, IonCardContent,
-  IonButton, IonIcon, IonBadge, IonSpinner,
+  IonButton, IonIcon, IonBadge, IonSkeletonText,
   IonModal, IonButtons, IonItem, IonLabel, IonInput,
   IonSelect, IonSelectOption,
   ToastController, AlertController, ModalController
@@ -89,7 +89,7 @@ interface Portfolio {
     CommonModule, FormsModule,
     IonContent, IonHeader, IonTitle, IonToolbar,
     IonCard, IonCardContent,
-    IonButton, IonIcon, IonBadge, IonSpinner,
+    IonButton, IonIcon, IonBadge, IonSkeletonText,
     IonModal, IonButtons, IonItem, IonLabel, IonInput,
     IonSelect, IonSelectOption,
     HabitGridComponent, StockChartComponent,

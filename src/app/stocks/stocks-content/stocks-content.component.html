@@ -158,10 +158,21 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Loading State -->
-      <div *ngIf="isLoading" class="empty-state">
-        <ion-spinner name="crescent"></ion-spinner>
-        <p>Loading stocks...</p>
+      <!-- Skeleton placeholders while stocks are still loading — shaped like
+           real stock cards so the swap-in doesn't jump around. -->
+      <div *ngIf="isLoading" class="stocks-list-scroll-container">
+        <div class="habit-business-item skeleton-stock-item" *ngFor="let i of [0, 1, 2]">
+          <div class="item-content">
+            <ion-skeleton-text animated class="skeleton-business-icon"></ion-skeleton-text>
+            <div class="business-info">
+              <ion-skeleton-text animated class="skeleton-business-name"></ion-skeleton-text>
+              <ion-skeleton-text animated class="skeleton-owner-name"></ion-skeleton-text>
+              <div class="habit-stats">
+                <ion-skeleton-text animated class="skeleton-stat-value" *ngFor="let s of [0, 1, 2]"></ion-skeleton-text>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Available Stocks List -->
@@ -465,10 +476,21 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div *ngIf="isLoading" class="empty-state">
-        <ion-spinner name="crescent"></ion-spinner>
-        <p>Loading portfolio...</p>
+      <!-- Skeleton placeholders while the portfolio is still loading —
+           shaped like real holding cards so the swap-in doesn't jump around. -->
+      <div *ngIf="isLoading" class="stocks-list-scroll-container">
+        <div class="habit-business-item skeleton-stock-item" *ngFor="let i of [0, 1, 2]">
+          <div class="item-content">
+            <ion-skeleton-text animated class="skeleton-business-icon"></ion-skeleton-text>
+            <div class="business-info">
+              <ion-skeleton-text animated class="skeleton-business-name"></ion-skeleton-text>
+              <ion-skeleton-text animated class="skeleton-owner-name"></ion-skeleton-text>
+              <div class="habit-stats">
+                <ion-skeleton-text animated class="skeleton-stat-value" *ngFor="let s of [0, 1, 2]"></ion-skeleton-text>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Portfolio Holdings -->
