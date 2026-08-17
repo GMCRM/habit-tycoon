@@ -49,14 +49,18 @@
       </span>
     </div>
 
-    <!-- Simple back button for multi-completion habits with progress -->
+    <!-- Step-back undo for multi-completion habits with progress — same
+         arrow-undo iconography as the main button's undo mode above, so the
+         two read as one consistent "undo" affordance instead of a
+         mismatched plain arrow. -->
     <div
       *ngIf="isTodayActiveDay() && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
       class="back-button"
+      aria-label="Undo last completion"
       (click)="undoLastCompletion()"
     >
       <ion-icon
-        name="arrow-back"
+        name="arrow-undo"
         class="back-icon"
       ></ion-icon>
     </div>

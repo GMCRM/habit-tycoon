@@ -667,8 +667,10 @@ button, span, div, ion-button {
   }
 }
 
-// Step-back button for multi-completion habits — small glass circle to
-// match the .hold-complete-button family it sits beside.
+// Step-back undo button for multi-completion habits — the same gold glass
+// treatment (and arrow-undo icon) as .hold-complete-button.is-undo-mode, so
+// this reads as the app's one established "undo" look instead of a
+// mismatched flat arrow, just scaled down to sit beside the main button.
 .back-button {
   position: relative;
   display: flex;
@@ -677,28 +679,51 @@ button, span, div, ion-button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 140, 0, 0.22) 0%, rgba(255, 140, 0, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.28) 0%, rgba(255, 235, 150, 0.28) 55%, rgba(255, 184, 0, 0.35) 100%);
   backdrop-filter: blur(10px) saturate(180%);
   -webkit-backdrop-filter: blur(10px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: visible;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow:
-    0 3px 10px rgba(255, 140, 0, 0.2),
-    inset 0 1px 1px rgba(255, 255, 255, 0.35);
+    0 4px 12px rgba(255, 184, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -4px 8px rgba(255, 184, 0, 0.2);
+
+  // Same specular highlight arc as the main button, scaled down
+  &::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 6px;
+    right: 6px;
+    height: 44%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+    filter: blur(1px);
+    pointer-events: none;
+  }
 
   .back-icon {
+    position: relative;
     font-size: 1.1rem;
     color: #FFFFFF;
-    filter: drop-shadow(0 0 3px rgba(255, 140, 0, 0.8));
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.9)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
     pointer-events: none;
   }
 
   &:hover {
     transform: scale(1.05);
     box-shadow:
-      0 4px 12px rgba(255, 140, 0, 0.3),
-      inset 0 1px 1px rgba(255, 255, 255, 0.45);
+      0 6px 16px rgba(255, 184, 0, 0.35),
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.6),
+      inset 0 -4px 8px rgba(255, 184, 0, 0.25);
   }
 
   &:active {

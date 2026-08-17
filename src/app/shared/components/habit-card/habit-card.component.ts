@@ -4,7 +4,7 @@ import { IonButton, IonIcon, ToastController, AlertController, ModalController }
 import { Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
-  checkmarkCircle, arrowUndo, arrowBack, chevronUp, chevronDown, trash,
+  checkmarkCircle, arrowUndo, chevronUp, chevronDown, trash,
   receiptOutline, calendarOutline, trendingUp, people, create, informationCircleOutline
 } from 'ionicons/icons';
 import { HabitBusiness, HabitBusinessService } from '../../../services/habit-business.service';
@@ -81,7 +81,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     private alertController: AlertController,
     private modalController: ModalController,
   ) {
-    addIcons({ checkmarkCircle, arrowUndo, arrowBack, chevronUp, chevronDown, trash, receiptOutline, calendarOutline, trendingUp, people, create, informationCircleOutline });
+    addIcons({ checkmarkCircle, arrowUndo, chevronUp, chevronDown, trash, receiptOutline, calendarOutline, trendingUp, people, create, informationCircleOutline });
   }
 
   ngOnInit() {

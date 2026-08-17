@@ -1835,9 +1835,15 @@ export class HabitBusinessService {
       
       // First, clean up any future date completions that shouldn't exist
       await this.cleanupInvalidCompletions();
-      
+
+      // Must match the local day boundary complete_habit_business/
+      // undo_habit_business_completion use, or a habit's current_progress
+      // from the previous local day can survive un-reset into a new local
+      // day whenever the client is ahead of UTC (see migration
+      // 20260817010000_fix_reset_outdated_habits_timezone.sql).
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const { data, error } = await this.supabase
-        .rpc('reset_outdated_habits');
+        .rpc('reset_outdated_habits', { p_client_timezone: clientTimezone });
 
       if (error) {
         console.error('Error resetting outdated daily habits:', error);
