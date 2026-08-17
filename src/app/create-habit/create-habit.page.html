@@ -58,6 +58,23 @@
           </button>
         </div>
 
+        <!-- Choose Friends — shown as soon as the Joint Venture tab is active, before any business is picked -->
+        <div class="form-section team-up-section" *ngIf="isJointVenture">
+          <ion-button
+            expand="block"
+            fill="outline"
+            color="tertiary"
+            (click)="openFriendPicker()"
+          >
+            <ion-icon name="people-circle" slot="start"></ion-icon>
+            Choose Friends ({{ selectedFriendIds.length }} selected)
+          </ion-button>
+
+          <p *ngIf="jvOwnerCount >= 2" class="jv-note jv-owner-note">
+            Splitting {{ jvOwnerCount }} ways — with ${{ userProfile?.cash | number:'1.2-2' }}, you can help launch businesses up to ${{ jvMaxUnlockedCost | number:'1.2-2' }}.
+          </p>
+        </div>
+
         <!-- Step 1: Name -->
         <div class="form-section">
           <div class="section-header">
@@ -150,7 +167,7 @@
               *ngFor="let type of businessTypes"
               class="investment-option"
               [class.selected]="selectedBusinessTypeId === type.id"
-              [class.locked]="userProfile?.cash < type.base_cost"
+              [class.jv-only]="!canAffordType(type)"
               (click)="selectRewardLevel(type)"
             >
               <div class="investment-header">
@@ -165,18 +182,28 @@
                 </div>
                 <div class="investment-info">
                   <div class="investment-name">{{ type.name }}</div>
-                  <div class="investment-cost" [class.unaffordable]="userProfile?.cash < type.base_cost">
-                    ${{ type.base_cost | number }}
+                  <div class="investment-cost" [class.unaffordable]="!canAffordType(type)">
+                    <ng-container *ngIf="isJointVenture && jvOwnerCount >= 2; else soloCost">
+                      <span class="original-cost">${{ type.base_cost | number }}</span>
+                      <span class="split-cost">${{ shareForType(type) | number:'1.2-2' }} your share</span>
+                    </ng-container>
+                    <ng-template #soloCost>${{ type.base_cost | number }}</ng-template>
                   </div>
                   <div class="investment-details">
                     <span class="revenue-amount">${{ type.base_pay | number }}</span>
                     <span class="revenue-label">per completion</span>
                   </div>
+                  <div class="jv-hint" *ngIf="!canAffordType(type)">
+                    <ion-icon name="people-circle"></ion-icon>
+                    <ng-container *ngIf="isJointVenture && jvOwnerCount >= 2">Add more friends to unlock</ng-container>
+                    <ng-container *ngIf="isJointVenture && jvOwnerCount < 2">Choose friends above to split the cost</ng-container>
+                    <ng-container *ngIf="!isJointVenture">Switch to Joint Venture to split the cost</ng-container>
+                  </div>
                 </div>
                 <ion-icon
                   class="investment-status-icon"
-                  [name]="userProfile?.cash >= type.base_cost ? 'checkmark-circle' : 'lock-closed'"
-                  [color]="userProfile?.cash >= type.base_cost ? 'success' : 'medium'"
+                  [name]="canAffordType(type) ? 'checkmark-circle' : 'people-circle'"
+                  [color]="canAffordType(type) ? 'success' : 'tertiary'"
                 ></ion-icon>
               </div>
             </div>
@@ -214,20 +241,8 @@
             </div>
           </div>
 
-          <!-- Joint Venture: friend picker + split summary -->
+          <!-- Joint Venture: split summary review -->
           <div *ngIf="isJointVenture" class="joint-venture-section">
-            <p class="jv-note">Joint ventures are always a simple daily habit — everyone checks in once a day.</p>
-
-            <ion-button
-              expand="block"
-              fill="outline"
-              color="tertiary"
-              (click)="openFriendPicker()"
-            >
-              <ion-icon name="people-circle" slot="start"></ion-icon>
-              Choose Friends ({{ selectedFriendIds.length }} selected)
-            </ion-button>
-
             <div *ngIf="selectedFriendIds.length > 0" class="jv-split-summary">
               <div class="summary-item">
                 <span class="summary-label">Co-owners:</span>

@@ -181,15 +181,42 @@ export class CreateHabitPage implements OnInit {
   }
 
   selectRewardLevel(businessType: BusinessType) {
-    if (this.userProfile?.cash >= businessType.base_cost) {
-      this.selectedBusinessTypeId = businessType.id;
-      this.selectedBusinessType = businessType;
-    }
+    // Selecting a tier is always allowed, even if the solo price is out of
+    // reach — a Joint Venture split (below) can still make it affordable.
+    // Actual affordability is enforced by `canAfford` at launch time.
+    this.selectedBusinessTypeId = businessType.id;
+    this.selectedBusinessType = businessType;
+  }
+
+  /**
+   * What this tier would actually cost this player right now: the full
+   * price solo, or their split share once on the Joint Venture tab with
+   * friends chosen (before that, it's still the full price — a JV needs at
+   * least one other owner to split anything).
+   */
+  shareForType(businessType: BusinessType): number {
+    if (!this.isJointVenture || this.jvOwnerCount < 2) return businessType.base_cost;
+    const othersShare = Math.round((businessType.base_cost / this.jvOwnerCount) * 100) / 100;
+    return Math.round((businessType.base_cost - othersShare * (this.jvOwnerCount - 1)) * 100) / 100;
+  }
+
+  canAffordType(businessType: BusinessType): boolean {
+    return (this.userProfile?.cash ?? 0) >= this.shareForType(businessType);
   }
 
   /** Total co-owners once launched: this player + everyone selected in the friend picker. */
   get jvOwnerCount(): number {
     return this.selectedFriendIds.length + 1;
+  }
+
+  /**
+   * The most expensive business this player's cash can unlock via a Joint
+   * Venture split, assuming the cost is shared evenly across the current
+   * owner count: cash * owners >= cost  <=>  cost / owners <= cash. This is
+   * the number the Investment Package tiles below light up against.
+   */
+  get jvMaxUnlockedCost(): number {
+    return Math.round((this.userProfile?.cash ?? 0) * this.jvOwnerCount * 100) / 100;
   }
 
   /** Every non-initiating co-owner's share — same rounding rule the server uses. */
@@ -201,7 +228,7 @@ export class CreateHabitPage implements OnInit {
   /** This player's own share — absorbs the rounding remainder so the total collected equals base_cost exactly. */
   get jvCreatorShare(): number {
     if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
-    return Math.round((this.selectedBusinessType.base_cost - this.jvShareOthers * (this.jvOwnerCount - 1)) * 100) / 100;
+    return this.shareForType(this.selectedBusinessType);
   }
 
   /** Per-completion earnings each co-owner gets — base_pay split across owners, rounded up to the cent, same as the server. */

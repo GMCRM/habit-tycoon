@@ -356,14 +356,14 @@ ion-content {
     box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.25);
   }
 
-  &:not(.selected):not(.locked):hover {
+  &:not(.selected):hover {
     border-color: var(--ion-color-primary);
     background: rgba(var(--ion-color-primary-rgb), 0.08);
     transform: translateY(-1px);
   }
 
-  &.locked {
-    opacity: 0.55;
+  &.jv-only:not(.selected) {
+    border-color: rgba(var(--ion-color-tertiary-rgb), 0.4);
   }
 
   .investment-header {
@@ -400,9 +400,28 @@ ion-content {
         font-size: 15px;
         color: var(--ion-color-success);
         margin-bottom: 4px;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        flex-wrap: wrap;
 
         &.unaffordable {
           color: var(--ion-color-danger);
+
+          .split-cost {
+            color: var(--ion-color-tertiary);
+          }
+        }
+
+        .original-cost {
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.5);
+          text-decoration: line-through;
+        }
+
+        .split-cost {
+          color: var(--ion-color-success);
         }
       }
 
@@ -420,6 +439,19 @@ ion-content {
         .revenue-label {
           color: rgba(255, 255, 255, 0.7);
           font-size: 12px;
+        }
+      }
+
+      .jv-hint {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--ion-color-tertiary);
+
+        ion-icon {
+          font-size: 13px;
         }
       }
     }
@@ -502,17 +534,26 @@ ion-content {
   font-style: italic;
 }
 
+.team-up-section {
+  border-color: rgba(var(--ion-color-tertiary-rgb), 0.35);
+}
+
 .joint-venture-section {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
 
-  .jv-note {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin: 0 0 10px 0;
-    line-height: 1.4;
-  }
+.jv-note {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 10px 0 0 0;
+  line-height: 1.4;
+}
+
+.jv-owner-note {
+  color: var(--ion-color-tertiary);
+  font-weight: 600;
 }
 
 .jv-split-summary {
