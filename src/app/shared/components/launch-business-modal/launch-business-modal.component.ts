@@ -111,9 +111,9 @@ export class LaunchBusinessModalComponent implements OnInit {
   }
 
   selectRewardLevel(businessType: BusinessType) {
-    // Selecting a tier is always allowed, even if the solo price is out of
-    // reach — a Joint Venture split (below) can still make it affordable.
-    // Actual affordability is enforced by `canAfford` at launch time.
+    // Tiers the player can't afford at the current friend count are locked
+    // out here; adding more friends lowers `shareForType` and re-enables them.
+    if (!this.canAffordType(businessType)) return;
     this.selectedBusinessTypeId = businessType.id;
     this.selectedBusinessType = businessType;
   }
@@ -202,6 +202,12 @@ export class LaunchBusinessModalComponent implements OnInit {
         // clear why they're fixed.
         this.recurrenceInterval = '24h';
         this.goalValue = 1;
+      }
+      // Fewer friends can push the current split share back out of reach —
+      // drop the selection rather than leave a now-locked tile selected.
+      if (this.selectedBusinessType && !this.canAffordType(this.selectedBusinessType)) {
+        this.selectedBusinessTypeId = null;
+        this.selectedBusinessType = null;
       }
     }
   }

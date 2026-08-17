@@ -146,6 +146,8 @@
             class="investment-option"
             [class.selected]="selectedBusinessTypeId === type.id"
             [class.jv-only]="!canAffordType(type)"
+            [class.disabled]="!canAffordType(type)"
+            [attr.aria-disabled]="!canAffordType(type)"
             (click)="selectRewardLevel(type)"
           >
             <div class="investment-header">
