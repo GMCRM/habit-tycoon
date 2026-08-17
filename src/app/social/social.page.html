@@ -89,6 +89,10 @@
                     <ion-skeleton-text animated class="skeleton-toggle-label"></ion-skeleton-text>
                     <ion-skeleton-text animated class="skeleton-toggle"></ion-skeleton-text>
                   </div>
+                  <div class="visibility-row">
+                    <ion-skeleton-text animated class="skeleton-toggle-label"></ion-skeleton-text>
+                    <ion-skeleton-text animated class="skeleton-toggle"></ion-skeleton-text>
+                  </div>
                 </div>
               </ion-card-content>
             </ion-card>
@@ -129,6 +133,15 @@
                       <ion-toggle
                         [checked]="friend.show_marketplace"
                         (ionChange)="onFriendVisibilityToggle(friend, 'show_marketplace', $event.detail.checked)"
+                      ></ion-toggle>
+                    </div>
+                    <div class="visibility-row">
+                      <ion-label>
+                        Show them on my leaderboards
+                      </ion-label>
+                      <ion-toggle
+                        [checked]="friend.show_on_leaderboard"
+                        (ionChange)="onFriendVisibilityToggle(friend, 'show_on_leaderboard', $event.detail.checked)"
                       ></ion-toggle>
                     </div>
                   </div>

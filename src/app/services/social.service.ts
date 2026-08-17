@@ -22,11 +22,17 @@ export interface Friend {
   // listings. Defaults to true (visible) when no row exists yet.
   show_stocks: boolean;
   show_marketplace: boolean;
+  // Whether this friend appears on the current user's own leaderboards.
+  // Defaults to true (shown) when no row exists yet. Unlike the two fields
+  // above, this is a viewer-side preference — it only affects what the
+  // current user sees, not what the friend can do.
+  show_on_leaderboard: boolean;
 }
 
 export interface FriendVisibilitySettings {
   show_stocks: boolean;
   show_marketplace: boolean;
+  show_on_leaderboard: boolean;
 }
 
 export interface SocialPost {
@@ -237,7 +243,8 @@ export class SocialService {
       return uniqueFriends.map(friend => ({
         ...friend,
         show_stocks: visibilityMap[friend.friend_profile.id]?.show_stocks ?? true,
-        show_marketplace: visibilityMap[friend.friend_profile.id]?.show_marketplace ?? true
+        show_marketplace: visibilityMap[friend.friend_profile.id]?.show_marketplace ?? true,
+        show_on_leaderboard: visibilityMap[friend.friend_profile.id]?.show_on_leaderboard ?? true
       }));
     } catch (error) {
       console.error('Error loading friends:', error);
@@ -254,7 +261,7 @@ export class SocialService {
     try {
       const { data, error } = await this.supabase
         .from('friend_visibility_settings')
-        .select('friend_id, show_stocks, show_marketplace')
+        .select('friend_id, show_stocks, show_marketplace, show_on_leaderboard')
         .eq('owner_id', userId)
         .in('friend_id', friendIds);
 
@@ -265,7 +272,11 @@ export class SocialService {
 
       const map: Record<string, FriendVisibilitySettings> = {};
       for (const row of data || []) {
-        map[row.friend_id] = { show_stocks: row.show_stocks, show_marketplace: row.show_marketplace };
+        map[row.friend_id] = {
+          show_stocks: row.show_stocks,
+          show_marketplace: row.show_marketplace,
+          show_on_leaderboard: row.show_on_leaderboard
+        };
       }
       return map;
     } catch (error) {
@@ -737,9 +748,10 @@ export class SocialService {
         }];
       }
 
-      // Get friends data (now includes financial information)
-      const friends = await this.getFriends(userId);
-      
+      // Get friends data (now includes financial information), excluding
+      // any the user has toggled off their leaderboards.
+      const friends = (await this.getFriends(userId)).filter(f => f.show_on_leaderboard);
+
       const leaderboard = [
         // Current user - use stored net_worth from database like home screen does
         {
@@ -802,8 +814,8 @@ export class SocialService {
         console.error('Error loading user profile for cash leaderboard:', userError);
       }
 
-      // Get friends
-      const friends = await this.getFriends(userId);
+      // Get friends, excluding any the user has toggled off their leaderboards
+      const friends = (await this.getFriends(userId)).filter(f => f.show_on_leaderboard);
 
       // Build list of all user IDs (self + friends)
       const allIds: string[] = [userId, ...friends.map(f => f.friend_profile.id)];
@@ -863,8 +875,8 @@ export class SocialService {
   // Weekly Habits Completed Leaderboard (resets at the start of the user's local week)
   async getFriendsHabitsCompletedLeaderboard(userId: string, weekStart: Date): Promise<any[]> {
     try {
-      // Get friends
-      const friends = await this.getFriends(userId);
+      // Get friends, excluding any the user has toggled off their leaderboards
+      const friends = (await this.getFriends(userId)).filter(f => f.show_on_leaderboard);
 
       // Build list of all user IDs (self + friends)
       const allIds: string[] = [userId, ...friends.map(f => f.friend_profile.id)];

@@ -637,12 +637,15 @@ export class SocialPage implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  // Toggling either setting only affects this specific friend's ability to
-  // view/buy the current user's *single-owner* businesses going forward —
+  // show_stocks/show_marketplace only affect this specific friend's ability
+  // to view/buy the current user's *single-owner* businesses going forward —
   // stocks already purchased are unaffected, and joint ventures (having
   // multiple co-owners) always stay visible to friends regardless of this
-  // toggle.
-  async onFriendVisibilityToggle(friend: Friend, field: 'show_stocks' | 'show_marketplace', checked: boolean) {
+  // toggle. show_on_leaderboard is different: it's a viewer-side preference
+  // that only changes what the current user sees on their own leaderboards —
+  // the friend's stats stay saved either way, so switching it back on later
+  // brings them right back.
+  async onFriendVisibilityToggle(friend: Friend, field: 'show_stocks' | 'show_marketplace' | 'show_on_leaderboard', checked: boolean) {
     if (!this.currentUser) return;
 
     const previous = friend[field];
