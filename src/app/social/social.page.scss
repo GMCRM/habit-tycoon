@@ -536,7 +536,13 @@ ion-content {
 
       ion-toggle {
         flex-shrink: 0;
-        --track-background-checked: var(--ion-color-primary);
+        transform: scale(0.75);
+        // Track sizing isn't exposed as a CSS custom property by Ionic, so
+        // scale() is the supported way to shrink the whole control.
+        --track-background: var(--ion-color-danger);
+        --track-background-checked: var(--ion-color-success);
+        --handle-background: #ffffff;
+        --handle-background-checked: #ffffff;
       }
     }
   }
@@ -1340,9 +1346,9 @@ ion-badge {
 
 .skeleton-toggle {
   flex-shrink: 0;
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
+  width: 27px;
+  height: 15px;
+  border-radius: 8px;
 }
 
 // Notifications tab
