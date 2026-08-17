@@ -118,9 +118,20 @@ export class LaunchBusinessModalComponent implements OnInit {
     this.selectedBusinessType = businessType;
   }
 
-  /** Whether this player can buy the tier outright, without splitting it as a Joint Venture. */
-  canSelectSolo(businessType: BusinessType): boolean {
-    return (this.userProfile?.cash ?? 0) >= businessType.base_cost;
+  /**
+   * What this tier would actually cost this player right now: the full
+   * price solo, or their split share once Joint Venture friends are chosen
+   * (before that, it's still the full price — a JV needs at least one
+   * other owner to split anything).
+   */
+  shareForType(businessType: BusinessType): number {
+    if (!this.isJointVenture || this.jvOwnerCount < 2) return businessType.base_cost;
+    const othersShare = Math.round((businessType.base_cost / this.jvOwnerCount) * 100) / 100;
+    return Math.round((businessType.base_cost - othersShare * (this.jvOwnerCount - 1)) * 100) / 100;
+  }
+
+  canAffordType(businessType: BusinessType): boolean {
+    return (this.userProfile?.cash ?? 0) >= this.shareForType(businessType);
   }
 
   /** Total co-owners once launched: this player + everyone selected in the friend picker. */
@@ -137,7 +148,7 @@ export class LaunchBusinessModalComponent implements OnInit {
   /** This player's own share — absorbs the rounding remainder so the total collected equals base_cost exactly. */
   get jvCreatorShare(): number {
     if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
-    return Math.round((this.selectedBusinessType.base_cost - this.jvShareOthers * (this.jvOwnerCount - 1)) * 100) / 100;
+    return this.shareForType(this.selectedBusinessType);
   }
 
   /** Per-completion earnings each co-owner gets — base_pay split across owners, rounded up to the cent, same as the server. */

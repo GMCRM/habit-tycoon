@@ -288,9 +288,28 @@
         font-size: 15px;
         color: var(--ion-color-success);
         margin-bottom: 4px;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        flex-wrap: wrap;
 
         &.unaffordable {
           color: var(--ion-color-danger);
+
+          .split-cost {
+            color: var(--ion-color-tertiary);
+          }
+        }
+
+        .original-cost {
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.5);
+          text-decoration: line-through;
+        }
+
+        .split-cost {
+          color: var(--ion-color-success);
         }
       }
 
@@ -403,12 +422,6 @@
   font-style: italic;
 }
 
-.joint-venture-section {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 215, 0, 0.2);
-}
-
 .jv-toggle-item {
   --background: transparent;
   --padding-start: 0;
@@ -443,6 +456,12 @@
     color: rgba(255, 255, 255, 0.6);
     margin: 0 0 10px 0;
     line-height: 1.4;
+  }
+
+  .jv-owner-note {
+    margin: 10px 0 0 0;
+    color: var(--ion-color-tertiary);
+    font-weight: 600;
   }
 }
 
