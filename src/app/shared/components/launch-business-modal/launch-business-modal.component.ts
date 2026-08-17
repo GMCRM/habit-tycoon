@@ -111,10 +111,16 @@ export class LaunchBusinessModalComponent implements OnInit {
   }
 
   selectRewardLevel(businessType: BusinessType) {
-    if (this.userProfile?.cash >= businessType.base_cost) {
-      this.selectedBusinessTypeId = businessType.id;
-      this.selectedBusinessType = businessType;
-    }
+    // Selecting a tier is always allowed, even if the solo price is out of
+    // reach — a Joint Venture split (below) can still make it affordable.
+    // Actual affordability is enforced by `canAfford` at launch time.
+    this.selectedBusinessTypeId = businessType.id;
+    this.selectedBusinessType = businessType;
+  }
+
+  /** Whether this player can buy the tier outright, without splitting it as a Joint Venture. */
+  canSelectSolo(businessType: BusinessType): boolean {
+    return (this.userProfile?.cash ?? 0) >= businessType.base_cost;
   }
 
   /** Total co-owners once launched: this player + everyone selected in the friend picker. */

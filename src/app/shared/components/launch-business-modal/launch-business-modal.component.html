@@ -123,7 +123,7 @@
             *ngFor="let type of businessTypes"
             class="investment-option"
             [class.selected]="selectedBusinessTypeId === type.id"
-            [class.locked]="userProfile?.cash < type.base_cost"
+            [class.jv-only]="!canSelectSolo(type)"
             (click)="selectRewardLevel(type)"
           >
             <div class="investment-header">
@@ -138,18 +138,22 @@
               </div>
               <div class="investment-info">
                 <div class="investment-name">{{ type.name }}</div>
-                <div class="investment-cost" [class.unaffordable]="userProfile?.cash < type.base_cost">
+                <div class="investment-cost" [class.unaffordable]="!canSelectSolo(type)">
                   ${{ type.base_cost | number }}
                 </div>
                 <div class="investment-details">
                   <span class="revenue-amount">${{ type.base_pay | number }}</span>
                   <span class="revenue-label">per completion</span>
                 </div>
+                <div class="jv-hint" *ngIf="!canSelectSolo(type)">
+                  <ion-icon name="people-circle"></ion-icon>
+                  Split with friends to unlock
+                </div>
               </div>
               <ion-icon
                 class="investment-status-icon"
-                [name]="userProfile?.cash >= type.base_cost ? 'checkmark-circle' : 'lock-closed'"
-                [color]="userProfile?.cash >= type.base_cost ? 'success' : 'medium'"
+                [name]="canSelectSolo(type) ? 'checkmark-circle' : 'people-circle'"
+                [color]="canSelectSolo(type) ? 'success' : 'tertiary'"
               ></ion-icon>
             </div>
           </div>

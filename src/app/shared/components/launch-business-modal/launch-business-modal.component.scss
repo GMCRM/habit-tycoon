@@ -244,14 +244,14 @@
     box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.25);
   }
 
-  &:not(.selected):not(.locked):hover {
+  &:not(.selected):hover {
     border-color: var(--ion-color-primary);
     background: rgba(var(--ion-color-primary-rgb), 0.08);
     transform: translateY(-1px);
   }
 
-  &.locked {
-    opacity: 0.55;
+  &.jv-only:not(.selected) {
+    border-color: rgba(var(--ion-color-tertiary-rgb), 0.4);
   }
 
   .investment-header {
@@ -308,6 +308,19 @@
         .revenue-label {
           color: rgba(255, 255, 255, 0.7);
           font-size: 12px;
+        }
+      }
+
+      .jv-hint {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--ion-color-tertiary);
+
+        ion-icon {
+          font-size: 13px;
         }
       }
     }
