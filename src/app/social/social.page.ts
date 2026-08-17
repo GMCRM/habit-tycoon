@@ -18,6 +18,7 @@ import { MarketplaceService, MarketplaceListing, MarketplacePurchase } from '../
 import { JointVentureService } from '../services/joint-venture.service';
 import { CountdownTickService } from '../services/countdown-tick.service';
 import { OfflineQueueService } from '../services/offline-queue.service';
+import { WeeklyReceiptService } from '../services/weekly-receipt.service';
 import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { StocksContentComponent } from '../stocks/stocks-content/stocks-content.component';
@@ -27,7 +28,7 @@ import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
   notifications, checkmark, close, notificationsOutline, settings, trashOutline, storefront,
-  helpCircleOutline } from 'ionicons/icons';
+  helpCircleOutline, chevronBack, chevronForward } from 'ionicons/icons';
 
 @Component({
   selector: 'app-social',
@@ -76,6 +77,11 @@ export class SocialPage implements OnInit, OnDestroy {
   completedLeaderboard: any[] = [];
   isLoadingCash = false;
   isLoadingCompleted = false;
+  // Which Monday-anchored week the Weekly Leaderboard is currently showing —
+  // navigable via previousLeaderboardWeek()/nextLeaderboardWeek(). Past weeks
+  // are served from a frozen snapshot (see get_weekly_leaderboard_history);
+  // the current week stays live.
+  leaderboardWeekStart!: Date;
   
   // UI state
   isLoading = false;
@@ -101,9 +107,12 @@ export class SocialPage implements OnInit, OnDestroy {
     private alertController: AlertController,
     private modalController: ModalController,
     private offlineQueueService: OfflineQueueService,
-    private jointVentureService: JointVentureService
+    private jointVentureService: JointVentureService,
+    private receiptService: WeeklyReceiptService
   ) {
-    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline});
+    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline,chevronBack,chevronForward});
+
+    this.leaderboardWeekStart = this.receiptService.getWeekStart();
 
     // Restore the previously selected tab from localStorage (only if the user has explicitly chosen one)
     const savedTab = localStorage.getItem('social-selected-tab');
@@ -378,10 +387,13 @@ export class SocialPage implements OnInit, OnDestroy {
     if (!this.currentUser) return;
     this.isLoadingCash = true;
     try {
-      this.cashLeaderboard = await this.socialService.getFriendsCashLeaderboard(
-        this.currentUser.id,
-        this.getCurrentWeekStart()
-      );
+      this.cashLeaderboard = this.isCurrentLeaderboardWeek
+        ? await this.socialService.getFriendsCashLeaderboard(this.currentUser.id, this.leaderboardWeekStart)
+        : await this.socialService.getFriendsCashLeaderboardHistory(
+            this.currentUser.id,
+            this.leaderboardWeekStart,
+            this.receiptService.getWeekEnd(this.leaderboardWeekStart)
+          );
     } catch (error) {
       console.error('Error loading cash leaderboard:', error);
       this.cashLeaderboard = [{ id: this.currentUser.id, name: 'You', cash_earned: 0, rank: 1 }];
@@ -394,10 +406,13 @@ export class SocialPage implements OnInit, OnDestroy {
     if (!this.currentUser) return;
     this.isLoadingCompleted = true;
     try {
-      this.completedLeaderboard = await this.socialService.getFriendsHabitsCompletedLeaderboard(
-        this.currentUser.id,
-        this.getCurrentWeekStart()
-      );
+      this.completedLeaderboard = this.isCurrentLeaderboardWeek
+        ? await this.socialService.getFriendsHabitsCompletedLeaderboard(this.currentUser.id, this.leaderboardWeekStart)
+        : await this.socialService.getFriendsHabitsCompletedLeaderboardHistory(
+            this.currentUser.id,
+            this.leaderboardWeekStart,
+            this.receiptService.getWeekEnd(this.leaderboardWeekStart)
+          );
     } catch (error) {
       console.error('Error loading habits completed leaderboard:', error);
       this.completedLeaderboard = [{ id: this.currentUser.id, name: 'You', habits_completed: 0, rank: 1 }];
@@ -406,20 +421,43 @@ export class SocialPage implements OnInit, OnDestroy {
     }
   }
 
-  // Start of the current local week (Monday 00:00) — the weekly leaderboards' reset point
-  private getCurrentWeekStart(): Date {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    // getDay(): 0 = Sunday .. 6 = Saturday; distance back to Monday
-    const daysSinceMonday = (start.getDay() + 6) % 7;
-    start.setDate(start.getDate() - daysSinceMonday);
-    return start;
+  /** Whether the Weekly Leaderboard is currently showing the in-progress current week (vs. a frozen past week). */
+  get isCurrentLeaderboardWeek(): boolean {
+    return this.leaderboardWeekStart.getTime() === this.receiptService.getWeekStart().getTime();
+  }
+
+  /** Display label for the week the Weekly Leaderboard is currently showing, e.g. "Aug 11 – Aug 17, 2026". */
+  get leaderboardWeekRangeLabel(): string {
+    const end = this.receiptService.getWeekEnd(this.leaderboardWeekStart);
+    end.setDate(end.getDate() - 1); // display inclusive Sunday, not exclusive next Monday
+    const startLabel = this.leaderboardWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endLabel = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `${startLabel} – ${endLabel}`;
+  }
+
+  async previousLeaderboardWeek() {
+    this.leaderboardWeekStart = this.receiptService.addWeeks(this.leaderboardWeekStart, -1);
+    await this.reloadWeeklyLeaderboard();
+  }
+
+  async nextLeaderboardWeek() {
+    if (this.isCurrentLeaderboardWeek) return;
+    this.leaderboardWeekStart = this.receiptService.addWeeks(this.leaderboardWeekStart, 1);
+    await this.reloadWeeklyLeaderboard();
+  }
+
+  private async reloadWeeklyLeaderboard() {
+    if (this.cashMetricFilter === 'completed') {
+      await this.loadCompletedLeaderboard();
+    } else {
+      await this.loadCashLeaderboard();
+    }
   }
 
   // Formats the time remaining until the weekly leaderboards reset, e.g. "2d 5h 12m"
   // `_tick` is unused but forces Angular to re-evaluate this binding on each timeRefreshInterval tick
   getWeeklyResetCountdown(_tick = this.timeRefreshTick): string {
-    const nextReset = new Date(this.getCurrentWeekStart());
+    const nextReset = new Date(this.receiptService.getWeekStart());
     nextReset.setDate(nextReset.getDate() + 7);
 
     const msRemaining = nextReset.getTime() - Date.now();

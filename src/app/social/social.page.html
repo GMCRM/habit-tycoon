@@ -466,9 +466,33 @@
 
           <!-- Habit Cash Earned View -->
           <ng-container *ngIf="leaderboardView === 'cashearned'">
-            <p class="weekly-reset-countdown">
+            <p class="weekly-reset-countdown" *ngIf="isCurrentLeaderboardWeek">
               ⏱️ Resets in {{ getWeeklyResetCountdown() }}
             </p>
+
+            <!-- Week navigator -->
+            <div class="week-nav">
+              <button
+                class="week-nav-arrow"
+                (click)="previousLeaderboardWeek()"
+                [disabled]="isLoadingCash || isLoadingCompleted"
+                aria-label="Previous week"
+              >
+                <ion-icon name="chevron-back"></ion-icon>
+              </button>
+              <div class="week-nav-label">
+                <span class="week-range">{{ leaderboardWeekRangeLabel }}</span>
+                <span class="week-current-tag" *ngIf="isCurrentLeaderboardWeek">This week</span>
+              </div>
+              <button
+                class="week-nav-arrow"
+                (click)="nextLeaderboardWeek()"
+                [disabled]="isLoadingCash || isLoadingCompleted || isCurrentLeaderboardWeek"
+                aria-label="Next week"
+              >
+                <ion-icon name="chevron-forward"></ion-icon>
+              </button>
+            </div>
 
             <!-- Metric Filter -->
             <ion-segment

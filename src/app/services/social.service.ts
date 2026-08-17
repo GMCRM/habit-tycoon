@@ -920,4 +920,56 @@ export class SocialService {
       }];
     }
   }
+
+  // Historical (past-week) Weekly Cash Earned Leaderboard — served from a frozen
+  // snapshot via get_weekly_leaderboard_history, so it stops drifting once first viewed.
+  async getFriendsCashLeaderboardHistory(userId: string, weekStart: Date, weekEnd: Date): Promise<any[]> {
+    try {
+      const rows = await this.getWeeklyLeaderboardHistoryRows('cash_earned', weekStart, weekEnd);
+      return rows.map(row => ({
+        id: row.ranked_user_id,
+        name: row.ranked_user_id === userId ? 'You' : row.display_name,
+        cash_earned: Number(row.value) || 0,
+        rank: row.rank
+      }));
+    } catch (error) {
+      console.error('Error loading historical cash leaderboard:', error);
+      return [{ id: userId, name: 'You', cash_earned: 0, rank: 1 }];
+    }
+  }
+
+  // Historical (past-week) Weekly Habits Completed Leaderboard — same frozen-snapshot pattern.
+  async getFriendsHabitsCompletedLeaderboardHistory(userId: string, weekStart: Date, weekEnd: Date): Promise<any[]> {
+    try {
+      const rows = await this.getWeeklyLeaderboardHistoryRows('habits_completed', weekStart, weekEnd);
+      return rows.map(row => ({
+        id: row.ranked_user_id,
+        name: row.ranked_user_id === userId ? 'You' : row.display_name,
+        habits_completed: Number(row.value) || 0,
+        rank: row.rank
+      }));
+    } catch (error) {
+      console.error('Error loading historical habits completed leaderboard:', error);
+      return [{ id: userId, name: 'You', habits_completed: 0, rank: 1 }];
+    }
+  }
+
+  private async getWeeklyLeaderboardHistoryRows(
+    metric: 'cash_earned' | 'habits_completed',
+    weekStart: Date,
+    weekEnd: Date
+  ): Promise<{ ranked_user_id: string; display_name: string; value: number; rank: number }[]> {
+    const { data, error } = await this.supabase.rpc('get_weekly_leaderboard_history', {
+      p_metric: metric,
+      p_week_start: weekStart.toISOString(),
+      p_week_end: weekEnd.toISOString()
+    });
+
+    if (error) {
+      console.error(`Error loading weekly leaderboard history (${metric}):`, error);
+      throw error;
+    }
+
+    return data || [];
+  }
 }
