@@ -135,6 +135,25 @@ export class HabitIntervalService {
   }
 
   /**
+   * Returns `habit.current_progress` scoped to the current period: 0 if the
+   * last completion predates the current period's start, since the server
+   * only zeroes `current_progress` itself via reset_outdated_habits() (run
+   * when Home is opened), so the raw field can sit stale across a period
+   * rollover until then. Callers displaying "today's" progress should use
+   * this instead of reading `current_progress` directly.
+   */
+  getCurrentProgress(habit: HabitBusiness, now: Date = new Date()): number {
+    const currentProgress = habit.current_progress || 0;
+    if (currentProgress === 0 || !habit.last_completed_at) return 0;
+
+    const interval = this.resolveInterval(habit);
+    const periodStart = this.getCurrentPeriodStart(interval, now);
+    const lastCompleted = new Date(habit.last_completed_at);
+
+    return lastCompleted >= periodStart ? currentProgress : 0;
+  }
+
+  /**
    * Returns true if the habit has met its goal within the current active period.
    * For 'specific_days' on a rest day, there's nothing to do today, so the habit
    * counts as "done" regardless of whether it was completed on its last active day.
@@ -153,15 +172,7 @@ export class HabitIntervalService {
     }
 
     const goalValue = habit.goal_value || 1;
-    const currentProgress = habit.current_progress || 0;
-
-    if (currentProgress < goalValue) return false;
-    if (!habit.last_completed_at) return false;
-
-    const periodStart = this.getCurrentPeriodStart(interval, now);
-    const lastCompleted = new Date(habit.last_completed_at);
-
-    return lastCompleted >= periodStart;
+    return this.getCurrentProgress(habit, now) >= goalValue;
   }
 
   /**

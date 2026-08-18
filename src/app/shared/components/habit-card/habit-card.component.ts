@@ -110,6 +110,11 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(this.hb);
   }
 
+  /** Today's progress, scoped to the current period (see HabitIntervalService.getCurrentProgress). */
+  getCurrentProgress(): number {
+    return this.habitIntervalService.getCurrentProgress(this.hb);
+  }
+
   isTodayActiveDay(): boolean {
     return this.habitIntervalService.isTodayActiveDay(this.hb);
   }

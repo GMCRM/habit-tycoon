@@ -29,10 +29,10 @@
   <div class="corner-controls corner-top-right" *ngIf="!hb.is_joint_venture">
     <!-- Single transforming button: Complete -> Undo, single tap -->
     <div
-      *ngIf="!isGoalCompleted() || (isTodayActiveDay() && (hb.current_progress || 0) > 0)"
+      *ngIf="!isGoalCompleted() || (isTodayActiveDay() && getCurrentProgress() > 0)"
       class="hold-complete-button"
       [class.is-completing]="completing"
-      [class.is-undo-mode]="isGoalCompleted() && (hb.current_progress || 0) > 0"
+      [class.is-undo-mode]="isGoalCompleted() && getCurrentProgress() > 0"
       [class.is-undoing]="undoing"
       [attr.aria-label]="isGoalCompleted() ? 'Undo completion' : 'Complete'"
       (click)="isGoalCompleted() ? handleUndoTap($event) : handleCompleteTap($event)"
@@ -45,16 +45,16 @@
 
       <!-- Progress count badge for multi-completion goals -->
       <span class="progress-badge" *ngIf="hb.goal_value && hb.goal_value > 1">
-        {{ hb.current_progress || 0 }}/{{ hb.goal_value }}
+        {{ getCurrentProgress() }}/{{ hb.goal_value }}
       </span>
     </div>
 
-    <!-- Step-back undo for multi-completion habits with progress — same
-         arrow-undo iconography as the main button's undo mode above, so the
-         two read as one consistent "undo" affordance instead of a
-         mismatched plain arrow. -->
+    <!-- Step-back undo for multi-completion habits mid-progress (not yet
+         goal-complete) — once the goal is met, the main button above already
+         is the undo control, so this stays hidden to avoid a second,
+         differently-styled undo affordance for the same action. -->
     <div
-      *ngIf="isTodayActiveDay() && (hb.goal_value && hb.goal_value > 1) && (hb.current_progress || 0) > 0"
+      *ngIf="isTodayActiveDay() && (hb.goal_value && hb.goal_value > 1) && getCurrentProgress() > 0 && !isGoalCompleted()"
       class="back-button"
       aria-label="Undo last completion"
       (click)="undoLastCompletion()"
@@ -258,7 +258,7 @@
 
       <div class="habit-period-status" *ngIf="!hb.is_joint_venture">
         <span class="period-progress"
-          >{{ hb.current_progress || 0 }}/{{ hb.goal_value || 1 }}
+          >{{ getCurrentProgress() }}/{{ hb.goal_value || 1 }}
           completions</span
         >
         <span *ngIf="isTodayActiveDay()" class="period-reset"
