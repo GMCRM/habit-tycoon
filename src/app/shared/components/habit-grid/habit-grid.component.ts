@@ -996,14 +996,15 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
     this.weeks = weeksNeeded;
 
-    if (this.isMobileScreen) {
-      this.scrollToToday();
-    }
+    this.scrollToToday();
   }
 
   /**
-   * On mobile the year strip is wider than the screen and scrolls
-   * horizontally - land on today instead of leaving the user at January.
+   * The year strip is often wider than its container (always on mobile,
+   * and on tablet/desktop too once it's squeezed into a narrower column
+   * like the 2-up habit grid) and scrolls horizontally - land on today
+   * instead of leaving the user at January. No-ops harmlessly if the
+   * whole grid already fits.
    */
   private scrollToToday(): void {
     setTimeout(() => {

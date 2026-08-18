@@ -688,7 +688,25 @@ button, span, div, ion-button {
       }
     }
   }
-  
+
+  .habit-businesses-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    gap: 0 16px;
+
+    // Grid items default to an "auto" minimum width based on their
+    // content's max-content size — without this, expanding a habit's
+    // year-calendar (wide, non-wrapping content) forces that column to
+    // grow past its fair 1fr share, throwing the two columns out of
+    // sync with each other. Pinning min-width: 0 keeps both columns
+    // locked at an even 50/50 split; the calendar scrolls horizontally
+    // within its own fixed-width column instead (already handled by
+    // .inline-habit-grid's overflow-x: auto).
+    > app-habit-card {
+      min-width: 0;
+    }
+  }
 }
 
 // Habit Grid Modal styling
