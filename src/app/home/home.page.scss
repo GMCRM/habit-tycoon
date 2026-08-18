@@ -510,7 +510,9 @@ button, span, div, ion-button {
   
   // Loading state styling (shown while habit-businesses are still being fetched,
   // so the empty state doesn't flash before real data arrives). Shaped like the
-  // habit-card it's standing in for, so the swap-in doesn't jump around.
+  // habit-card it's standing in for — same corner button, icon, name, action-icon
+  // row and stat pair — and laid out in the same .habit-businesses-container grid,
+  // so the swap-in doesn't jump around or change column count at any screen size.
   .loading-state {
     .skeleton-card {
       background: var(--business-item-background);
@@ -518,20 +520,34 @@ button, span, div, ion-button {
       border-radius: 12px;
       margin: 12px 0;
       padding: 16px;
-      aspect-ratio: 1 / 1;
+      position: relative;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      align-items: center;
+
+      // Stand-in for the complete/undo circle that floats over the top-right
+      // corner of a real card.
+      .skeleton-corner-button {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: rgba(255, 215, 0, 0.12);
+        animation: skeleton-logo-pulse 1.4s ease-in-out infinite;
+      }
 
       .skeleton-icon-wrap {
         display: flex;
         justify-content: center;
-        margin-bottom: 12px;
+        margin-top: 68px; // clears the 48px corner circle, matching .business-hero
+        margin-bottom: 6px;
       }
 
       .skeleton-icon-logo {
-        width: 88px;
-        height: 88px;
+        width: 106px;
+        height: 106px;
         border-radius: 22%;
         object-fit: cover;
         animation: skeleton-logo-pulse 1.4s ease-in-out infinite;
@@ -549,17 +565,45 @@ button, span, div, ion-button {
       .skeleton-title {
         width: 60%;
         height: 20px;
-        margin: 0 auto 16px;
+        margin: 0 auto 12px;
+      }
+
+      // Stand-in for the row of icon-only buttons (delete, earnings, calendar,
+      // upgrade, stock owners, edit) under the name.
+      .skeleton-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 16px;
+
+        .skeleton-action-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+        }
       }
 
       .skeleton-stats {
         display: flex;
         justify-content: center;
-        gap: 32px;
+        gap: 16px;
 
-        .skeleton-stat {
-          width: 70px;
-          height: 32px;
+        .skeleton-stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+
+          .skeleton-stat-label {
+            width: 50px;
+            height: 10px;
+          }
+
+          .skeleton-stat-value {
+            width: 60px;
+            height: 16px;
+          }
         }
       }
     }
@@ -703,8 +747,36 @@ button, span, div, ion-button {
     // locked at an even 50/50 split; the calendar scrolls horizontally
     // within its own fixed-width column instead (already handled by
     // .inline-habit-grid's overflow-x: auto).
-    > app-habit-card {
+    > app-habit-card,
+    > .skeleton-card {
       min-width: 0;
+    }
+  }
+
+  // Mirror .habit-business-item's own >=768px growth (bigger icon, wider
+  // corner circle, more stat spacing) so the placeholder scales in step.
+  .loading-state .skeleton-card {
+    .skeleton-corner-button {
+      top: 14px;
+      width: 56px;
+      height: 56px;
+    }
+
+    .skeleton-icon-wrap {
+      margin-top: 76px; // clears the 56px corner circle, matching .business-hero
+    }
+
+    .skeleton-icon-logo {
+      width: 130px;
+      height: 130px;
+    }
+
+    .skeleton-title {
+      height: 24px;
+    }
+
+    .skeleton-stats {
+      gap: 24px;
     }
   }
 }

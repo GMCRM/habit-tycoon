@@ -204,16 +204,33 @@
 
         <div
           *ngIf="(!habitBusinesses || habitBusinesses.length === 0) && (!hasCheckedAuth || isLoading)"
-          class="loading-state"
+          class="habit-businesses-container loading-state"
         >
-          <div class="skeleton-card" *ngFor="let i of [0, 1]">
+          <!-- Card count matches the widest grid (3-up on iPad landscape+) so the
+               loading state fills out a full row instead of leaving a gap; on
+               narrower screens the same cards simply wrap into more rows. -->
+          <div class="skeleton-card" *ngFor="let i of [0, 1, 2]">
+            <div class="skeleton-corner-button"></div>
             <div class="skeleton-icon-wrap">
               <img src="assets/icon/logo.png" alt="" class="skeleton-icon-logo" />
             </div>
             <ion-skeleton-text animated class="skeleton-title"></ion-skeleton-text>
+            <div class="skeleton-actions">
+              <ion-skeleton-text
+                animated
+                class="skeleton-action-icon"
+                *ngFor="let a of [0, 1, 2, 3, 4]"
+              ></ion-skeleton-text>
+            </div>
             <div class="skeleton-stats">
-              <ion-skeleton-text animated class="skeleton-stat"></ion-skeleton-text>
-              <ion-skeleton-text animated class="skeleton-stat"></ion-skeleton-text>
+              <div class="skeleton-stat-item">
+                <ion-skeleton-text animated class="skeleton-stat-label"></ion-skeleton-text>
+                <ion-skeleton-text animated class="skeleton-stat-value"></ion-skeleton-text>
+              </div>
+              <div class="skeleton-stat-item">
+                <ion-skeleton-text animated class="skeleton-stat-label"></ion-skeleton-text>
+                <ion-skeleton-text animated class="skeleton-stat-value"></ion-skeleton-text>
+              </div>
             </div>
           </div>
         </div>
