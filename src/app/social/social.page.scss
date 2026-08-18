@@ -85,33 +85,30 @@
   }
 }
 
-// iOS Safari viewport fixes for ion-content
-ion-content {
-  /* Ensure proper height calculation on iOS */
-  // --offset-bottom: auto !important;
-  // --offset-top: auto !important;
-  
-  /* iOS Safari specific fixes */
-  @supports (-webkit-touch-callout: none) {
-    height: 100% !important;
-    min-height: 100% !important;
-  }
-}
+// NOTE: this used to force `ion-content { height: 100% !important }` here
+// for "iOS Safari fixes". Ionic already sizes ion-content correctly below
+// ion-header via flexbox (ion-header + ion-content are flex siblings, and
+// ion-content gets the remaining space) — forcing height to 100% of
+// ion-content's own parent (the full window) overrides that and makes
+// ion-content's box extend past the bottom of the screen by exactly the
+// header's height, since it now ignores how much space the header actually
+// took. That pushed .scrollable-content's real bottom edge (and the last
+// bit of scrolled content, e.g. a stock card's price/actions row) below the
+// visible viewport, permanently inaccessible no matter how far you
+// scrolled — not a scroll bug, a sizing bug that happened to look like one.
 
 // Custom scrollable content
 .scrollable-content {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Enable momentum scrolling on iOS */
-  -webkit-overflow-scrolling: touch;
-  
+
   /* Hide scrollbar for Firefox */
   scrollbar-width: none;
-  
+
   /* Hide scrollbar for Internet Explorer/Edge */
   -ms-overflow-style: none;
-  
+
   /* iOS Safari specific scrolling fixes */
   @supports (-webkit-touch-callout: none) {
     /* ion-content is already sized correctly below the header by flexbox;
@@ -120,7 +117,14 @@ ion-content {
        scrolled content behind the fixed bottom nav. */
     height: 100%;
     overflow-y: scroll !important;
-    -webkit-overflow-scrolling: touch !important;
+    /* No -webkit-overflow-scrolling: touch here (deliberately) — that
+       legacy momentum-scroll hint makes WKWebView cache this element's
+       scroll bounds at whatever height it had when scrolling first began.
+       Portfolio/holdings cards render async and grow this container's
+       content height after that point, so the cached bounds fall short of
+       the real bottom and scrolling gets stuck before reaching it. Modern
+       iOS (13+) already does native momentum scrolling on any
+       overflow:auto/scroll element without this property. */
   }
   
   /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
