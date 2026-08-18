@@ -3,15 +3,13 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Enable momentum scrolling on iOS */
-  -webkit-overflow-scrolling: touch;
-  
+
   /* Hide scrollbar for Firefox */
   scrollbar-width: none;
-  
+
   /* Hide scrollbar for Internet Explorer/Edge */
   -ms-overflow-style: none;
-  
+
   /* iOS Safari specific scrolling fixes */
   @supports (-webkit-touch-callout: none) {
     /* ion-content is already sized correctly below the header by flexbox;
@@ -20,7 +18,14 @@
        scrolled content behind the fixed bottom nav. */
     height: 100%;
     overflow-y: scroll !important;
-    -webkit-overflow-scrolling: touch !important;
+    /* No -webkit-overflow-scrolling: touch here (deliberately) — that
+       legacy momentum-scroll hint makes WKWebView cache this element's
+       scroll bounds at whatever height it had when scrolling first began.
+       Portfolio/holdings cards render async and grow this container's
+       content height after that point, so the cached bounds fall short of
+       the real bottom and scrolling gets stuck before reaching it. Modern
+       iOS (13+) already does native momentum scrolling on any
+       overflow:auto/scroll element without this property. */
   }
   
   /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
@@ -1281,6 +1286,58 @@
       
       .earnings-section {
         min-width: 140px;
+      }
+    }
+  }
+}
+
+// Stack the price/actions sidebar under the calendar+chart column instead of
+// beside it for tablet-landscape/small-laptop widths (1025-1400px — this is
+// where an iPad Pro in landscape lands, e.g. 13" M4/M5 at 1376pt, 12.9" 6th
+// gen at 1366pt, 11" M4 at 1210pt). At these widths the row layout above
+// leaves the earnings-section sidebar sitting mostly empty next to the much
+// taller calendar+chart column in .business-info, since the card height is
+// dictated by that taller column. Reuses the same top-left icon overlay
+// pattern as the <1025px stacked layout below, just sized for the bigger
+// icon/fonts this range already uses (see block above).
+@media (min-width: 1025px) and (max-width: 1400px) {
+  .my-habit-businesses {
+    .habit-business-item {
+      .item-content {
+        flex-direction: column;
+        align-items: stretch;
+
+        .business-icon-img,
+        .business-icon {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          z-index: 10;
+        }
+
+        .business-info {
+          width: 100%;
+
+          .business-name,
+          .owner-section {
+            margin-left: 96px; // clear the 80px top-left icon
+          }
+        }
+
+        .earnings-section {
+          width: 100%;
+          min-width: auto;
+          margin-top: 8px;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+
+          .earnings-total {
+            flex-direction: row;
+            align-items: baseline;
+            gap: 8px;
+          }
+        }
       }
     }
   }
