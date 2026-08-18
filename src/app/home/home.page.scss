@@ -709,6 +709,13 @@ button, span, div, ion-button {
   }
 }
 
+// iPad landscape and larger tablets/desktops: bump to 3 habits per row
+@media (min-width: 1024px) {
+  .habit-businesses-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 // Habit Grid Modal styling
 .habit-grid-modal {
   ion-modal {
