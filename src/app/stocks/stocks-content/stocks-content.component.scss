@@ -346,6 +346,30 @@
   padding-right: 4px;
 }
 
+// Multi-column card grid — mirrors the Home screen's .habit-businesses-container
+// breakpoints so Available Stocks / Portfolio cards go 2-up then 3-up as the
+// screen gets bigger instead of staying a single stacked column forever.
+@media (min-width: 768px) {
+  .stocks-list-scroll-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    gap: 0 16px;
+
+    // Same reasoning as Home: without this a card's wide inline calendar
+    // can push its column past its fair 1fr share and desync the columns.
+    > .habit-business-item {
+      min-width: 0;
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  .stocks-list-scroll-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 // Stocks sections - match homepage habit-businesses styling
 .my-habit-businesses {
   .section-header {
@@ -1292,15 +1316,19 @@
 }
 
 // Stack the price/actions sidebar under the calendar+chart column instead of
-// beside it for tablet-landscape/small-laptop widths (1025-1400px — this is
-// where an iPad Pro in landscape lands, e.g. 13" M4/M5 at 1376pt, 12.9" 6th
-// gen at 1366pt, 11" M4 at 1210pt). At these widths the row layout above
-// leaves the earnings-section sidebar sitting mostly empty next to the much
-// taller calendar+chart column in .business-info, since the card height is
-// dictated by that taller column. Reuses the same top-left icon overlay
-// pattern as the <1025px stacked layout below, just sized for the bigger
-// icon/fonts this range already uses (see block above).
-@media (min-width: 1025px) and (max-width: 1400px) {
+// beside it from tablet-landscape widths up (1025px+ — this is where an iPad
+// Pro in landscape lands, e.g. 13" M4/M5 at 1376pt, 12.9" 6th gen at 1366pt,
+// 11" M4 at 1210pt). At these widths the row layout above leaves the
+// earnings-section sidebar sitting mostly empty next to the much taller
+// calendar+chart column in .business-info, since the card height is dictated
+// by that taller column. No upper bound: from 768px up, cards sit in a
+// 2-or-3-column grid (see .stocks-list-scroll-container), so a card never
+// gets the full viewport width again — the row layout's implicit default
+// past 1400px would otherwise squeeze icon/info/earnings into a column-width
+// sliver instead of stacking. Reuses the same top-left icon overlay pattern
+// as the <1025px stacked layout below, just sized for the bigger icon/fonts
+// this range already uses (see block above).
+@media (min-width: 1025px) {
   .my-habit-businesses {
     .habit-business-item {
       .item-content {
@@ -1747,4 +1775,3 @@
     }
   }
 }
-
