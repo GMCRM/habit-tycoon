@@ -1,0 +1,40 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="calendar-outline" color="tertiary"></ion-icon>
+        {{ businessName }}
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="calendar-modal-content">
+  <div class="inline-habit-grid">
+    <div>
+      <app-habit-grid
+        [businessId]="businessId"
+        [businessName]="businessName"
+        [businessEmoji]="businessEmoji"
+        [businessType]="businessType"
+        [businessCreatedAt]="businessCreatedAt"
+        [isModal]="false"
+        [showStats]="true"
+        [useCalendarYear]="true"
+      >
+      </app-habit-grid>
+      <app-stock-chart
+        [businessId]="businessId"
+        [isStockView]="false"
+        [days]="30"
+        [currentStreak]="currentStreak"
+      >
+      </app-stock-chart>
+    </div>
+  </div>
+</ion-content>

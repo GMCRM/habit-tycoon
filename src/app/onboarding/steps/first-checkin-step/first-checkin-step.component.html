@@ -22,11 +22,9 @@
       [hb]="habit"
       [isFirst]="true"
       [isLast]="true"
-      [gridExpanded]="gridExpanded"
       [currentUserId]="currentUserId"
       [userCash]="userCash"
       [canDelete]="false"
-      (toggleGrid)="gridExpanded = !gridExpanded"
       (changed)="onCardChanged()"
       (offlineQueued)="onCardChanged()"
     ></app-habit-card>

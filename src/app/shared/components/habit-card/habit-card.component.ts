@@ -14,34 +14,32 @@ import { HabitUpdateService } from '../../../services/habit-update.service';
 import { HabitIntervalService } from '../../../services/habit-interval.service';
 import { CountdownTickService } from '../../../services/countdown-tick.service';
 import { SoundService } from '../../../services/sound.service';
-import { HabitGridComponent } from '../habit-grid/habit-grid.component';
-import { StockChartComponent } from '../stock-chart/stock-chart.component';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { UpgradeModalComponent } from '../../../home/upgrade-modal/upgrade-modal.component';
 import { EditHabitModalComponent } from '../../../home/edit-habit-modal/edit-habit-modal.component';
 import { StockOwnersModalComponent } from '../stock-owners-modal/stock-owners-modal.component';
 import { JvParticipantsModalComponent } from '../jv-participants-modal/jv-participants-modal.component';
+import { CalendarModalComponent } from '../calendar-modal/calendar-modal.component';
+import { EarningsModalComponent } from '../earnings-modal/earnings-modal.component';
 
 /**
  * The habit-business card shown on the home screen — reused as-is (same
  * markup, styles and fully working icons) by the onboarding "complete your
  * habit" step, so the two never drift apart. One instance = one habit;
- * per-item UI state (earnings/grid toggles, in-flight complete/undo) lives
- * locally here instead of being keyed by id in a parent component.
+ * per-item UI state (in-flight complete/undo) lives locally here instead of
+ * being keyed by id in a parent component.
  */
 @Component({
   selector: 'app-habit-card',
   templateUrl: './habit-card.component.html',
   styleUrls: ['./habit-card.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonButton, IonIcon, HabitGridComponent, StockChartComponent, BusinessIconPipe],
+  imports: [CommonModule, IonButton, IonIcon, BusinessIconPipe],
 })
 export class HabitCardComponent implements OnInit, OnDestroy {
   @Input({ required: true }) hb!: HabitBusiness;
   @Input() isFirst = true;
   @Input() isLast = true;
-  /** Only one card's inline 365-day grid is open at a time — the parent owns that exclusivity. */
-  @Input() gridExpanded = false;
   @Input() stockBoostPercent = 0;
   @Input() jvStatusRows: JointVentureStatusRow[] = [];
   @Input() currentUserId: string | null = null;
@@ -49,7 +47,6 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   @Input() canDelete = true;
 
   @Output() reorder = new EventEmitter<'up' | 'down'>();
-  @Output() toggleGrid = new EventEmitter<void>();
   /** Fires after any successful action that changes cash/dashboard data (complete, undo, delete, upgrade, edit, JV actions). */
   @Output() changed = new EventEmitter<void>();
   /** Fires when an action was queued offline instead of completing immediately. */
@@ -57,8 +54,6 @@ export class HabitCardComponent implements OnInit, OnDestroy {
 
   completing = false;
   undoing = false;
-  showEarningsSection = false;
-  showEarningsBreakdown = false;
   countdown = '...';
 
   /** How long after a joint-venture check-in the undo button stays available. */
@@ -177,8 +172,22 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     this.reorder.emit('down');
   }
 
-  onToggleGrid() {
-    this.toggleGrid.emit();
+  /** Open the full year-long completion calendar + stock chart in a modal. */
+  async openCalendarModal() {
+    const modal = await this.modalController.create({
+      component: CalendarModalComponent,
+      componentProps: {
+        businessId: this.hb.id,
+        businessName: this.hb.business_name,
+        businessEmoji: this.hb.business_icon,
+        businessType: this.hb.business_types?.name || this.hb.business_name || '',
+        businessCreatedAt: this.hb.created_at,
+        currentStreak: this.getEffectiveStreak(),
+        modalController: this.modalController
+      },
+      cssClass: 'calendar-modal'
+    });
+    await modal.present();
   }
 
   private async toast(message: string, color: string, duration = 3000) {
@@ -724,12 +733,18 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     return { baseEarnings, streakBonus, stockBoost, totalEarnings: baseTotal };
   }
 
-  toggleEarningsBreakdown() {
-    this.showEarningsBreakdown = !this.showEarningsBreakdown;
-  }
-
-  toggleEarningsVisibility() {
-    this.showEarningsSection = !this.showEarningsSection;
+  /** Open the per-completion earnings breakdown in a modal. */
+  async openEarningsModal() {
+    const modal = await this.modalController.create({
+      component: EarningsModalComponent,
+      componentProps: {
+        businessName: this.hb.business_name,
+        breakdown: this.getEarningsBreakdown(),
+        modalController: this.modalController
+      },
+      cssClass: 'earnings-modal'
+    });
+    await modal.present();
   }
 
   /** Format large numbers for display (1.1K, 1.1M, 1.1B, 1.1T, etc.) */

@@ -373,19 +373,6 @@ export class HomePage implements OnInit, OnDestroy {
     return hb.id;
   }
 
-  /**
-   * Toggle the inline 365-day habit grid for a specific habit business.
-   * Only one card's grid is ever open at once.
-   */
-  toggleHabitGrid(habitBusiness: HabitBusiness) {
-    const currentState = this.expandedGrids[habitBusiness.id] || false;
-    this.expandedGrids = {};
-    this.expandedGrids[habitBusiness.id] = !currentState;
-  }
-
-  // Track which habits have their 365-day grid expanded
-  expandedGrids: { [key: string]: boolean } = {};
-
   // Stock ownership pay-boost percentage per habit business (1% per share purchased by investors)
   stockBoostByBusinessId: { [habitBusinessId: string]: number } = {};
 

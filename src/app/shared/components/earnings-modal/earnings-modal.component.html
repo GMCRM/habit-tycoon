@@ -1,0 +1,69 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="receipt-outline" color="tertiary"></ion-icon>
+        {{ businessName }}
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="earnings-modal-content">
+  <div class="earnings-section">
+    <div class="earnings-total">
+      <div class="total-amount">
+        ${{ breakdown.totalEarnings | number:'1.2-2' }}
+      </div>
+      <div class="earnings-label">total per completion</div>
+
+      <!-- Itemized Earnings Toggle Button -->
+      <ion-button
+        fill="clear"
+        size="small"
+        color="medium"
+        (click)="toggleBreakdown()"
+      >
+        <ion-icon
+          [name]="showBreakdown ? 'chevron-up' : 'chevron-down'"
+          slot="end"
+        ></ion-icon>
+        {{ showBreakdown ? 'Hide Details' : 'Itemized' }}
+      </ion-button>
+    </div>
+
+    <!-- Earnings Breakdown (Collapsible) -->
+    <div
+      class="earnings-breakdown"
+      *ngIf="showBreakdown"
+    >
+      <div class="breakdown-item">
+        <span class="breakdown-label">Base Pay:</span>
+        <span class="breakdown-value">${{ breakdown.baseEarnings | number:'1.2-2' }}</span>
+      </div>
+      <div
+        class="breakdown-item"
+        *ngIf="breakdown.stockBoost > 0"
+      >
+        <span class="breakdown-label">Stock Boost:</span>
+        <span class="breakdown-value">+${{ breakdown.stockBoost | number:'1.2-2' }}</span>
+      </div>
+      <div
+        class="breakdown-item"
+        *ngIf="breakdown.streakBonus > 0"
+      >
+        <span class="breakdown-label">Streak Bonus:</span>
+        <span class="breakdown-value">+${{ breakdown.streakBonus | number:'1.2-2' }}</span>
+      </div>
+      <div class="breakdown-item breakdown-total">
+        <span class="breakdown-label">Total:</span>
+        <span class="breakdown-value">${{ breakdown.totalEarnings | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+</ion-content>

@@ -34,7 +34,6 @@ export class FirstCheckinStepComponent implements OnInit {
   @Output() completed = new EventEmitter<CheckinResult>();
 
   result: CheckinResult | null = null;
-  gridExpanded = false;
   currentUserId: string | null = null;
   userCash = 0;
 

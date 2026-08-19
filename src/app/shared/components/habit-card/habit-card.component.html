@@ -156,7 +156,7 @@
         <!-- Earnings Toggle Button -->
         <div
           class="earnings-toggle-button"
-          (click)="toggleEarningsVisibility()"
+          (click)="openEarningsModal()"
         >
           <ion-icon name="receipt-outline" class="dollar-icon"></ion-icon>
         </div>
@@ -166,7 +166,7 @@
           color="tertiary"
           size="default"
           class="calendar-toggle-button"
-          (click)="onToggleGrid()"
+          (click)="openCalendarModal()"
           style="
             margin: 0;
             --padding-start: 12px;
@@ -277,99 +277,6 @@
         <span *ngIf="isJvCheckedInToday() && jvCheckedInCount() < jvTotalCoOwners()" class="jv-waiting-on">
           Waiting on {{ jvWaitingOnNames() }} for today's streak bonus
         </span>
-      </div>
-
-      <!-- Earnings Section (toggleable) - Now displayed below the main content -->
-      <div
-        class="earnings-section"
-        *ngIf="showEarningsSection"
-      >
-        <div class="earnings-total">
-          <div class="total-amount">
-            ${{ getEarningsBreakdown().totalEarnings | number:'1.2-2' }}
-          </div>
-          <div class="earnings-label">total per completion</div>
-
-          <!-- Itemized Earnings Toggle Button -->
-          <ion-button
-            fill="clear"
-            size="small"
-            color="medium"
-            (click)="toggleEarningsBreakdown()"
-          >
-            <ion-icon
-              [name]="showEarningsBreakdown ? 'chevron-up' : 'chevron-down'"
-              slot="end"
-            ></ion-icon>
-            {{ showEarningsBreakdown ? 'Hide Details' :
-            'Itemized' }}
-          </ion-button>
-        </div>
-
-        <!-- Earnings Breakdown (Collapsible) -->
-        <div
-          class="earnings-breakdown"
-          *ngIf="showEarningsBreakdown"
-        >
-          <div class="breakdown-item">
-            <span class="breakdown-label">Base Pay:</span>
-            <span class="breakdown-value"
-              >${{ getEarningsBreakdown().baseEarnings | number:'1.2-2'
-              }}</span
-            >
-          </div>
-          <div
-            class="breakdown-item"
-            *ngIf="getEarningsBreakdown().stockBoost > 0"
-          >
-            <span class="breakdown-label">Stock Boost:</span>
-            <span class="breakdown-value"
-              >+${{ getEarningsBreakdown().stockBoost | number:'1.2-2'
-              }}</span
-            >
-          </div>
-          <div
-            class="breakdown-item"
-            *ngIf="getEarningsBreakdown().streakBonus > 0"
-          >
-            <span class="breakdown-label">Streak Bonus:</span>
-            <span class="breakdown-value"
-              >+${{ getEarningsBreakdown().streakBonus | number:'1.2-2'
-              }}</span
-            >
-          </div>
-          <div class="breakdown-item breakdown-total">
-            <span class="breakdown-label">Total:</span>
-            <span class="breakdown-value"
-              >${{ getEarningsBreakdown().totalEarnings | number:'1.2-2'
-              }}</span
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- Inline Year-Long Habit Grid (Expandable) -->
-      <div *ngIf="gridExpanded" class="inline-habit-grid">
-        <div>
-          <app-habit-grid
-            [businessId]="hb.id"
-            [businessName]="hb.business_name"
-            [businessEmoji]="hb.business_icon"
-            [businessType]="hb.business_types?.name || hb.business_name || ''"
-            [businessCreatedAt]="hb.created_at"
-            [isModal]="false"
-            [showStats]="true"
-            [useCalendarYear]="true"
-          >
-          </app-habit-grid>
-          <app-stock-chart
-            [businessId]="hb.id"
-            [isStockView]="false"
-            [days]="30"
-            [currentStreak]="getEffectiveStreak()"
-          >
-          </app-stock-chart>
-        </div>
       </div>
 
       <!-- Daily Check-in Action -->
