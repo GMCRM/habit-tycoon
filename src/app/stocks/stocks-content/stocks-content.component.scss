@@ -1371,6 +1371,54 @@
   }
 }
 
+// Per-card Streak / Available-or-Owned / Expected-or-Dividends stats — from
+// 768px up, cards sit 2- or 3-per-row with no upper bound (see
+// .stocks-list-scroll-container above), so a card is only ever half or a
+// third of the viewport at these widths, never full width again. The
+// flex-wrap: nowrap row set by the font-size breakpoints above assumed a
+// full-width card and crushed all three stats into one cramped row here
+// (clipped "EXPECTED/SHARE" label, squeezed "$3.3k" value). Stacking each
+// stat as its own label/value row instead reads cleanly at any card width
+// the grid produces. Comes after those breakpoints so it wins the cascade
+// at equal selector specificity.
+@media (min-width: 768px) {
+  .my-habit-businesses {
+    .habit-business-item {
+      .item-content {
+        .business-info {
+          .habit-stats {
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            gap: 6px;
+            max-width: 280px;
+            margin: 0 auto 12px auto;
+
+            .stat-item {
+              flex-direction: row;
+              justify-content: space-between;
+              align-items: baseline;
+              text-align: left;
+              flex: none;
+              min-width: 0;
+              gap: 8px;
+
+              .stat-value {
+                text-align: right;
+              }
+
+              &:last-child {
+                min-width: 0;
+                flex: none;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // Mobile responsive stats — all 3 cards stay side-by-side at every width,
 // they just shrink progressively (matches the Daily Stats cards on Home).
 // Shares the same up-to-1024px range as the stacked card layout above.
