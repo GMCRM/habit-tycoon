@@ -177,7 +177,7 @@
 
       <!-- Available Stocks List -->
       <div class="stocks-list-scroll-container">
-        <div *ngIf="!isLoading && getFilteredBusinesses().length > 0">
+        <ng-container *ngIf="!isLoading && getFilteredBusinesses().length > 0">
           <div
             *ngFor="let business of getFilteredBusinesses(); trackBy: trackByFriendBusinessId"
             class="habit-business-item"
@@ -295,7 +295,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
       </div>
 
       <!-- Empty State for Available Stocks -->
@@ -495,7 +495,7 @@
 
       <!-- Portfolio Holdings -->
       <div class="stocks-list-scroll-container">
-        <div *ngIf="!isLoading && portfolio.length > 0">
+        <ng-container *ngIf="!isLoading && portfolio.length > 0">
           <div *ngFor="let holding of portfolio" class="habit-business-item">
             <div class="item-content">
               <img
@@ -662,7 +662,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
       </div>
 
       <!-- Empty State for Portfolio -->
