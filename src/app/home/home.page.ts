@@ -393,11 +393,14 @@ export class HomePage implements OnInit, OnDestroy {
     this.pendingSyncSub = this.offlineQueueService.pendingCount$.subscribe(
       count => (this.pendingSyncCount = count)
     );
-    // Refresh reactively when a business is launched from elsewhere (e.g. the
-    // bottom-nav "+" button while already on /home never navigates, so
-    // ionViewWillEnter won't refire — this is the only signal we get).
+    // Refresh reactively whenever a habit changes elsewhere: a business
+    // launched from elsewhere (e.g. the bottom-nav "+" button while already
+    // on /home never navigates, so ionViewWillEnter won't refire), or a
+    // completion/undo pushed in by HabitRealtimeService from another
+    // signed-in device — without this, cash/streak/pending-count here stay
+    // stale until the user manually navigates back to this page.
     this.habitCreatedSub = this.habitUpdateService.updates$.subscribe(event => {
-      if (event?.type === 'created' && !this.isLoading) {
+      if (event && !this.isLoading) {
         this.loadDashboardData();
       }
     });

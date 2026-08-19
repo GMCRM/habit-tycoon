@@ -5,6 +5,7 @@ import { App, URLOpenListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { AuthService } from './services/auth.service';
 import { WidgetBridge } from './services/widget-bridge.plugin';
+import { HabitRealtimeService } from './services/habit-realtime.service';
 
 // If the app was backgrounded longer than this (ms), force a full reload so
 // Angular, Supabase auth, and all subscriptions start fresh.
@@ -49,7 +50,8 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private habitRealtimeService: HabitRealtimeService
   ) {}
 
   // Keeps the iOS widget's copy of the Supabase session current — its own
@@ -174,9 +176,11 @@ export class AppComponent implements OnInit, OnDestroy {
         // app's own navigation concerns.
         if (session) {
           this.syncWidgetAuthSession(session);
+          this.habitRealtimeService.start(session.user.id);
         }
 
         if (event === 'SIGNED_OUT') {
+          this.habitRealtimeService.stop();
           // Ignore SIGNED_OUT while the OAuth code exchange is in-flight.
           // On Chrome (desktop) Supabase fires SIGNED_OUT when it finds and
           // invalidates a stale session stored in localStorage from a prior
@@ -250,5 +254,6 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.appUrlOpenListener?.remove();
+    this.habitRealtimeService.stop();
   }
 }
