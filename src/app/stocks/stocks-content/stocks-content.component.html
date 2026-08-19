@@ -87,7 +87,7 @@
         </div>
 
         <div class="filter-count" *ngIf="selectedOwnerFilter">
-          {{ getFilteredBusinesses().length }} of {{ friendBusinesses.length }} stocks
+          {{ filteredBusinesses.length }} of {{ friendBusinesses.length }} stocks
         </div>
       </div>
 
@@ -177,21 +177,24 @@
 
       <!-- Available Stocks List -->
       <div class="stocks-list-scroll-container">
-        <ng-container *ngIf="!isLoading && getFilteredBusinesses().length > 0">
+        <ng-container *ngIf="!isLoading && filteredBusinesses.length > 0">
           <div
-            *ngFor="let business of getFilteredBusinesses(); trackBy: trackByFriendBusinessId"
+            *ngFor="let business of filteredBusinesses; trackBy: trackByFriendBusinessId"
             class="habit-business-item"
           >
             <div class="item-content">
-              <img
-                *ngIf="business.businessIcon | businessIconSrc as iconSrc"
-                [src]="iconSrc"
-                [alt]="business.businessName"
-                class="business-icon-img"
-              />
-              <div *ngIf="!(business.businessIcon | businessIconSrc)" class="business-icon">
-                {{ business.businessIcon || '🏢' }}
-              </div>
+              <ng-container *ngIf="business.businessIcon | businessIconSrc as iconSrc; else availableIconFallback">
+                <img
+                  [src]="iconSrc"
+                  [alt]="business.businessName"
+                  class="business-icon-img"
+                />
+              </ng-container>
+              <ng-template #availableIconFallback>
+                <div class="business-icon">
+                  {{ business.businessIcon || '🏢' }}
+                </div>
+              </ng-template>
               <div class="business-info">
                 <h3 class="business-name">{{ business.businessName }}</h3>
                 <div class="owner-section">
@@ -219,27 +222,43 @@
                   </div>
                 </div>
 
-                <!-- Habit Grid showing habit completion pattern -->
+                <!-- Habit Grid showing habit completion pattern. Deferred
+                     until this card scrolls near the viewport — each grid
+                     is ~370 DOM cells and each chart mounts its own Chart.js
+                     canvas + network fetch, so mounting all of them up front
+                     for every card is what was causing the scroll lag. -->
                 <div class="habit-grid-wrapper">
-                  <app-habit-grid
-                    [businessId]="business.id"
-                    [businessName]="business.businessName"
-                    [businessEmoji]="business.businessIcon"
-                    [businessType]="'Stock'"
-                    [isModal]="false"
-                    [showStats]="false"
-                    [useCalendarYear]="true"
-                    [size]="'medium'"
-                    [isStockView]="true"
-                  >
-                  </app-habit-grid>
-                  <app-stock-chart
-                    [businessId]="business.id"
-                    [isStockView]="true"
-                    [days]="30"
-                    [currentStreak]="getEffectiveStreakForFriendBusiness(business)"
-                  >
-                  </app-stock-chart>
+                  @defer (on viewport) {
+                    <app-habit-grid
+                      [businessId]="business.id"
+                      [businessName]="business.businessName"
+                      [businessEmoji]="business.businessIcon"
+                      [businessType]="'Stock'"
+                      [isModal]="false"
+                      [showStats]="false"
+                      [useCalendarYear]="true"
+                      [size]="'medium'"
+                      [isStockView]="true"
+                    >
+                    </app-habit-grid>
+                    <app-stock-chart
+                      [businessId]="business.id"
+                      [isStockView]="true"
+                      [days]="30"
+                      [currentStreak]="getEffectiveStreakForFriendBusiness(business)"
+                    >
+                    </app-stock-chart>
+                  } @placeholder {
+                    <div class="habit-grid-wrapper-skeleton">
+                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
+                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
+                    </div>
+                  } @loading (minimum 200ms) {
+                    <div class="habit-grid-wrapper-skeleton">
+                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
+                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
+                    </div>
+                  }
                 </div>
               </div>
 
@@ -300,7 +319,7 @@
 
       <!-- Empty State for Available Stocks -->
       <div
-        *ngIf="!isLoading && getFilteredBusinesses().length === 0 && friendBusinesses.length > 0"
+        *ngIf="!isLoading && filteredBusinesses.length === 0 && friendBusinesses.length > 0"
         class="empty-state"
       >
         <ion-icon name="funnel" size="large" color="medium"></ion-icon>
@@ -496,17 +515,20 @@
       <!-- Portfolio Holdings -->
       <div class="stocks-list-scroll-container">
         <ng-container *ngIf="!isLoading && portfolio.length > 0">
-          <div *ngFor="let holding of portfolio" class="habit-business-item">
+          <div *ngFor="let holding of portfolio; trackBy: trackByPortfolioId" class="habit-business-item">
             <div class="item-content">
-              <img
-                *ngIf="holding.businessIcon | businessIconSrc as iconSrc"
-                [src]="iconSrc"
-                [alt]="holding.businessName"
-                class="business-icon-img"
-              />
-              <div *ngIf="!(holding.businessIcon | businessIconSrc)" class="business-icon">
-                {{ holding.businessIcon || '📈' }}
-              </div>
+              <ng-container *ngIf="holding.businessIcon | businessIconSrc as iconSrc; else portfolioIconFallback">
+                <img
+                  [src]="iconSrc"
+                  [alt]="holding.businessName"
+                  class="business-icon-img"
+                />
+              </ng-container>
+              <ng-template #portfolioIconFallback>
+                <div class="business-icon">
+                  {{ holding.businessIcon || '📈' }}
+                </div>
+              </ng-template>
               <div class="business-info">
                 <h3 class="business-name">{{ holding.businessName }}</h3>
                 <div class="owner-section">
@@ -536,27 +558,41 @@
                   </div>
                 </div>
 
-                <!-- Habit Grid showing habit completion pattern -->
+                <!-- Habit Grid showing habit completion pattern. Deferred
+                     until this card scrolls near the viewport - see the
+                     Available Stocks card above for why. -->
                 <div class="habit-grid-wrapper">
-                  <app-habit-grid
-                    [businessId]="holding.stockId"
-                    [businessName]="holding.businessName"
-                    [businessEmoji]="holding.businessIcon"
-                    [businessType]="'Stock'"
-                    [isModal]="false"
-                    [showStats]="false"
-                    [useCalendarYear]="true"
-                    [size]="'medium'"
-                    [isStockView]="true"
-                  >
-                  </app-habit-grid>
-                  <app-stock-chart
-                    [businessId]="holding.stockId"
-                    [isStockView]="true"
-                    [days]="30"
-                    [currentStreak]="getEffectiveStreakForHolding(holding)"
-                  >
-                  </app-stock-chart>
+                  @defer (on viewport) {
+                    <app-habit-grid
+                      [businessId]="holding.stockId"
+                      [businessName]="holding.businessName"
+                      [businessEmoji]="holding.businessIcon"
+                      [businessType]="'Stock'"
+                      [isModal]="false"
+                      [showStats]="false"
+                      [useCalendarYear]="true"
+                      [size]="'medium'"
+                      [isStockView]="true"
+                    >
+                    </app-habit-grid>
+                    <app-stock-chart
+                      [businessId]="holding.stockId"
+                      [isStockView]="true"
+                      [days]="30"
+                      [currentStreak]="getEffectiveStreakForHolding(holding)"
+                    >
+                    </app-stock-chart>
+                  } @placeholder {
+                    <div class="habit-grid-wrapper-skeleton">
+                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
+                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
+                    </div>
+                  } @loading (minimum 200ms) {
+                    <div class="habit-grid-wrapper-skeleton">
+                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
+                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
+                    </div>
+                  }
                 </div>
               </div>
 
@@ -698,13 +734,16 @@
       <div *ngIf="selectedHolding" class="sell-modal-content">
         <div class="business-info">
           <div class="business-header">
-            <img
-              *ngIf="selectedHolding.emoji | businessIconSrc as iconSrc"
-              [src]="iconSrc"
-              [alt]="selectedHolding.businessName"
-              class="business-emoji-img"
-            />
-            <span *ngIf="!(selectedHolding.emoji | businessIconSrc)" class="business-emoji">{{ selectedHolding.emoji }}</span>
+            <ng-container *ngIf="selectedHolding.emoji | businessIconSrc as iconSrc; else sellIconFallback">
+              <img
+                [src]="iconSrc"
+                [alt]="selectedHolding.businessName"
+                class="business-emoji-img"
+              />
+            </ng-container>
+            <ng-template #sellIconFallback>
+              <span class="business-emoji">{{ selectedHolding.emoji }}</span>
+            </ng-template>
             <div>
               <h2>{{ selectedHolding.businessName }}</h2>
               <p>
@@ -791,13 +830,16 @@
       <div *ngIf="selectedBuyBusiness" class="sell-modal-content">
         <div class="business-info">
           <div class="business-header">
-            <img
-              *ngIf="selectedBuyBusiness.businessIcon | businessIconSrc as iconSrc"
-              [src]="iconSrc"
-              [alt]="selectedBuyBusiness.businessName"
-              class="business-emoji-img"
-            />
-            <span *ngIf="!(selectedBuyBusiness.businessIcon | businessIconSrc)" class="business-emoji">{{ selectedBuyBusiness.businessIcon }}</span>
+            <ng-container *ngIf="selectedBuyBusiness.businessIcon | businessIconSrc as iconSrc; else buyIconFallback">
+              <img
+                [src]="iconSrc"
+                [alt]="selectedBuyBusiness.businessName"
+                class="business-emoji-img"
+              />
+            </ng-container>
+            <ng-template #buyIconFallback>
+              <span class="business-emoji">{{ selectedBuyBusiness.businessIcon }}</span>
+            </ng-template>
             <div>
               <h2>{{ selectedBuyBusiness.businessName }}</h2>
               <p>

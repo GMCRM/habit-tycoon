@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy, inject, HostListener, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy, inject, HostListener, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { 
   IonHeader, IonToolbar, IonTitle, IonButton, IonIcon
@@ -360,7 +360,8 @@ export interface HabitGridDay {
       letter-spacing: 0.5px;
     }
 
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('scrollArea') scrollAreaRef?: ElementRef<HTMLDivElement>;
@@ -402,6 +403,7 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
 
   private habitBusinessService = inject(HabitBusinessService);
   private habitUpdateService = inject(HabitUpdateService);
+  private cdr = inject(ChangeDetectorRef);
   
   // Real-time update subscription
   private updateSubscription?: Subscription;
@@ -466,6 +468,7 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
     // If mobile state changed, regenerate the grid
     if (previousMobileState !== this.isMobileScreen) {
       this.generateGrid();
+      this.cdr.markForCheck();
     }
   }
 
@@ -513,6 +516,9 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
     if (updated) {
       // Recalculate stats after the update
       this.calculateStats();
+      // This runs from an RxJS subscription callback, not a template-bound
+      // event, so under OnPush it won't be picked up automatically.
+      this.cdr.markForCheck();
     } else {
       console.warn('⚠️ Could not find grid cell for date:', updateDate);
       console.warn('⚠️ Available dates in grid:', this.gridDays.length, 'total dates');
@@ -890,6 +896,10 @@ export class HabitGridComponent implements OnInit, OnChanges, OnDestroy {
       this.generateGrid();
       this.calculateStats();
     }
+    // loadData is async - by the time this runs we're in a later microtask,
+    // which (unlike the synchronous ngOnInit/ngOnChanges call site) isn't
+    // automatically picked up by OnPush's dirty-checking.
+    this.cdr.markForCheck();
   }
 
   private generateMockData() {

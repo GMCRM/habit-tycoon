@@ -724,6 +724,25 @@
     }
   }
 
+  // Placeholder shown by @defer while a card's habit-grid + stock-chart
+  // (the expensive part of each card) hasn't mounted yet - roughly matches
+  // their combined height so the deferred swap-in doesn't jump the layout.
+  .habit-grid-wrapper-skeleton {
+    .skeleton-grid {
+      width: 100%;
+      height: 130px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .skeleton-chart {
+      width: 100%;
+      height: 80px;
+      border-radius: 8px;
+      margin: 8px 0 0;
+    }
+  }
+
   // Empty state styling - matches homepage
   .empty-state {
     text-align: center;

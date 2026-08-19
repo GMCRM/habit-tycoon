@@ -103,6 +103,12 @@ export class StocksContentComponent implements OnInit {
 
   selectedTab: 'available' | 'portfolio' = 'available';
   friendBusinesses: FriendBusiness[] = [];
+  // Cached result of the filter/sort applied to friendBusinesses - recomputed
+  // only when the underlying data, owner filter, or streak sort actually
+  // changes (see updateFilteredBusinesses), instead of being re-filtered and
+  // re-sorted from the template on every change-detection pass (including
+  // every scroll-triggered one), which was a major source of scroll jank.
+  filteredBusinesses: FriendBusiness[] = [];
   portfolio: Portfolio[] = [];
   isLoading = false;
   currentUser: any = null;
@@ -254,6 +260,7 @@ export class StocksContentComponent implements OnInit {
       console.error('Error loading friend businesses:', error);
       this.friendBusinesses = [];
     }
+    this.updateFilteredBusinesses();
   }
 
   async loadPortfolio() {
@@ -1063,9 +1070,12 @@ export class StocksContentComponent implements OnInit {
   }
 
   /**
-   * Get filtered (and optionally streak-sorted) businesses
+   * Recompute the filtered (and optionally streak-sorted) business list and
+   * cache it into `filteredBusinesses`. Called whenever friendBusinesses,
+   * the owner filter, or the streak sort actually change - the template
+   * binds to the cached field rather than calling this on every CD pass.
    */
-  getFilteredBusinesses(): FriendBusiness[] {
+  private updateFilteredBusinesses(): void {
     let businesses = this.friendBusinesses;
 
     if (this.selectedOwnerFilter) {
@@ -1081,12 +1091,17 @@ export class StocksContentComponent implements OnInit {
       });
     }
 
-    return businesses;
+    this.filteredBusinesses = businesses;
   }
 
   /** *ngFor trackBy for the friend-business list — keeps DOM/mini-chart nodes stable across reloads instead of destroying/recreating every card. */
   trackByFriendBusinessId(_index: number, business: FriendBusiness): string {
     return business.id;
+  }
+
+  /** *ngFor trackBy for the portfolio list — keeps DOM/mini-chart/chart.js nodes stable across reloads instead of destroying/recreating every card. */
+  trackByPortfolioId(_index: number, holding: Portfolio): string {
+    return holding.id;
   }
 
   /**
@@ -1099,6 +1114,7 @@ export class StocksContentComponent implements OnInit {
     } else {
       localStorage.removeItem('stocks-owner-filter');
     }
+    this.updateFilteredBusinesses();
   }
 
   /**
@@ -1118,6 +1134,7 @@ export class StocksContentComponent implements OnInit {
     } else {
       localStorage.removeItem('stocks-streak-sort');
     }
+    this.updateFilteredBusinesses();
   }
 
   /**
@@ -1135,6 +1152,7 @@ export class StocksContentComponent implements OnInit {
     this.streakSortDirection = null;
     localStorage.removeItem('stocks-owner-filter');
     localStorage.removeItem('stocks-streak-sort');
+    this.updateFilteredBusinesses();
   }
 
   /**

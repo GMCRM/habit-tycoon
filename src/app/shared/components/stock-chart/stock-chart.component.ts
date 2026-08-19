@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, inject, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import { CommonModule } from '@angular/common';
 import { HabitBusinessService } from '../../../services/habit-business.service';
@@ -50,7 +50,8 @@ export interface HabitCompletionPoint {
       font-size: 0.8rem;
       text-align: center;
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -66,10 +67,15 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
 
   private chart: Chart | null = null;
   private habitBusinessService = inject(HabitBusinessService);
+  private cdr = inject(ChangeDetectorRef);
 
   async ngOnInit() {
     if (this.businessId && this.data.length === 0) {
       await this.loadCompletionData();
+      // The await above resumes in a later microtask, which OnPush doesn't
+      // pick up on its own - needed so the "Loading..." placeholder (bound
+      // to data.length) clears once data arrives.
+      this.cdr.markForCheck();
     }
   }
 
@@ -84,6 +90,7 @@ export class StockChartComponent implements OnInit, AfterViewInit, OnChanges, On
       setTimeout(async () => {
         await this.loadCompletionData();
         this.createChart();
+        this.cdr.markForCheck();
       }, 100);
     }
 
