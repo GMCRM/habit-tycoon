@@ -1088,7 +1088,7 @@
     .habit-business-item {
       .item-content {
         flex-direction: column;
-        align-items: stretch;
+        align-items: center;
         gap: 8px;
 
         // Only meaningful as a vertical divider in the row layout above
@@ -1099,20 +1099,15 @@
           display: none;
         }
 
+        // Icon sits in normal flow at the very top of the card, centered,
+        // instead of floating top-left over the text below it.
         .business-icon-img {
-          position: absolute;
-          top: 12px;
-          left: 12px;
           width: 106px;
           height: 106px;
           margin-right: 0;
-          z-index: 10;
         }
 
         .business-icon {
-          position: absolute;
-          top: 12px;
-          left: 12px;
           font-size: 4.32rem;
           min-width: auto;
           width: 106px;
@@ -1123,22 +1118,20 @@
           background: rgba(0, 0, 0, 0.3);
           border-radius: 8px;
           border: 1px solid rgba(255, 215, 0, 0.3);
-          z-index: 10;
         }
 
         .business-info {
           margin-left: 0;
           padding-left: 0;
           width: 100%;
+          text-align: center;
 
           .business-name {
-            margin-left: 122px; // Make room for top-left emoji
             margin-bottom: 4px;
             font-size: 1.1rem;
           }
 
           .owner-section {
-            margin-left: 122px; // Make room for top-left emoji
             margin-bottom: 8px;
 
             .owner-label {
@@ -1151,17 +1144,16 @@
           }
 
           .habit-description {
-            margin-left: 122px; // Make room for top-left emoji
             margin-bottom: 8px;
             font-size: 0.9rem;
           }
-          
+
           .habit-stats {
             gap: 6px;
             margin-bottom: 8px;
             justify-content: center;
             max-width: 100%;
-            margin-left: 122px; // clear the top-left icon, same offset as business-name/owner-section
+            margin-left: auto;
             margin-right: auto;
             flex-wrap: wrap;
             row-gap: 10px;
@@ -1347,7 +1339,7 @@
     .habit-business-item {
       .item-content {
         flex-direction: column;
-        align-items: stretch;
+        align-items: center;
 
         // Only meaningful as a vertical divider in the row layout used
         // below 1025px; in this stacked column layout it's an invisible
@@ -1358,21 +1350,16 @@
           display: none;
         }
 
+        // Icon sits in normal flow at the very top of the card, centered,
+        // instead of floating top-left over the text below it.
         .business-icon-img,
         .business-icon {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          z-index: 10;
+          margin-right: 0;
         }
 
         .business-info {
           width: 100%;
-
-          .business-name,
-          .owner-section {
-            margin-left: 122px; // clear the 106px top-left icon
-          }
+          text-align: center;
         }
 
         // earnings-section itself still had flex-direction: row with three
@@ -1437,7 +1424,7 @@
             align-items: stretch;
             gap: 6px;
             max-width: 280px;
-            margin: 0 auto 12px 122px; // clear the top-left icon, same offset as business-name/owner-section
+            margin: 0 auto 12px auto;
 
             .stat-item {
               flex-direction: row;
