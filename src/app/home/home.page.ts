@@ -305,11 +305,12 @@ export class HomePage implements OnInit, OnDestroy {
           this.todaysStockEarnings = 0; // Default to 0 if stock earnings calculation fails
         }
         
-        // Calculate pending habits (habits that haven't reached their goal for today/this week)
-        this.pendingHabitsCount = this.habitBusinesses.filter(hb => {
-          const isCompleted = this.isGoalCompleted(hb);
-          return !isCompleted;
-        }).length;
+        // Calculate pending habits (habits that haven't reached their goal for today/this week).
+        // Must use isDoneForDisplay, not isGoalCompleted directly — for joint ventures
+        // isGoalCompleted reflects the whole group's attendance, not just this user's own
+        // check-in, so it would count a JV habit as "pending" even after the user has
+        // already checked in themselves, disagreeing with the todo/done lists below.
+        this.pendingHabitsCount = this.habitBusinesses.filter(hb => !this.isDoneForDisplay(hb)).length;
       } else {
         console.warn('⚠️  No current user found, cannot load dashboard data');
       }
