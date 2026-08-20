@@ -368,8 +368,10 @@ ion-content {
 
   .investment-header {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    text-align: center;
 
     .investment-icon {
       font-size: 28px;
@@ -386,7 +388,7 @@ ion-content {
     }
 
     .investment-info {
-      flex: 1;
+      width: 100%;
       min-width: 0;
 
       .investment-name {
@@ -402,6 +404,7 @@ ion-content {
         margin-bottom: 4px;
         display: flex;
         align-items: baseline;
+        justify-content: center;
         gap: 6px;
         flex-wrap: wrap;
 
@@ -428,6 +431,7 @@ ion-content {
       .investment-details {
         display: flex;
         align-items: baseline;
+        justify-content: center;
         gap: 6px;
 
         .revenue-amount {
@@ -445,6 +449,7 @@ ion-content {
       .jv-hint {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 4px;
         margin-top: 4px;
         font-size: 11px;
@@ -457,6 +462,9 @@ ion-content {
     }
 
     .investment-status-icon {
+      position: absolute;
+      top: 12px;
+      right: 14px;
       font-size: 20px;
       flex-shrink: 0;
     }
