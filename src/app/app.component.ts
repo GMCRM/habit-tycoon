@@ -6,6 +6,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 import { AuthService } from './services/auth.service';
 import { WidgetBridge } from './services/widget-bridge.plugin';
 import { HabitRealtimeService } from './services/habit-realtime.service';
+import { HabitUpdateService } from './services/habit-update.service';
 
 // If the app was backgrounded longer than this (ms), force a full reload so
 // Angular, Supabase auth, and all subscriptions start fresh.
@@ -36,13 +37,19 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       // Short absence: re-enter NgZone and refresh the Supabase JWT so
-      // subsequent API calls don't get 401s.
+      // subsequent API calls don't get 401s. Also nudge the active page to
+      // re-fetch habit data — the Realtime channel only delivers events
+      // while it's actually connected, and mobile browsers routinely
+      // suspend a backgrounded tab's WebSocket, so a completion made on
+      // another device while this tab was hidden would otherwise stay
+      // invisible until a manual refresh.
       this.ngZone.run(async () => {
         try {
           await this.authService.supabase.auth.refreshSession();
         } catch {
           // Session already valid or offline — ignore.
         }
+        this.habitUpdateService.emitResync();
       });
     }
   };
@@ -51,7 +58,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private ngZone: NgZone,
-    private habitRealtimeService: HabitRealtimeService
+    private habitRealtimeService: HabitRealtimeService,
+    private habitUpdateService: HabitUpdateService
   ) {}
 
   // Keeps the iOS widget's copy of the Supabase session current — its own

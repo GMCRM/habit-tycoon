@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface HabitUpdateEvent {
-  type: 'completion' | 'undo' | 'created';
+  type: 'completion' | 'undo' | 'created' | 'resync';
   habitBusinessId: string;
   completionDate: string;
   timestamp: number;
@@ -56,6 +56,24 @@ export class HabitUpdateService {
     this.updateSubject.next({
       type: 'created',
       habitBusinessId,
+      completionDate: this.getLocalDateString(),
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Signal that the app regained focus and any page listening should
+   * re-fetch its data — a catch-all for changes that may have happened on
+   * another device while this tab/app was in the background (and so were
+   * never seen by the live Realtime subscription, which only delivers
+   * events while actually connected). Carries no specific habitBusinessId,
+   * so per-cell live-patch listeners (which match on that id) ignore it;
+   * only whole-page reload listeners like the dashboard act on it.
+   */
+  emitResync() {
+    this.updateSubject.next({
+      type: 'resync',
+      habitBusinessId: '',
       completionDate: this.getLocalDateString(),
       timestamp: Date.now()
     });
