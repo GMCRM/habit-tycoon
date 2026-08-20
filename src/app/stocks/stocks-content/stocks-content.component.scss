@@ -417,7 +417,106 @@
       background: linear-gradient(90deg, transparent, var(--ion-color-primary), transparent);
       opacity: 0.6;
     }
-    
+
+    // Buy Shares corner button — same liquid-glass sphere treatment as the
+    // home screen's complete/undo circle (habit-card.component.scss
+    // .hold-complete-button), with a $ in place of the checkmark.
+    .corner-controls {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 3;
+
+      &.corner-top-right {
+        right: 14px;
+      }
+    }
+
+    .buy-shares-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      padding: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.24) 0%, rgba(0, 230, 120, 0.12) 55%, rgba(0, 230, 120, 0.28) 100%);
+      backdrop-filter: blur(14px) saturate(180%);
+      -webkit-backdrop-filter: blur(14px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      color: #FFFFFF;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: visible;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      box-shadow:
+        0 6px 18px rgba(0, 230, 120, 0.3),
+        0 1px 2px rgba(0, 0, 0, 0.15),
+        inset 0 1px 1px rgba(255, 255, 255, 0.65),
+        inset 0 -6px 10px rgba(0, 230, 120, 0.25),
+        inset 0 0 14px rgba(0, 230, 120, 0.15);
+
+      // Specular highlight arc across the top of the glass
+      &::before {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 9px;
+        right: 9px;
+        height: 44%;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+        border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+        filter: blur(1px);
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      // Faint rim light at the bottom edge for depth
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        box-shadow: inset 0 -2px 4px rgba(255, 255, 255, 0.15);
+        pointer-events: none;
+        z-index: 4;
+      }
+
+      .button-icon {
+        position: relative;
+        z-index: 2;
+        pointer-events: none;
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1;
+        color: #FFFFFF;
+        filter: drop-shadow(0 0 4px rgba(0, 230, 120, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+      }
+
+      &:hover:not(.is-disabled) {
+        transform: scale(1.05);
+        box-shadow:
+          0 8px 22px rgba(0, 230, 120, 0.4),
+          0 1px 2px rgba(0, 0, 0, 0.15),
+          inset 0 1px 1px rgba(255, 255, 255, 0.75),
+          inset 0 -6px 10px rgba(0, 230, 120, 0.3),
+          inset 0 0 16px rgba(0, 230, 120, 0.22);
+      }
+
+      &.is-disabled {
+        opacity: 0.4;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      &:focus {
+        outline: none;
+      }
+    }
+
     .item-content {
       display: flex;
       // flex-start, not center: business-info now holds the calendar grid
@@ -632,28 +731,6 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 4px;
-          }
-        }
-
-        .checkin-action {
-          margin-top: 8px;
-
-          ion-button {
-            --border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-
-            &[color="success"] {
-              --background: var(--earnings-color);
-              --color: #000000;
-              --box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
-            }
-
-            &[color="secondary"] {
-              --background: rgba(255, 165, 0, 0.8);
-              --color: #000000;
-              --box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
-            }
           }
         }
 
@@ -1229,18 +1306,6 @@
             }
           }
 
-          .checkin-action {
-            margin-top: 6px;
-
-            ion-button {
-              font-size: 0.8rem;
-              --padding-start: 12px;
-              --padding-end: 12px;
-              --padding-top: 8px;
-              --padding-bottom: 8px;
-            }
-          }
-
           .holding-actions-row {
             ion-button {
               font-size: 0.75rem;
@@ -1389,7 +1454,6 @@
             gap: 8px;
           }
 
-          .checkin-action,
           .holding-actions-row {
             width: 100%;
           }
@@ -1665,16 +1729,6 @@
           
           .earnings-label {
             font-size: 0.7rem;
-          }
-        }
-        
-        .checkin-action {
-          ion-button {
-            font-size: 0.8rem;
-            --padding-start: 12px;
-            --padding-end: 12px;
-            --padding-top: 8px;
-            --padding-bottom: 8px;
           }
         }
       }
