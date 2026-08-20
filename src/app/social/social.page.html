@@ -796,6 +796,18 @@
               [class.pending-listing]="isListingPending(listing)"
             >
               <ion-card-content>
+                <!-- Buy (top-right corner) — same liquid-glass sphere button
+                     as the Stocks tab's Buy Shares control. -->
+                <div class="corner-controls corner-top-right" *ngIf="!listing.is_own">
+                  <div
+                    class="buy-shares-button"
+                    aria-label="Buy"
+                    (click)="buyListing(listing)"
+                  >
+                    <span class="button-icon">$</span>
+                  </div>
+                </div>
+
                 <div class="listing-info">
                   <img
                     *ngIf="listing.business_icon | businessIconSrc as iconSrc"
@@ -825,15 +837,6 @@
                       ⏱️ {{ getListingCountdown(listing) }}
                     </p>
                   </div>
-                  <ion-button
-                    *ngIf="!listing.is_own"
-                    fill="solid"
-                    color="success"
-                    size="small"
-                    (click)="buyListing(listing)"
-                  >
-                    Buy
-                  </ion-button>
                 </div>
               </ion-card-content>
             </ion-card>

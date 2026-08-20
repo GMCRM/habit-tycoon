@@ -1248,12 +1248,106 @@ ion-badge {
 
   ion-card-content {
     padding: 16px 20px;
+    position: relative;
   }
 
-  .listing-info {
+  // Buy corner button — same liquid-glass sphere treatment as the Stocks
+  // tab's Buy Shares control (stocks-content.component.scss .buy-shares-button).
+  .corner-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 3;
+  }
+
+  .buy-shares-button {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 14px;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.24) 0%, rgba(0, 230, 120, 0.12) 55%, rgba(0, 230, 120, 0.28) 100%);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    color: #FFFFFF;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overflow: visible;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow:
+      0 6px 18px rgba(0, 230, 120, 0.3),
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.65),
+      inset 0 -6px 10px rgba(0, 230, 120, 0.25),
+      inset 0 0 14px rgba(0, 230, 120, 0.15);
+
+    // Specular highlight arc across the top of the glass
+    &::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 9px;
+      right: 9px;
+      height: 44%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+      border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+      filter: blur(1px);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    // Faint rim light at the bottom edge for depth
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      box-shadow: inset 0 -2px 4px rgba(255, 255, 255, 0.15);
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .button-icon {
+      position: relative;
+      z-index: 2;
+      pointer-events: none;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+      color: #FFFFFF;
+      filter: drop-shadow(0 0 4px rgba(0, 230, 120, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+    }
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow:
+        0 8px 22px rgba(0, 230, 120, 0.4),
+        0 1px 2px rgba(0, 0, 0, 0.15),
+        inset 0 1px 1px rgba(255, 255, 255, 0.75),
+        inset 0 -6px 10px rgba(0, 230, 120, 0.3),
+        inset 0 0 16px rgba(0, 230, 120, 0.22);
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  // Icon at the top, centered, with the rest of the listing's data
+  // centered underneath it.
+  .listing-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding-top: 8px;
 
     .listing-icon {
       font-size: 4.32rem;
@@ -1269,7 +1363,7 @@ ion-badge {
     }
 
     .listing-details {
-      flex: 1;
+      width: 100%;
       min-width: 0;
 
       h3 {
@@ -1287,6 +1381,7 @@ ion-badge {
       .listing-meta {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
         flex-wrap: wrap;
         margin-bottom: 4px;
@@ -1426,20 +1521,21 @@ ion-badge {
   width: 65%;
   height: 1.1rem;
   border-radius: 4px;
-  margin-bottom: 6px;
+  margin: 0 auto 6px;
 }
 
 .skeleton-listing-seller {
   width: 40%;
   height: 0.8rem;
   border-radius: 4px;
-  margin-bottom: 8px;
+  margin: 0 auto 8px;
 }
 
 .skeleton-listing-price {
   width: 70px;
   height: 1rem;
   border-radius: 4px;
+  margin: 0 auto;
 }
 
 // Fade the real content in once it swaps in for a skeleton, so the
