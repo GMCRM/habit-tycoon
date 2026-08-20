@@ -988,9 +988,9 @@ export class StocksContentComponent implements OnInit {
   markReminderSent(businessId: string): void {
     const today = new Date().toDateString();
     this.dailyReminders[businessId] = today;
-    
+
     // Store in localStorage for persistence across sessions
-    localStorage.setItem(`reminder_${businessId}`, today);
+    localStorage.setItem(this.getReminderStorageKey(businessId), today);
   }
 
   /**
@@ -998,11 +998,20 @@ export class StocksContentComponent implements OnInit {
    */
   loadReminderHistory(): void {
     this.portfolio.forEach(holding => {
-      const storedDate = localStorage.getItem(`reminder_${holding.businessId}`);
+      const storedDate = localStorage.getItem(this.getReminderStorageKey(holding.businessId));
       if (storedDate) {
         this.dailyReminders[holding.businessId] = storedDate;
       }
     });
+  }
+
+  /**
+   * Reminder state key, scoped to the current user - without this, "already
+   * reminded today" leaks across accounts signed into the same device
+   * (localStorage is shared, but who sent the reminder is not).
+   */
+  private getReminderStorageKey(businessId: string): string {
+    return `reminder_${this.currentUser?.id}_${businessId}`;
   }
 
   /**
