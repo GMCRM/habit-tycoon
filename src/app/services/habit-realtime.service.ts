@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { HabitUpdateService } from './habit-update.service';
@@ -67,8 +68,17 @@ export class HabitRealtimeService {
         }
       });
 
+    // Gate the poll on tab visibility to avoid polling a genuinely
+    // backgrounded browser tab — but only on web. Capacitor's WKWebView
+    // (the native iOS app shell) doesn't reliably report
+    // document.visibilityState as 'visible' even while the app is
+    // foregrounded and on-screen, which would silently keep this fallback
+    // from ever firing on-device — the app's own lifecycle (start()/stop()
+    // called on sign-in/out and app destroy) is what actually bounds it
+    // natively, so no extra gating is needed there.
+    const isNative = Capacitor.isNativePlatform();
     this.pollIntervalId = setInterval(() => {
-      if (document.visibilityState === 'visible') {
+      if (isNative || document.visibilityState === 'visible') {
         this.habitUpdateService.emitResync();
       }
     }, HabitRealtimeService.POLL_INTERVAL_MS);
