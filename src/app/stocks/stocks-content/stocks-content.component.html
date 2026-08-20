@@ -222,23 +222,14 @@
                   </div>
                 </div>
 
-                <!-- Calendar button opens the full completion calendar in a
-                     popup (matches the home screen). The stock price graph
-                     stays inline below, deferred until this card scrolls
+                <!-- Stock price graph, deferred until this card scrolls
                      near the viewport — the chart mounts its own Chart.js
                      canvas + network fetch, so mounting all of them up front
-                     for every card is what was causing the scroll lag. -->
+                     for every card is what was causing the scroll lag. The
+                     full completion calendar is opened via the calendar icon
+                     button next to the stockholders icon (matches the home
+                     screen's calendar popup). -->
                 <div class="habit-grid-wrapper">
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    class="view-calendar-btn"
-                    (click)="openCalendarModal(business.id, business.businessName, business.businessIcon)"
-                  >
-                    <ion-icon name="calendar-outline" slot="start"></ion-icon>
-                    View Calendar
-                  </ion-button>
                   @defer (on viewport) {
                     <app-stock-chart
                       [businessId]="business.id"
@@ -280,16 +271,29 @@
                   <div class="earnings-label">per share</div>
                 </div>
 
-                <!-- Stockholders Action -->
-                <ion-button
-                  fill="clear"
-                  color="tertiary"
-                  size="small"
-                  (click)="openStockOwnersModal(business.businessName, business.id)"
-                  style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                >
-                  <ion-icon name="people" slot="icon-only"></ion-icon>
-                </ion-button>
+                <div class="earnings-section-actions">
+                  <!-- Calendar Action -->
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    (click)="openCalendarModal(business.id, business.businessName, business.businessIcon)"
+                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                  >
+                    <ion-icon name="calendar-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+
+                  <!-- Stockholders Action -->
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    (click)="openStockOwnersModal(business.businessName, business.id)"
+                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                  >
+                    <ion-icon name="people" slot="icon-only"></ion-icon>
+                  </ion-button>
+                </div>
 
                 <!-- Buy Action -->
                 <div class="checkin-action">
@@ -551,22 +555,12 @@
                   </div>
                 </div>
 
-                <!-- Calendar button opens the full completion calendar in a
-                     popup (matches the home screen). The stock price graph
-                     stays inline below, deferred until this card scrolls
+                <!-- Stock price graph, deferred until this card scrolls
                      near the viewport - see the Available Stocks card above
-                     for why. -->
+                     for why. The full completion calendar is opened via the
+                     calendar icon button below (matches the home screen's
+                     calendar popup). -->
                 <div class="habit-grid-wrapper">
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    class="view-calendar-btn"
-                    (click)="openCalendarModal(holding.stockId, holding.businessName, holding.businessIcon)"
-                  >
-                    <ion-icon name="calendar-outline" slot="start"></ion-icon>
-                    View Calendar
-                  </ion-button>
                   @defer (on viewport) {
                     <app-stock-chart
                       [businessId]="holding.stockId"
@@ -613,6 +607,17 @@
                 </div>
 
                 <div class="earnings-section-actions">
+                  <!-- Calendar Action -->
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    (click)="openCalendarModal(holding.stockId, holding.businessName, holding.businessIcon)"
+                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                  >
+                    <ion-icon name="calendar-outline" slot="icon-only"></ion-icon>
+                  </ion-button>
+
                   <!-- Stockholders Action -->
                   <ion-button
                     fill="clear"
