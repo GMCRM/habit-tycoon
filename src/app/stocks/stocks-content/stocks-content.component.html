@@ -507,6 +507,20 @@
       <div class="stocks-list-scroll-container">
         <ng-container *ngIf="!isLoading && portfolio.length > 0">
           <div *ngFor="let holding of portfolio; trackBy: trackByPortfolioId" class="habit-business-item">
+            <!-- Buy More (top-right corner) — same glass sphere as the
+                 Available Stocks card. Hidden entirely once there are no
+                 more shares left to buy, same as the old Buy button. -->
+            <div class="corner-controls corner-top-right" *ngIf="canBuyMoreShares(holding)">
+              <div
+                class="buy-shares-button"
+                [class.is-disabled]="isLoading"
+                aria-label="Buy Shares"
+                (click)="isLoading ? null : openBuyModal(getBusinessForHolding(holding))"
+              >
+                <span class="button-icon">$</span>
+              </div>
+            </div>
+
             <div class="item-content">
               <ng-container *ngIf="holding.businessIcon | businessIconSrc as iconSrc; else portfolioIconFallback">
                 <img
@@ -630,19 +644,6 @@
                 </div>
 
                 <div class="holding-actions-row">
-                  <ion-button
-                    *ngIf="canBuyMoreShares(holding)"
-                    fill="solid"
-                    color="success"
-                    size="small"
-                    (click)="openBuyModal(getBusinessForHolding(holding))"
-                    [disabled]="isLoading"
-                    class="buy-more-button"
-                  >
-                    <ion-icon name="add-circle" slot="start"></ion-icon>
-                    Buy ({{ getBusinessForHolding(holding)?.sharesAvailable }}
-                    left)
-                  </ion-button>
                   <ion-button
                     fill="outline"
                     size="small"
