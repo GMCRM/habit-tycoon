@@ -1371,18 +1371,41 @@
           }
         }
 
+        // earnings-section itself still had flex-direction: row with three
+        // unwrapped children (price, stockholders/breakdown icon buttons,
+        // buy/sell/remind buttons) — fine at full page width, but at 2-or-3
+        // column grid widths (see .stocks-list-scroll-container) there isn't
+        // room for all three on one line, and with the card's
+        // overflow: hidden the overflow silently clips instead of wrapping,
+        // cutting off the action buttons entirely. Stack each piece as its
+        // own full-width row instead so nothing gets clipped regardless of
+        // column width.
         .earnings-section {
           width: 100%;
           min-width: auto;
           margin-top: 8px;
-          flex-direction: row;
-          justify-content: space-between;
-          align-items: center;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
 
           .earnings-total {
             flex-direction: row;
+            justify-content: center;
             align-items: baseline;
             gap: 8px;
+          }
+
+          .earnings-section-actions {
+            justify-content: center;
+          }
+
+          .checkin-action,
+          .holding-actions-row {
+            width: 100%;
+          }
+
+          .holding-actions-row {
+            flex-wrap: wrap;
           }
         }
       }
