@@ -24,6 +24,17 @@ export class HabitRealtimeService {
 
   private channel: RealtimeChannel | null = null;
   private activeUserId: string | null = null;
+  private pollIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  // Some mobile browsers (observed on iPad Chrome, which is WebKit under the
+  // hood) don't reliably deliver postgres_changes events over the Realtime
+  // WebSocket even while the tab is visible and the channel reports as
+  // subscribed — the same code works fine on desktop Chrome. Rather than
+  // depend entirely on that socket, poll for a resync on this interval as a
+  // safety net so a completion made on another device is never stuck
+  // waiting more than this long, independent of whether the WebSocket path
+  // is actually working on a given device.
+  private static readonly POLL_INTERVAL_MS = 20000;
 
   start(userId: string): void {
     if (this.activeUserId === userId && this.channel) return;
@@ -50,13 +61,27 @@ export class HabitRealtimeService {
           this.habitUpdateService.emitHabitUndo(row.habit_business_id, this.toLocalDateString(row.completed_at));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`⚠️ HabitRealtimeService: channel ${status.toLowerCase()}, relying on the poll fallback`);
+        }
+      });
+
+    this.pollIntervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        this.habitUpdateService.emitResync();
+      }
+    }, HabitRealtimeService.POLL_INTERVAL_MS);
   }
 
   stop(): void {
     if (this.channel) {
       this.supabaseService.client.removeChannel(this.channel);
       this.channel = null;
+    }
+    if (this.pollIntervalId) {
+      clearInterval(this.pollIntervalId);
+      this.pollIntervalId = null;
     }
     this.activeUserId = null;
   }
