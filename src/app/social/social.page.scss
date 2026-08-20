@@ -717,7 +717,16 @@ h2 {
   .page-container {
     max-width: none; // Remove max-width constraint to use full screen width
     margin: 0;
-    padding: 0; // Remove horizontal padding
+    // Only zero the horizontal padding here — the base `.page-container`
+    // rule above reserves top/bottom padding (incl. the iOS @supports bump)
+    // for the floating bottom nav. A blanket `padding: 0` used to wipe that
+    // out on tablet-width screens (iPad and up), since this rule comes later
+    // in source order and wins the cascade at equal specificity. That left
+    // no scrollable room past the last row of content — e.g. the last
+    // marketplace listings row sat permanently stuck behind the bottom nav,
+    // unreachable no matter how far you scrolled.
+    padding-left: 0;
+    padding-right: 0;
   }
   
   .tab-content {
