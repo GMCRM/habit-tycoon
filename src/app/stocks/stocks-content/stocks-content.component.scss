@@ -432,17 +432,17 @@
       min-width: 0; // flex item must be allowed to shrink below its content's natural width, or the whole card (buttons, calendar) drags off-screen on mobile
 
       .business-icon {
-        font-size: 3.75rem;
-        min-width: 75px;
-        width: 75px;
+        font-size: 5.28rem;
+        min-width: 130px;
+        width: 130px;
         text-align: center;
         filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
         padding-right: 12px;
       }
 
       .business-icon-img {
-        width: 75px;
-        height: 75px;
+        width: 130px;
+        height: 130px;
         flex-shrink: 0;
         margin-right: 12px;
         border-radius: 22%;
@@ -691,9 +691,9 @@
     }
 
     .skeleton-business-icon {
-      width: 75px;
-      height: 75px;
-      min-width: 75px;
+      width: 106px;
+      height: 106px;
+      min-width: 106px;
       border-radius: 22%;
       margin-right: 12px;
     }
@@ -1102,8 +1102,8 @@
           position: absolute;
           top: 12px;
           left: 12px;
-          width: 66px;
-          height: 66px;
+          width: 106px;
+          height: 106px;
           margin-right: 0;
           z-index: 10;
         }
@@ -1112,10 +1112,10 @@
           position: absolute;
           top: 12px;
           left: 12px;
-          font-size: 3.3rem;
+          font-size: 4.32rem;
           min-width: auto;
-          width: 66px;
-          height: 66px;
+          width: 106px;
+          height: 106px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1131,13 +1131,13 @@
           width: 100%;
 
           .business-name {
-            margin-left: 82px; // Make room for top-left emoji
+            margin-left: 122px; // Make room for top-left emoji
             margin-bottom: 4px;
             font-size: 1.1rem;
           }
 
           .owner-section {
-            margin-left: 82px; // Make room for top-left emoji
+            margin-left: 122px; // Make room for top-left emoji
             margin-bottom: 8px;
 
             .owner-label {
@@ -1150,7 +1150,7 @@
           }
 
           .habit-description {
-            margin-left: 82px; // Make room for top-left emoji
+            margin-left: 122px; // Make room for top-left emoji
             margin-bottom: 8px;
             font-size: 0.9rem;
           }
@@ -1283,13 +1283,13 @@
   .habit-business-item {
     .item-content {
       .business-icon {
-        font-size: 4.5rem;
-        min-width: 120px;
+        font-size: 5.28rem;
+        min-width: 130px;
       }
 
       .business-icon-img {
-        width: 120px;
-        height: 120px;
+        width: 130px;
+        height: 130px;
       }
       
       .business-info {
@@ -1369,7 +1369,7 @@
 
           .business-name,
           .owner-section {
-            margin-left: 136px; // clear the 120px top-left icon
+            margin-left: 146px; // clear the 130px top-left icon
           }
         }
 
@@ -1509,7 +1509,7 @@
       align-items: stretch;
       
       .business-icon {
-        font-size: 3rem;
+        font-size: 4.32rem;
         min-width: auto;
         width: auto;
         text-align: center;
@@ -1518,8 +1518,8 @@
       }
 
       .business-icon-img {
-        width: 60px;
-        height: 60px;
+        width: 106px;
+        height: 106px;
         margin-right: 0;
         align-self: center;
       }
@@ -1575,12 +1575,37 @@
       .earnings-section {
         min-width: auto;
         width: 100%;
-        
+
         .earnings-total {
           .total-amount {
             font-size: 1.2rem;
           }
         }
+      }
+    }
+  }
+}
+
+// Match the marketplace listing icon's larger size at this breakpoint (see
+// social.page.scss's .listing-icon-img) — the mobile-specific block just
+// above sizes the icon for phones, but tablets in the stacked layout
+// (769-1024px) should get the same bump the marketplace gets at 768px+.
+@media (min-width: 769px) and (max-width: 1024px) {
+  .my-habit-businesses .habit-business-item .item-content {
+    .business-icon {
+      font-size: 5.28rem;
+    }
+
+    .business-icon-img {
+      width: 130px;
+      height: 130px;
+    }
+
+    .business-info {
+      .business-name,
+      .owner-section,
+      .habit-description {
+        margin-left: 146px; // clear the 130px top-left icon
       }
     }
   }
