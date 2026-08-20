@@ -2369,16 +2369,35 @@ export class HabitBusinessService {
   }
 
   /**
+   * Resolves recurrence_interval/frequency into '24h' | 'specific_days',
+   * mirroring HabitIntervalService.resolveInterval and the identical logic in
+   * complete_habit_business() — duplicated here (rather than delegating to
+   * HabitIntervalService) because callers in this file only have the raw
+   * columns, not a full HabitBusiness object (cross-user stock rows can't be
+   * read directly — see get_habit_schedule_for_stock).
+   */
+  private isScheduledDay(
+    recurrenceInterval: string | null | undefined,
+    frequency: string | null | undefined,
+    activeDays: number[] | null | undefined,
+    date: Date
+  ): boolean {
+    const isSpecificDays = recurrenceInterval === 'specific_days' || recurrenceInterval === '7d' || frequency === 'weekly';
+    if (!isSpecificDays) return true;
+    return (activeDays || []).includes(date.getDay());
+  }
+
+  /**
    * Get habit completion history for the specified period
    * When days = 365, returns current calendar year data (Jan 1 - Dec 31)
    * Otherwise returns the last N days from today
    */
   async getHabitCompletionHistory(businessId: string, days: number = 30): Promise<{ date: string; completed: boolean; streakDay: number }[]> {
     try {
-      
+
       let startDate: Date;
       let endDate: Date;
-      
+
       if (days === 365) {
         // For full year view (365 days), show current calendar year
         const currentYear = new Date().getFullYear();
@@ -2391,14 +2410,23 @@ export class HabitBusinessService {
         startDate.setDate(startDate.getDate() - days);
       }
 
-      // Get completion data - using correct column names from schema
-      const { data: completions, error } = await this.supabase
-        .from('habit_completions')
-        .select('id, completed_at, streak_count, earnings, habit_business_id')
-        .eq('habit_business_id', businessId)
-        .gte('completed_at', startDate.toISOString())
-        .lte('completed_at', endDate.toISOString())
-        .order('completed_at', { ascending: true });
+      // Get completion data - using correct column names from schema, plus the
+      // habit's own schedule so non-scheduled days (specific_days habits) don't
+      // get miscounted as broken streaks below.
+      const [{ data: completions, error }, { data: habitRow }] = await Promise.all([
+        this.supabase
+          .from('habit_completions')
+          .select('id, completed_at, streak_count, earnings, habit_business_id')
+          .eq('habit_business_id', businessId)
+          .gte('completed_at', startDate.toISOString())
+          .lte('completed_at', endDate.toISOString())
+          .order('completed_at', { ascending: true }),
+        this.supabase
+          .from('habit_businesses')
+          .select('recurrence_interval, frequency, active_days')
+          .eq('id', businessId)
+          .maybeSingle()
+      ]);
 
       if (error) {
         console.error('❌ Error fetching habit completions:', error);
@@ -2428,14 +2456,15 @@ export class HabitBusinessService {
         }
 
         const wasCompleted = !!completion;
+        const scheduled = this.isScheduledDay(habitRow?.recurrence_interval, habitRow?.frequency, habitRow?.active_days, currentDate);
 
         // Update streak - use the streak_count from the completion record if available
         if (wasCompleted) {
           currentStreak = completion.streak_count || currentStreak + 1;
-        } else if (dateStr === todayStr) {
-          // Today's period isn't over yet — a missing completion today doesn't mean
-          // the streak broke, it means the day is still in progress. Carry the
-          // streak forward unchanged; it will correctly reset tomorrow if still missed.
+        } else if (dateStr === todayStr || !scheduled) {
+          // Today's period isn't over yet, or this calendar day isn't even due for
+          // a specific_days habit — neither means the streak broke, so hold it
+          // steady rather than dropping to 0 the way an actual miss would.
         } else {
           currentStreak = 0;
         }
@@ -2477,14 +2506,19 @@ export class HabitBusinessService {
         startDate.setDate(startDate.getDate() - days);
       }
 
-      // Use RPC function to get completion history for stocks (bypasses RLS)
-      
-      const { data: completions, error } = await this.supabase
-        .rpc('get_habit_completions_for_stock', {
+      // Use RPC functions to get completion history + the habit's schedule for
+      // stocks (both bypass RLS — a stock viewer can't read habit_businesses
+      // directly). The schedule keeps non-scheduled days of a specific_days
+      // habit from being miscounted as broken streaks below.
+      const [{ data: completions, error }, { data: scheduleRows }] = await Promise.all([
+        this.supabase.rpc('get_habit_completions_for_stock', {
           input_uuid: businessId,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString()
-        });
+        }),
+        this.supabase.rpc('get_habit_schedule_for_stock', { input_uuid: businessId })
+      ]);
+      const schedule = scheduleRows?.[0];
 
       if (error) {
         console.error('❌ Error fetching stock habit completions:', error);
@@ -2515,13 +2549,15 @@ export class HabitBusinessService {
         });
 
         const wasCompleted = !!completion;
+        const scheduled = this.isScheduledDay(schedule?.recurrence_interval, schedule?.frequency, schedule?.active_days, currentDate);
 
         // Update streak
         if (wasCompleted) {
           currentStreak = completion.streak_count || currentStreak + 1;
-        } else if (dateStr === todayStr) {
-          // Today's period isn't over yet — don't treat a missing completion
-          // today as a break; carry the streak forward unchanged.
+        } else if (dateStr === todayStr || !scheduled) {
+          // Today's period isn't over yet, or this calendar day isn't even due for
+          // a specific_days habit — neither means the streak broke; carry the
+          // streak forward unchanged.
         } else {
           currentStreak = 0;
         }
@@ -2587,6 +2623,14 @@ export class HabitBusinessService {
         return [];
       }
 
+      // Best-effort schedule lookup (RPC bypasses RLS; this fallback path is
+      // already the degraded case if the direct query above worked at all) so
+      // non-scheduled days of a specific_days habit aren't miscounted as
+      // broken streaks below. Default to '24h' behavior if it's unavailable.
+      const { data: scheduleRows } = await this.supabase
+        .rpc('get_habit_schedule_for_stock', { input_uuid: businessId });
+      const schedule = scheduleRows?.[0];
+
       // Create date range array
       const dateRange: { date: string; completed: boolean; streakDay: number }[] = [];
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -2604,12 +2648,14 @@ export class HabitBusinessService {
         });
 
         const wasCompleted = !!completion;
+        const scheduled = this.isScheduledDay(schedule?.recurrence_interval, schedule?.frequency, schedule?.active_days, currentDate);
 
         if (wasCompleted) {
           currentStreak = completion.streak_count || currentStreak + 1;
-        } else if (dateStr === todayStr) {
-          // Today's period isn't over yet — don't treat a missing completion
-          // today as a break; carry the streak forward unchanged.
+        } else if (dateStr === todayStr || !scheduled) {
+          // Today's period isn't over yet, or this calendar day isn't even due for
+          // a specific_days habit — neither means the streak broke; carry the
+          // streak forward unchanged.
         } else {
           currentStreak = 0;
         }
