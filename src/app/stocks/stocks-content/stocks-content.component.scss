@@ -1153,7 +1153,7 @@
             margin-bottom: 8px;
             justify-content: center;
             max-width: 100%;
-            margin-left: auto;
+            margin-left: 122px; // clear the top-left icon, same offset as business-name/owner-section
             margin-right: auto;
             flex-wrap: wrap;
             row-gap: 10px;
@@ -1415,7 +1415,7 @@
             align-items: stretch;
             gap: 6px;
             max-width: 280px;
-            margin: 0 auto 12px auto;
+            margin: 0 auto 12px 122px; // clear the top-left icon, same offset as business-name/owner-section
 
             .stat-item {
               flex-direction: row;
