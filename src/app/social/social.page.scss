@@ -743,10 +743,17 @@ h2 {
     }
   }
 
-  // Match the home page's larger business icon at this breakpoint
-  .marketplace-listing-card .listing-info {
-    .listing-icon { font-size: 5.28rem; }
-    .listing-icon-img { width: 130px; height: 130px; }
+  // Multi-column marketplace grid — each listing keeps the same card
+  // design used on mobile (icon + details + Buy button), just arranged in
+  // a responsive grid so more listings fit per row as the viewport grows.
+  .marketplace-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+
+    .marketplace-listing-card {
+      margin-bottom: 0; // grid gap handles spacing instead
+    }
   }
 
   // Restore side-by-side pill layout for the leaderboard view toggle
@@ -1424,13 +1431,6 @@ ion-badge {
   width: 70px;
   height: 1rem;
   border-radius: 4px;
-}
-
-@media (min-width: 768px) {
-  .skeleton-listing-icon {
-    width: 130px;
-    height: 130px;
-  }
 }
 
 // Fade the real content in once it swaps in for a skeleton, so the
