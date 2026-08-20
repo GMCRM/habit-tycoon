@@ -635,13 +635,6 @@
           }
         }
 
-        .earnings-section-actions {
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          gap: 4px;
-        }
-
         .checkin-action {
           margin-top: 8px;
 
@@ -728,6 +721,15 @@
   // (the expensive part of each card) hasn't mounted yet - roughly matches
   // its height so the deferred swap-in doesn't jump the layout.
   .habit-grid-wrapper {
+    .card-icon-actions {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      margin: 0 0 4px;
+    }
+
     .skeleton-chart {
       width: 100%;
       height: 80px;
@@ -1386,10 +1388,6 @@
             justify-content: center;
             align-items: baseline;
             gap: 8px;
-          }
-
-          .earnings-section-actions {
-            justify-content: center;
           }
 
           .checkin-action,

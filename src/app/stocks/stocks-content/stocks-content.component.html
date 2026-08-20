@@ -222,14 +222,32 @@
                   </div>
                 </div>
 
-                <!-- Stock price graph, deferred until this card scrolls
-                     near the viewport — the chart mounts its own Chart.js
-                     canvas + network fetch, so mounting all of them up front
-                     for every card is what was causing the scroll lag. The
-                     full completion calendar is opened via the calendar icon
-                     button next to the stockholders icon (matches the home
-                     screen's calendar popup). -->
+                <!-- Icon row (calendar popup, stockholders) sits above the
+                     stock price graph, deferred until this card scrolls near
+                     the viewport — the chart mounts its own Chart.js canvas +
+                     network fetch, so mounting all of them up front for every
+                     card is what was causing the scroll lag. -->
                 <div class="habit-grid-wrapper">
+                  <div class="card-icon-actions">
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="small"
+                      (click)="openCalendarModal(business.id, business.businessName, business.businessIcon)"
+                      style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                    >
+                      <ion-icon name="calendar-outline" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="small"
+                      (click)="openStockOwnersModal(business.businessName, business.id)"
+                      style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                    >
+                      <ion-icon name="people" slot="icon-only"></ion-icon>
+                    </ion-button>
+                  </div>
                   @defer (on viewport) {
                     <app-stock-chart
                       [businessId]="business.id"
@@ -269,30 +287,6 @@
                     ${{ (business.stockPrice || 0) | number: '1.2-2' }}
                   </div>
                   <div class="earnings-label">per share</div>
-                </div>
-
-                <div class="earnings-section-actions">
-                  <!-- Calendar Action -->
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    (click)="openCalendarModal(business.id, business.businessName, business.businessIcon)"
-                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                  >
-                    <ion-icon name="calendar-outline" slot="icon-only"></ion-icon>
-                  </ion-button>
-
-                  <!-- Stockholders Action -->
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    (click)="openStockOwnersModal(business.businessName, business.id)"
-                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                  >
-                    <ion-icon name="people" slot="icon-only"></ion-icon>
-                  </ion-button>
                 </div>
 
                 <!-- Buy Action -->
@@ -555,12 +549,40 @@
                   </div>
                 </div>
 
-                <!-- Stock price graph, deferred until this card scrolls
-                     near the viewport - see the Available Stocks card above
-                     for why. The full completion calendar is opened via the
-                     calendar icon button below (matches the home screen's
-                     calendar popup). -->
+                <!-- Icon row (calendar popup, stockholders, stat breakdown)
+                     sits above the stock price graph, deferred until this
+                     card scrolls near the viewport - see the Available
+                     Stocks card above for why. -->
                 <div class="habit-grid-wrapper">
+                  <div class="card-icon-actions">
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="small"
+                      (click)="openCalendarModal(holding.stockId, holding.businessName, holding.businessIcon)"
+                      style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                    >
+                      <ion-icon name="calendar-outline" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="small"
+                      (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
+                      style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                    >
+                      <ion-icon name="people" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-button
+                      fill="clear"
+                      color="tertiary"
+                      size="small"
+                      (click)="showHoldingStatsBreakdown(holding)"
+                      style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
+                    >
+                      <ion-icon name="stats-chart" slot="icon-only"></ion-icon>
+                    </ion-button>
+                  </div>
                   @defer (on viewport) {
                     <app-stock-chart
                       [businessId]="holding.stockId"
@@ -604,41 +626,6 @@
                     ${{ (holding.currentPrice || 0) | number: '1.2-2' }}
                   </div>
                   <div class="earnings-label">current price</div>
-                </div>
-
-                <div class="earnings-section-actions">
-                  <!-- Calendar Action -->
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    (click)="openCalendarModal(holding.stockId, holding.businessName, holding.businessIcon)"
-                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                  >
-                    <ion-icon name="calendar-outline" slot="icon-only"></ion-icon>
-                  </ion-button>
-
-                  <!-- Stockholders Action -->
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    (click)="openStockOwnersModal(holding.businessName, holding.businessId)"
-                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                  >
-                    <ion-icon name="people" slot="icon-only"></ion-icon>
-                  </ion-button>
-
-                  <!-- Full Stat Breakdown Action -->
-                  <ion-button
-                    fill="clear"
-                    color="tertiary"
-                    size="small"
-                    (click)="showHoldingStatsBreakdown(holding)"
-                    style="margin: 0; --padding-start: 6px; --padding-end: 6px;"
-                  >
-                    <ion-icon name="stats-chart" slot="icon-only"></ion-icon>
-                  </ion-button>
                 </div>
 
                 <div class="holding-actions-row">
