@@ -29,6 +29,16 @@
         [isStockView]="isStockView"
       >
       </app-habit-grid>
+      <app-month-calendar
+        class="month-calendar"
+        [businessId]="businessId"
+        [businessEmoji]="businessEmoji"
+        [businessName]="businessName"
+        [businessType]="businessType"
+        [businessCreatedAt]="businessCreatedAt"
+        [isStockView]="isStockView"
+      >
+      </app-month-calendar>
       <app-stock-chart
         *ngIf="showStockChart"
         [businessId]="businessId"

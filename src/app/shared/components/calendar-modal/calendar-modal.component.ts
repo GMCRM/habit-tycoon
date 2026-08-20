@@ -6,9 +6,10 @@ import {
 import { addIcons } from 'ionicons';
 import { calendarOutline, close } from 'ionicons/icons';
 import { HabitGridComponent } from '../habit-grid/habit-grid.component';
+import { MonthCalendarComponent } from '../month-calendar/month-calendar.component';
 import { StockChartComponent } from '../stock-chart/stock-chart.component';
 
-/** Full year-long completion calendar + stock chart for a habit business, opened from the card's calendar button. */
+/** Full year-long completion calendar + monthly calendar + stock chart for a habit business, opened from the card's calendar button. */
 @Component({
   selector: 'app-calendar-modal',
   templateUrl: './calendar-modal.component.html',
@@ -16,7 +17,7 @@ import { StockChartComponent } from '../stock-chart/stock-chart.component';
   standalone: true,
   imports: [
     CommonModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButton,
-    IonIcon, IonButtons, HabitGridComponent, StockChartComponent
+    IonIcon, IonButtons, HabitGridComponent, MonthCalendarComponent, StockChartComponent
   ]
 })
 export class CalendarModalComponent {

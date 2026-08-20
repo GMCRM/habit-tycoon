@@ -28,6 +28,11 @@
   }
 }
 
+.month-calendar {
+  display: block;
+  margin-top: 16px;
+}
+
 @media (max-width: 480px) {
   .inline-habit-grid app-habit-grid {
     --grid-size: 7px;
