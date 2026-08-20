@@ -432,17 +432,17 @@
       min-width: 0; // flex item must be allowed to shrink below its content's natural width, or the whole card (buttons, calendar) drags off-screen on mobile
 
       .business-icon {
-        font-size: 5.28rem;
-        min-width: 130px;
-        width: 130px;
+        font-size: 4.32rem;
+        min-width: 106px;
+        width: 106px;
         text-align: center;
         filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
         padding-right: 12px;
       }
 
       .business-icon-img {
-        width: 130px;
-        height: 130px;
+        width: 106px;
+        height: 106px;
         flex-shrink: 0;
         margin-right: 12px;
         border-radius: 22%;
@@ -1282,16 +1282,6 @@
   
   .habit-business-item {
     .item-content {
-      .business-icon {
-        font-size: 5.28rem;
-        min-width: 130px;
-      }
-
-      .business-icon-img {
-        width: 130px;
-        height: 130px;
-      }
-      
       .business-info {
         .business-name {
           font-size: 1.4rem;
@@ -1369,7 +1359,7 @@
 
           .business-name,
           .owner-section {
-            margin-left: 146px; // clear the 130px top-left icon
+            margin-left: 122px; // clear the 106px top-left icon
           }
         }
 
@@ -1581,31 +1571,6 @@
             font-size: 1.2rem;
           }
         }
-      }
-    }
-  }
-}
-
-// Match the marketplace listing icon's larger size at this breakpoint (see
-// social.page.scss's .listing-icon-img) — the mobile-specific block just
-// above sizes the icon for phones, but tablets in the stacked layout
-// (769-1024px) should get the same bump the marketplace gets at 768px+.
-@media (min-width: 769px) and (max-width: 1024px) {
-  .my-habit-businesses .habit-business-item .item-content {
-    .business-icon {
-      font-size: 5.28rem;
-    }
-
-    .business-icon-img {
-      width: 130px;
-      height: 130px;
-    }
-
-    .business-info {
-      .business-name,
-      .owner-section,
-      .habit-description {
-        margin-left: 146px; // clear the 130px top-left icon
       }
     }
   }
