@@ -2,7 +2,7 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy, inject, 
 import { CommonModule } from '@angular/common';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle } from 'ionicons/icons';
+import { checkmarkCircle, chevronBack, chevronForward } from 'ionicons/icons';
 import { Subscription } from 'rxjs';
 import { HabitBusinessService } from '../../../services/habit-business.service';
 import { HabitUpdateService, HabitUpdateEvent } from '../../../services/habit-update.service';
@@ -21,7 +21,21 @@ interface MonthCalendarDay {
   imports: [CommonModule, IonIcon],
   template: `
     <div class="month-calendar-container">
-      <div class="month-calendar-header">{{ monthName }} {{ year }}</div>
+      <div class="month-calendar-header">
+        <ion-icon
+          name="chevron-back"
+          class="month-nav-arrow"
+          [class.disabled]="!canGoPrev"
+          (click)="goToPreviousMonth()">
+        </ion-icon>
+        <span class="month-calendar-title">{{ monthName }} {{ year }}</span>
+        <ion-icon
+          name="chevron-forward"
+          class="month-nav-arrow"
+          [class.disabled]="!canGoNext"
+          (click)="goToNextMonth()">
+        </ion-icon>
+      </div>
 
       <div class="weekday-row">
         <span class="weekday-label" *ngFor="let d of weekdayLabels">{{ d }}</span>
@@ -60,12 +74,38 @@ interface MonthCalendarDay {
     }
 
     .month-calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .month-calendar-title {
       text-align: center;
       font-size: 1rem;
       font-weight: bold;
       color: #FFD700;
-      margin-bottom: 10px;
       letter-spacing: 0.5px;
+    }
+
+    .month-nav-arrow {
+      font-size: 18px;
+      color: #FFD700;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: opacity 0.15s ease, background-color 0.15s ease;
+    }
+
+    .month-nav-arrow:hover {
+      background-color: rgba(255, 215, 0, 0.12);
+    }
+
+    .month-nav-arrow.disabled {
+      opacity: 0.25;
+      pointer-events: none;
+      cursor: default;
     }
 
     .weekday-row {
@@ -156,6 +196,9 @@ export class MonthCalendarComponent implements OnInit, OnChanges, OnDestroy {
   year: number = new Date().getFullYear();
   weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  private viewYear: number = new Date().getFullYear();
+  private viewMonth: number = new Date().getMonth();
+
   private data: { date: string; completed: boolean; streakDay: number }[] = [];
 
   private habitBusinessService = inject(HabitBusinessService);
@@ -171,7 +214,44 @@ export class MonthCalendarComponent implements OnInit, OnChanges, OnDestroy {
   };
 
   constructor() {
-    addIcons({ checkmarkCircle });
+    addIcons({ checkmarkCircle, chevronBack, chevronForward });
+  }
+
+  get canGoNext(): boolean {
+    const today = new Date();
+    return this.viewYear < today.getFullYear() ||
+      (this.viewYear === today.getFullYear() && this.viewMonth < today.getMonth());
+  }
+
+  get canGoPrev(): boolean {
+    if (!this.businessCreatedAt) return true;
+    const created = new Date(this.businessCreatedAt);
+    return this.viewYear > created.getFullYear() ||
+      (this.viewYear === created.getFullYear() && this.viewMonth > created.getMonth());
+  }
+
+  goToPreviousMonth() {
+    if (!this.canGoPrev) return;
+    if (this.viewMonth === 0) {
+      this.viewMonth = 11;
+      this.viewYear--;
+    } else {
+      this.viewMonth--;
+    }
+    this.generateMonth();
+    this.cdr.markForCheck();
+  }
+
+  goToNextMonth() {
+    if (!this.canGoNext) return;
+    if (this.viewMonth === 11) {
+      this.viewMonth = 0;
+      this.viewYear++;
+    } else {
+      this.viewMonth++;
+    }
+    this.generateMonth();
+    this.cdr.markForCheck();
   }
 
   ngOnInit() {
@@ -185,6 +265,9 @@ export class MonthCalendarComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['businessId']) {
+      const today = new Date();
+      this.viewYear = today.getFullYear();
+      this.viewMonth = today.getMonth();
       this.loadData();
     }
   }
@@ -286,8 +369,8 @@ export class MonthCalendarComponent implements OnInit, OnChanges, OnDestroy {
 
   private generateMonth() {
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
+    const currentYear = this.viewYear;
+    const currentMonth = this.viewMonth;
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
