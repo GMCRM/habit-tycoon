@@ -182,6 +182,19 @@
             *ngFor="let business of filteredBusinesses; trackBy: trackByFriendBusinessId"
             class="habit-business-item"
           >
+            <!-- Buy Shares (top-right corner) — mirrors the home screen's
+                 complete/undo glass sphere, with a $ instead of a checkmark. -->
+            <div class="corner-controls corner-top-right">
+              <div
+                class="buy-shares-button"
+                [class.is-disabled]="isLoading || !business.stockId || business.sharesAvailable <= 0"
+                aria-label="Buy Shares"
+                (click)="(isLoading || !business.stockId || business.sharesAvailable <= 0) ? null : openBuyModal(business)"
+              >
+                <span class="button-icon">$</span>
+              </div>
+            </div>
+
             <div class="item-content">
               <ng-container *ngIf="business.businessIcon | businessIconSrc as iconSrc; else availableIconFallback">
                 <img
@@ -288,20 +301,6 @@
                     ${{ (business.stockPrice || 0) | number: '1.2-2' }}
                   </div>
                   <div class="earnings-label">per share</div>
-                </div>
-
-                <!-- Buy Action -->
-                <div class="checkin-action">
-                  <ion-button
-                    fill="solid"
-                    color="success"
-                    size="small"
-                    (click)="openBuyModal(business)"
-                    [disabled]="isLoading || !business.stockId || business.sharesAvailable <= 0"
-                  >
-                    <ion-icon name="add-circle" slot="start"></ion-icon>
-                    Buy Shares
-                  </ion-button>
                 </div>
               </div>
             </div>
