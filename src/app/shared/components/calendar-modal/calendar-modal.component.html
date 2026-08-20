@@ -26,11 +26,13 @@
         [isModal]="false"
         [showStats]="true"
         [useCalendarYear]="true"
+        [isStockView]="isStockView"
       >
       </app-habit-grid>
       <app-stock-chart
+        *ngIf="showStockChart"
         [businessId]="businessId"
-        [isStockView]="false"
+        [isStockView]="isStockView"
         [days]="30"
         [currentStreak]="currentStreak"
       >

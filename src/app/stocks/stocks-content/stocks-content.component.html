@@ -222,25 +222,24 @@
                   </div>
                 </div>
 
-                <!-- Habit Grid showing habit completion pattern. Deferred
-                     until this card scrolls near the viewport — each grid
-                     is ~370 DOM cells and each chart mounts its own Chart.js
+                <!-- Calendar button opens the full completion calendar in a
+                     popup (matches the home screen). The stock price graph
+                     stays inline below, deferred until this card scrolls
+                     near the viewport — the chart mounts its own Chart.js
                      canvas + network fetch, so mounting all of them up front
                      for every card is what was causing the scroll lag. -->
                 <div class="habit-grid-wrapper">
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    class="view-calendar-btn"
+                    (click)="openCalendarModal(business.id, business.businessName, business.businessIcon)"
+                  >
+                    <ion-icon name="calendar-outline" slot="start"></ion-icon>
+                    View Calendar
+                  </ion-button>
                   @defer (on viewport) {
-                    <app-habit-grid
-                      [businessId]="business.id"
-                      [businessName]="business.businessName"
-                      [businessEmoji]="business.businessIcon"
-                      [businessType]="'Stock'"
-                      [isModal]="false"
-                      [showStats]="false"
-                      [useCalendarYear]="true"
-                      [size]="'medium'"
-                      [isStockView]="true"
-                    >
-                    </app-habit-grid>
                     <app-stock-chart
                       [businessId]="business.id"
                       [isStockView]="true"
@@ -249,15 +248,9 @@
                     >
                     </app-stock-chart>
                   } @placeholder {
-                    <div class="habit-grid-wrapper-skeleton">
-                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
-                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
-                    </div>
+                    <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
                   } @loading (minimum 200ms) {
-                    <div class="habit-grid-wrapper-skeleton">
-                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
-                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
-                    </div>
+                    <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
                   }
                 </div>
               </div>
@@ -558,23 +551,23 @@
                   </div>
                 </div>
 
-                <!-- Habit Grid showing habit completion pattern. Deferred
-                     until this card scrolls near the viewport - see the
-                     Available Stocks card above for why. -->
+                <!-- Calendar button opens the full completion calendar in a
+                     popup (matches the home screen). The stock price graph
+                     stays inline below, deferred until this card scrolls
+                     near the viewport - see the Available Stocks card above
+                     for why. -->
                 <div class="habit-grid-wrapper">
+                  <ion-button
+                    fill="clear"
+                    color="tertiary"
+                    size="small"
+                    class="view-calendar-btn"
+                    (click)="openCalendarModal(holding.stockId, holding.businessName, holding.businessIcon)"
+                  >
+                    <ion-icon name="calendar-outline" slot="start"></ion-icon>
+                    View Calendar
+                  </ion-button>
                   @defer (on viewport) {
-                    <app-habit-grid
-                      [businessId]="holding.stockId"
-                      [businessName]="holding.businessName"
-                      [businessEmoji]="holding.businessIcon"
-                      [businessType]="'Stock'"
-                      [isModal]="false"
-                      [showStats]="false"
-                      [useCalendarYear]="true"
-                      [size]="'medium'"
-                      [isStockView]="true"
-                    >
-                    </app-habit-grid>
                     <app-stock-chart
                       [businessId]="holding.stockId"
                       [isStockView]="true"
@@ -583,15 +576,9 @@
                     >
                     </app-stock-chart>
                   } @placeholder {
-                    <div class="habit-grid-wrapper-skeleton">
-                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
-                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
-                    </div>
+                    <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
                   } @loading (minimum 200ms) {
-                    <div class="habit-grid-wrapper-skeleton">
-                      <ion-skeleton-text animated class="skeleton-grid"></ion-skeleton-text>
-                      <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
-                    </div>
+                    <ion-skeleton-text animated class="skeleton-chart"></ion-skeleton-text>
                   }
                 </div>
               </div>

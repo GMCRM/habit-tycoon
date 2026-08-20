@@ -724,15 +724,17 @@
     }
   }
 
-  // Placeholder shown by @defer while a card's habit-grid + stock-chart
+  // Opens the full completion calendar in a popup, matching the home
+  // screen's calendar button - the stock price graph stays inline below it.
+  // The skeleton-chart placeholder is shown by @defer while the stock-chart
   // (the expensive part of each card) hasn't mounted yet - roughly matches
-  // their combined height so the deferred swap-in doesn't jump the layout.
-  .habit-grid-wrapper-skeleton {
-    .skeleton-grid {
-      width: 100%;
-      height: 130px;
-      border-radius: 12px;
-      margin-bottom: 8px;
+  // its height so the deferred swap-in doesn't jump the layout.
+  .habit-grid-wrapper {
+    .view-calendar-btn {
+      display: block;
+      margin: 0 0 4px;
+      --padding-start: 0;
+      font-size: 0.85rem;
     }
 
     .skeleton-chart {

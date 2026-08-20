@@ -9,8 +9,8 @@ import {
   IonSelect, IonSelectOption,
   ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
-import { HabitGridComponent } from '../../shared/components/habit-grid/habit-grid.component';
 import { StockChartComponent } from '../../shared/components/stock-chart/stock-chart.component';
+import { CalendarModalComponent } from '../../shared/components/calendar-modal/calendar-modal.component';
 import { StockOwnersModalComponent } from '../../shared/components/stock-owners-modal/stock-owners-modal.component';
 import { StockStatBreakdownModalComponent } from '../../shared/components/stock-stat-breakdown-modal/stock-stat-breakdown-modal.component';
 import { HabitBusinessService } from '../../services/habit-business.service';
@@ -27,7 +27,7 @@ import {
   swapHorizontal, helpCircle, close, addCircle, pieChart,
   wallet, removeCircle, add, remove, chevronBack,
   chevronForward, helpCircleOutline, people, arrowUp, arrowDown,
-  statsChart
+  statsChart, calendarOutline
 } from 'ionicons/icons';
 
 interface FriendBusiness {
@@ -92,7 +92,7 @@ interface Portfolio {
     IonButton, IonIcon, IonBadge, IonSkeletonText,
     IonModal, IonButtons, IonItem, IonLabel, IonInput,
     IonSelect, IonSelectOption,
-    HabitGridComponent, StockChartComponent,
+    StockChartComponent,
     BusinessIconPipe
   ]
 })
@@ -154,7 +154,7 @@ export class StocksContentComponent implements OnInit {
     private modalController: ModalController
   ) {
     // Register icons
-    addIcons({funnel,closeCircle,settings,trendingUpOutline,pieChartOutline,swapHorizontal,helpCircle,trendingUp,close,addCircle,pieChart,wallet,trendingDown,removeCircle,helpCircleOutline,chevronBack,chevronForward,remove,add,arrowBack,star,business,cash,checkmarkCircle,alertCircle,people,arrowUp,arrowDown,statsChart});
+    addIcons({funnel,closeCircle,settings,trendingUpOutline,pieChartOutline,swapHorizontal,helpCircle,trendingUp,close,addCircle,pieChart,wallet,trendingDown,removeCircle,helpCircleOutline,chevronBack,chevronForward,remove,add,arrowBack,star,business,cash,checkmarkCircle,alertCircle,people,arrowUp,arrowDown,statsChart,calendarOutline});
   }
 
   async ngOnInit() {
@@ -786,6 +786,28 @@ export class StocksContentComponent implements OnInit {
     if (current > 1) {
       this.selectedQuantities[stockId] = current - 1;
     }
+  }
+
+  /**
+   * Open the full year-long completion calendar in a popup, matching the
+   * home screen's calendar button. The stock price graph stays inline on
+   * the card instead of moving into this modal.
+   */
+  async openCalendarModal(businessId: string, businessName: string, businessEmoji: string) {
+    const modal = await this.modalController.create({
+      component: CalendarModalComponent,
+      componentProps: {
+        businessId,
+        businessName,
+        businessEmoji,
+        businessType: 'Stock',
+        isStockView: true,
+        showStockChart: false,
+        modalController: this.modalController
+      },
+      cssClass: 'calendar-modal'
+    });
+    await modal.present();
   }
 
   /**

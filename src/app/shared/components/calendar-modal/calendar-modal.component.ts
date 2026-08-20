@@ -26,6 +26,10 @@ export class CalendarModalComponent {
   @Input() businessType: string = '';
   @Input() businessCreatedAt: string = '';
   @Input() currentStreak: number = 0;
+  /** Cross-user data (a friend's business viewed from the Stocks page) instead of the current user's own. */
+  @Input() isStockView: boolean = false;
+  /** Hide the stock price chart when it's already shown inline elsewhere on the page (e.g. the Stocks page cards). */
+  @Input() showStockChart: boolean = true;
   @Input() modalController: any;
 
   constructor() {
