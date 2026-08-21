@@ -399,9 +399,17 @@ export class HomePage implements OnInit, OnDestroy {
     this.habitCreatedSub?.unsubscribe();
   }
 
-  /** A habit-card action (complete/undo/delete/upgrade/edit/JV) landed successfully — refresh cash + the dashboard list. */
+  /**
+   * A habit-card action (complete/undo/delete/upgrade/edit/JV) landed successfully — refresh cash + the dashboard list.
+   * Uses refreshUserProfile() rather than loadCurrentUser(): habit-card also emits a
+   * HabitUpdateService event alongside `changed`, which this page's own updates$ subscriber
+   * (see ngOnInit) reacts to by calling loadDashboardData() — synchronously setting isLoading
+   * true before this handler runs. loadCurrentUser() bails out immediately whenever isLoading
+   * is already true, so it would silently no-op here and leave the displayed cash stale until
+   * the next full page load. refreshUserProfile() has no such guard.
+   */
   async onCardChanged() {
-    await this.loadCurrentUser();
+    await this.refreshUserProfile();
     await this.loadDashboardData();
   }
 
