@@ -492,15 +492,6 @@ h2 {
   text-overflow: ellipsis;
   text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
 }
-.request-card .request-info .request-details .request-email {
-  margin: 0 0 8px 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
-}
 .request-card .request-info .request-details .request-time,
 .request-card .request-info .request-details .request-status {
   margin: 0;

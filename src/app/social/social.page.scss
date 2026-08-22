@@ -832,16 +832,6 @@ h2 {
         text-shadow: 0 0 6px rgba(255, 215, 0, 0.3); // Add glow
       }
       
-      .request-email {
-        margin: 0 0 8px 0; // Increased bottom margin
-        color: rgba(255, 255, 255, 0.8); // Better contrast
-        font-size: 0.9rem; // Slightly larger
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.4;
-      }
-      
       .request-time,
       .request-status {
         margin: 0;
