@@ -31,28 +31,6 @@
         <div class="cash-subtitle">Turn a daily habit into a business</div>
       </div>
 
-      <!-- Team Up (optional) — pick friends first; costs below become your split share -->
-      <div class="form-section team-up-section">
-        <div class="section-header">
-          <ion-icon name="people-circle"></ion-icon>
-          <h3>Team Up?</h3>
-        </div>
-
-        <ion-button
-          expand="block"
-          fill="outline"
-          color="tertiary"
-          (click)="openFriendPicker()"
-        >
-          <ion-icon name="people-circle" slot="start"></ion-icon>
-          Choose Friends ({{ selectedFriendIds.length }} selected)
-        </ion-button>
-
-        <p *ngIf="isJointVenture" class="jv-note jv-owner-note">
-          Splitting {{ jvOwnerCount }} ways — with ${{ userProfile?.cash | number:'1.2-2' }}, you can help launch businesses up to ${{ jvMaxUnlockedCost | number:'1.2-2' }}.
-        </p>
-      </div>
-
       <!-- Step 1: Name -->
       <div class="form-section">
         <div class="section-header">
@@ -94,7 +72,6 @@
               placeholder="Select schedule"
               interface="popover"
               [interfaceOptions]="scheduleInterfaceOptions"
-              [disabled]="isJointVenture"
             >
               <ion-select-option value="24h">Every Day 🔥</ion-select-option>
               <ion-select-option value="specific_days">Specific Days 📅</ion-select-option>
@@ -109,14 +86,12 @@
               min="1"
               max="20"
               placeholder="1"
-              [disabled]="isJointVenture"
             ></ion-input>
           </ion-item>
         </div>
-        <p *ngIf="isJointVenture" class="jv-schedule-lock-note">Joint ventures are always "Every Day", once per day — locked while Joint Venture is on.</p>
 
         <!-- Day picker — only shown for specific_days -->
-        <div *ngIf="recurrenceInterval === 'specific_days' && !isJointVenture" class="day-picker-section">
+        <div *ngIf="recurrenceInterval === 'specific_days'" class="day-picker-section">
           <div class="day-picker-label">Active Days</div>
           <div class="day-chips">
             <button
@@ -145,7 +120,6 @@
             *ngFor="let type of businessTypes"
             class="investment-option"
             [class.selected]="selectedBusinessTypeId === type.id"
-            [class.jv-only]="!canAffordType(type)"
             [class.disabled]="!canAffordType(type)"
             [attr.aria-disabled]="!canAffordType(type)"
             (click)="selectRewardLevel(type)"
@@ -163,26 +137,17 @@
               <div class="investment-info">
                 <div class="investment-name">{{ type.name }}</div>
                 <div class="investment-cost" [class.unaffordable]="!canAffordType(type)">
-                  <ng-container *ngIf="isJointVenture; else soloCost">
-                    <span class="original-cost">${{ type.base_cost | number }}</span>
-                    <span class="split-cost">${{ shareForType(type) | number:'1.2-2' }} your share</span>
-                  </ng-container>
-                  <ng-template #soloCost>${{ type.base_cost | number }}</ng-template>
+                  ${{ type.base_cost | number }}
                 </div>
                 <div class="investment-details">
                   <span class="revenue-amount">${{ type.base_pay | number }}</span>
                   <span class="revenue-label">per completion</span>
                 </div>
-                <div class="jv-hint" *ngIf="!canAffordType(type)">
-                  <ion-icon name="people-circle"></ion-icon>
-                  <ng-container *ngIf="isJointVenture; else needFriendsHint">Add more friends to unlock</ng-container>
-                  <ng-template #needFriendsHint>Split with friends to unlock</ng-template>
-                </div>
               </div>
               <ion-icon
                 class="investment-status-icon"
-                [name]="canAffordType(type) ? 'checkmark-circle' : 'people-circle'"
-                [color]="canAffordType(type) ? 'success' : 'tertiary'"
+                [name]="canAffordType(type) ? 'checkmark-circle' : 'warning'"
+                [color]="canAffordType(type) ? 'success' : 'danger'"
               ></ion-icon>
             </div>
           </div>
@@ -211,31 +176,12 @@
             </span>
           </div>
           <div class="summary-item cost">
-            <span class="summary-label">{{ isJointVenture ? 'Your Share:' : 'Initial Cost:' }}</span>
-            <span class="summary-value">-${{ (isJointVenture ? jvCreatorShare : selectedBusinessType?.base_cost) | number:'1.2-2' }}</span>
+            <span class="summary-label">Initial Cost:</span>
+            <span class="summary-value">-${{ selectedBusinessType?.base_cost | number:'1.2-2' }}</span>
           </div>
           <div class="summary-item earning">
             <span class="summary-label">Revenue / Completion:</span>
-            <span class="summary-value">+${{ (isJointVenture ? jvBasePayShare : selectedBusinessType?.base_pay) | number:'1.2-2' }}</span>
-          </div>
-        </div>
-
-        <div *ngIf="isJointVenture" class="jv-split-summary">
-          <div class="summary-item">
-            <span class="summary-label">Co-owners:</span>
-            <span class="summary-value">{{ jvOwnerCount }} people</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Each friend's share:</span>
-            <span class="summary-value">${{ jvShareOthers | number:'1.2-2' }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Max streak bonus:</span>
-            <span class="summary-value">+{{ jvMaxStreakMultiplierPercent }}%</span>
-          </div>
-          <div class="summary-item highlight">
-            <span class="summary-label">Max payout per owner (at full streak):</span>
-            <span class="summary-value">${{ jvMaxPayPerOwner | number:'1.2-2' }}</span>
+            <span class="summary-value">+${{ selectedBusinessType?.base_pay | number:'1.2-2' }}</span>
           </div>
         </div>
 
@@ -243,12 +189,7 @@
           <ion-icon name="warning" color="danger"></ion-icon>
           <div class="warning-text">
             <strong>Insufficient Capital</strong><br />
-            <ng-container *ngIf="!isJointVenture">
-              Need ${{ selectedBusinessType?.base_cost | number }} but only have ${{ userProfile?.cash | number }}
-            </ng-container>
-            <ng-container *ngIf="isJointVenture">
-              Need ${{ jvCreatorShare | number:'1.2-2' }} for your share but only have ${{ userProfile?.cash | number }}
-            </ng-container>
+            Need ${{ selectedBusinessType?.base_cost | number }} but only have ${{ userProfile?.cash | number }}
           </div>
         </div>
       </div>
