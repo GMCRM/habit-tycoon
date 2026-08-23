@@ -83,6 +83,7 @@ const GENERAL_CATEGORY_META: Record<GeneralAchievementCategory, { label: string;
   leaderboard: { label: 'Leaderboards', icon: '🥇' },
   perfect: { label: 'Perfect Streaks', icon: '🗓️' },
   meta: { label: 'Meta', icon: '🏅' },
+  tycoon: { label: 'Habit Tycoon', icon: '👑' },
 };
 
 @Component({
@@ -283,9 +284,19 @@ export class WeeklyReceiptPage implements OnInit {
       const earnedKeys = new Set(earned.map((e) => e.achievement_key));
       let runningEarnedCount = 0;
 
-      const states: GeneralAchievementState[] = GENERAL_ACHIEVEMENT_DEFINITIONS.map((def) => {
+      const states: GeneralAchievementState[] = GENERAL_ACHIEVEMENT_DEFINITIONS
+        // Hidden achievements (the Habit Tycoon tier) are invisible in the
+        // list entirely until earned, rather than showing as locked — so
+        // they don't spoil late-game content for players who haven't
+        // reached it. Once earned they render like any other achievement.
+        .filter((def) => !def.isHidden || earnedKeys.has(def.key))
+        .map((def) => {
         const isEarned = earnedKeys.has(def.key);
-        if (isEarned && def.key !== 'meta_legend') {
+        // Hidden (Tycoon-tier) achievements don't count toward the Legend
+        // meta-achievement's "every other general achievement" tally —
+        // matches the category != 'tycoon' exclusion in
+        // check_general_achievements() server-side.
+        if (isEarned && def.key !== 'meta_legend' && !def.isHidden) {
           runningEarnedCount++;
         }
 
@@ -346,7 +357,7 @@ export class WeeklyReceiptPage implements OnInit {
     // its target is "every other general achievement", derived the same way
     // generalProgressLabel() below computes it, so the bar and the label agree.
     if (a.metric === 'legend_count') {
-      const total = GENERAL_ACHIEVEMENT_DEFINITIONS.length - 1;
+      const total = GENERAL_ACHIEVEMENT_DEFINITIONS.filter((d) => d.key !== 'meta_legend' && !d.isHidden).length;
       return total > 0 ? Math.max(0, Math.min(100, ((a.progressCurrent ?? 0) / total) * 100)) : 0;
     }
     if (a.threshold === undefined || a.progressCurrent === undefined) return 0;
@@ -355,7 +366,7 @@ export class WeeklyReceiptPage implements OnInit {
 
   generalProgressLabel(a: GeneralAchievementState): string {
     if (a.metric === 'legend_count') {
-      const total = GENERAL_ACHIEVEMENT_DEFINITIONS.length - 1;
+      const total = GENERAL_ACHIEVEMENT_DEFINITIONS.filter((d) => d.key !== 'meta_legend' && !d.isHidden).length;
       return `${Math.min(a.progressCurrent ?? 0, total)}/${total}`;
     }
     if (a.threshold === undefined || a.progressCurrent === undefined) return '';

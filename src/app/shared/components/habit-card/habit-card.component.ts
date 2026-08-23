@@ -21,6 +21,7 @@ import { StockOwnersModalComponent } from '../stock-owners-modal/stock-owners-mo
 import { JvParticipantsModalComponent } from '../jv-participants-modal/jv-participants-modal.component';
 import { CalendarModalComponent } from '../calendar-modal/calendar-modal.component';
 import { EarningsModalComponent } from '../earnings-modal/earnings-modal.component';
+import { formatLargeNumber as formatLargeNumberUtil } from '../../currency-format.util';
 
 /**
  * The habit-business card shown on the home screen — reused as-is (same
@@ -433,8 +434,17 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const businessTypes = await this.habitBusinessService.getBusinessTypes();
-      const upgradeOptions = businessTypes.filter(bt => bt.base_cost > (this.hb.cost || 0) && bt.id !== this.hb.business_type_id);
+      const [businessTypes, tycoonUnlocked] = await Promise.all([
+        this.habitBusinessService.getBusinessTypes(),
+        this.habitBusinessService.hasUnlockedTycoonTier(this.hb.id),
+      ]);
+      // Habit Tycoon (tier 2) options are simply absent here — not shown as
+      // locked — until this habit has earned all 6 milestone achievements.
+      const upgradeOptions = businessTypes.filter(bt =>
+        bt.base_cost > (this.hb.cost || 0) &&
+        bt.id !== this.hb.business_type_id &&
+        (bt.tier !== 2 || tycoonUnlocked)
+      );
       if (upgradeOptions.length === 0) {
         await this.toast('🎉 You already have the best business type available!', 'success');
         return;
@@ -521,10 +531,16 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const businessTypes = await this.habitBusinessService.getBusinessTypes();
+      const [businessTypes, tycoonUnlocked] = await Promise.all([
+        this.habitBusinessService.getBusinessTypes(),
+        this.habitBusinessService.hasUnlockedTycoonTier(this.hb.id),
+      ]);
+      // Habit Tycoon (tier 2) options are simply absent here — not shown as
+      // locked — until this habit has earned all 6 milestone achievements.
       const upgradeOptions = businessTypes.filter(bt =>
         bt.base_cost > (this.hb.cost || 0) &&
-        bt.id !== this.hb.business_type_id
+        bt.id !== this.hb.business_type_id &&
+        (bt.tier !== 2 || tycoonUnlocked)
       );
 
       if (upgradeOptions.length === 0) {
@@ -749,21 +765,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
 
   /** Format large numbers for display (1.1K, 1.1M, 1.1B, 1.1T, etc.) */
   formatLargeNumber(amount: number): string {
-    if (amount >= 1000000000000) {
-      const trillions = amount / 1000000000000;
-      return trillions >= 10 ? `${Math.floor(trillions)}T` : `${trillions.toFixed(1)}T`;
-    } else if (amount >= 1000000000) {
-      const billions = amount / 1000000000;
-      return billions >= 10 ? `${Math.floor(billions)}B` : `${billions.toFixed(1)}B`;
-    } else if (amount >= 1000000) {
-      const millions = amount / 1000000;
-      return millions >= 10 ? `${Math.floor(millions)}M` : `${millions.toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      const thousands = amount / 1000;
-      return thousands >= 10 ? `${Math.floor(thousands)}K` : `${thousands.toFixed(1)}K`;
-    } else {
-      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+    return formatLargeNumberUtil(amount);
   }
 
   /** Show this habit-business's description in a popup (the description text itself is hidden on the card). */

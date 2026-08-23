@@ -103,6 +103,9 @@
       <!-- Icon: largest element, front and center -->
       <div class="business-hero">
         <div class="business-icon-wrap">
+          <!-- Habit Tycoon status: same icon as the base business, marked
+               out with a green banner across the top -->
+          <span *ngIf="hb.business_tier === 2" class="tycoon-banner">HABIT TYCOON</span>
           <img
             *ngIf="hb.business_icon | businessIconSrc as iconSrc"
             [src]="iconSrc"
