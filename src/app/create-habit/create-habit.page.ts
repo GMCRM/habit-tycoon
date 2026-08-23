@@ -79,7 +79,9 @@ export class CreateHabitPage implements OnInit {
   async loadData() {
     this.loading = true;
     try {
-      this.businessTypes = await this.habitBusinessService.getBusinessTypes();
+      // Habit Tycoon (tier 2) businesses can only be reached by upgrading an
+      // existing, milestone-complete habit — never offered as a first business.
+      this.businessTypes = (await this.habitBusinessService.getBusinessTypes()).filter(bt => bt.tier !== 2);
 
       const { data: { user } } = await this.authService.getUser();
       if (user) {

@@ -14,6 +14,7 @@ export interface BusinessType {
   base_cost: number;
   base_pay: number;
   description: string;
+  tier: number; // 1 = the original 10 business types; 2 = "Habit Tycoon" status — same names/icons, unlocked per-habit once all 6 milestone achievements are earned
 }
 
 export interface HabitBusiness {
@@ -39,6 +40,8 @@ export interface HabitBusiness {
   display_order: number; // User's preferred order for display
   user_custom_order: number; // User's original custom order (for resetting)
   last_upgraded_at?: string; // Last tier-upgrade timestamp; upgrades are rate-limited to once/24h
+  business_tier: number; // 1 = normal business, 2 = Habit Tycoon status — snapshotted from business_types.tier and kept in sync server-side by the enforce_habit_tycoon_tier_gate trigger
+  first_tycoon_purchase_at?: string | null; // When this habit first reached Habit Tycoon status; null until then
   marketplace_base_value?: number | null; // 70% of the business's tier price (business_types.base_cost), when this business was bought via the Marketplace; same figure as the cost*0.7 fallback below, just persisted so a Marketplace-sourced business doesn't need a business_types join to compute it
   marketplace_bonus_percent?: number | null; // Streak bonus % (0-100) baked into earnings_per_completion when this business was bought via the Marketplace; shown as a "+X%" badge on the habit card icon
   is_joint_venture?: boolean; // Co-owned by multiple friends (see JointVentureService) — always false for a single-owner business
@@ -358,6 +361,28 @@ export class HabitBusinessService {
   }
 
   /**
+   * Whether a habit has earned all 6 milestone achievements (7/30/100-day
+   * streak, 10/50/100 completions) and can therefore be upgraded into a
+   * Habit Tycoon (tier 2) business type. Mirrors the server-side check in
+   * the enforce_habit_tycoon_tier_gate trigger, which is the actual source
+   * of truth for whether an upgrade is allowed — this is only used to
+   * decide which options to show in the upgrade UI.
+   */
+  async hasUnlockedTycoonTier(habitBusinessId: string): Promise<boolean> {
+    const { count, error } = await this.supabase
+      .from('habit_milestone_achievements')
+      .select('milestone_key', { count: 'exact', head: true })
+      .eq('habit_business_id', habitBusinessId);
+
+    if (error) {
+      console.error('Error checking Habit Tycoon unlock status:', error);
+      return false;
+    }
+
+    return (count ?? 0) >= 6;
+  }
+
+  /**
    * Get user's habit-businesses ordered by display_order (for user customization).
    * Falls back to the last cached snapshot (see HabitCacheService) if the
    * network read fails — offline, or on a flaky connection — so the habit
@@ -467,6 +492,7 @@ export class HabitBusinessService {
         longest_streak: 0,
         total_completions: 0,
         total_earnings: 0,
+        business_tier: 1,
         is_active: true,
         display_order: nextOrderValue,
         user_custom_order: nextOrderValue,

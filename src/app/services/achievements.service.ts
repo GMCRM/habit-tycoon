@@ -78,7 +78,8 @@ export type GeneralAchievementCategory =
   | 'completions'
   | 'leaderboard'
   | 'perfect'
-  | 'meta';
+  | 'meta'
+  | 'tycoon';
 
 // What client-computed stat (if any) a definition's progress bar tracks.
 // Achievements with no natural "progress towards a number" (e.g. first
@@ -102,6 +103,7 @@ export interface GeneralAchievementDefinition {
   threshold?: number;
   unit?: string;
   businessTypeId?: number;
+  isHidden?: boolean; // Doesn't render in the achievements list at all until earned — used for the Habit Tycoon tier so it doesn't spoil late-game content for players who haven't reached it
 }
 
 export interface EarnedGeneralAchievement {
@@ -172,6 +174,28 @@ export const GENERAL_ACHIEVEMENT_DEFINITIONS: GeneralAchievementDefinition[] = [
   // Meta
   { key: 'meta_completionist', category: 'meta', emoji: '🧩', label: 'Completionist', description: 'Earn all 6 milestone badges on a single habit.' },
   { key: 'meta_legend', category: 'meta', emoji: '🏅', label: 'Legend', description: 'Earn every other general achievement.', metric: 'legend_count' },
+
+  // Habit Tycoon (all hidden — invisible in the achievements list until earned)
+  { key: 'tycoon_debut', category: 'tycoon', emoji: '🏆', label: 'Tycoon Debut', description: 'Buy your first Habit Tycoon business.', isHidden: true },
+  { key: 'tycoon_second_wind', category: 'tycoon', emoji: '📈', label: 'Second Wind', description: 'Upgrade a Habit Tycoon business at least once.', isHidden: true },
+  { key: 'tycoon_oil_baron_ii', category: 'tycoon', emoji: '🛢️', label: 'Oil Baron II', description: 'Reach a Habit Tycoon Oil Company — the top of the tier.', isHidden: true },
+  { key: 'tycoon_speed_baron', category: 'tycoon', emoji: '⚡', label: 'Speed Baron', description: 'Go from your first Habit Tycoon purchase to a Habit Tycoon Oil Company on the same habit within 7 days.', isHidden: true },
+  { key: 'tycoon_dynasty', category: 'tycoon', emoji: '👑', label: 'Tycoon Dynasty', description: 'Keep Habit Tycoon status on a habit for 30 days straight.', isHidden: true },
+  { key: 'tycoon_trio', category: 'tycoon', emoji: '🎩', label: 'Tycoon Trio', description: 'Have Habit Tycoon status on 3 different habits at once.', isHidden: true },
+  { key: 'tycoon_empire', category: 'tycoon', emoji: '🏙️', label: 'Tycoon Empire', description: 'Have Habit Tycoon status on 5 different habits at once.', isHidden: true },
+  { key: 'tycoon_full_portfolio', category: 'tycoon', emoji: '🗂️', label: 'Full Tycoon Portfolio', description: 'Own all 10 Habit Tycoon business types at once.', isHidden: true },
+  { key: 'tycoon_quadrillionaire', category: 'tycoon', emoji: '💎', label: 'Quadrillionaire', description: 'Reach a net worth of $1,000,000,000,000,000.', isHidden: true },
+  { key: 'tycoon_quintillion_club', category: 'tycoon', emoji: '🌌', label: 'Quintillion Club', description: 'Reach a net worth of $1,000,000,000,000,000,000.', isHidden: true },
+  { key: 'tycoon_septillion_status', category: 'tycoon', emoji: '✨', label: 'Septillion Status', description: 'Reach a net worth of $1,000,000,000,000,000,000,000,000.', isHidden: true },
+  { key: 'tycoon_octillion_overlord', category: 'tycoon', emoji: '🪐', label: 'Octillion Overlord', description: 'Reach a net worth of $10,000,000,000,000,000,000,000,000,000 — a maxed-out Habit Tycoon Oil Company.', isHidden: true },
+  { key: 'tycoon_streak', category: 'tycoon', emoji: '🔥', label: 'Tycoon Streak', description: 'Reach a 100-day streak on a habit that already has Habit Tycoon status.', isHidden: true },
+  { key: 'tycoon_double_century', category: 'tycoon', emoji: '💯', label: 'Double Century', description: 'Reach a 200-day streak on a habit that already has Habit Tycoon status.', isHidden: true },
+  { key: 'tycoon_triple_threat', category: 'tycoon', emoji: '🎯', label: 'Triple Threat', description: 'Earn all 6 milestone badges on 3 separate habits at once.', isHidden: true },
+  { key: 'tycoon_trader', category: 'tycoon', emoji: '💼', label: 'Tycoon Trader', description: 'Sell a Habit Tycoon business on the Marketplace.', isHidden: true },
+  { key: 'tycoon_hostile_takeover', category: 'tycoon', emoji: '🤝', label: 'Hostile Takeover', description: 'Buy a Habit Tycoon business from another player on the Marketplace.', isHidden: true },
+  { key: 'tycoon_joint_tycoon', category: 'tycoon', emoji: '🧑‍🤝‍🧑', label: 'Joint Tycoon', description: 'Co-own a Habit Tycoon business through a Joint Venture.', isHidden: true },
+  { key: 'tycoon_shareholder', category: 'tycoon', emoji: '📊', label: 'Tycoon Shareholder', description: 'Own stock in a Habit Tycoon business.', isHidden: true },
+  { key: 'tycoon_old_money', category: 'tycoon', emoji: '🕰️', label: 'Old Money', description: 'Hold Full Portfolio (all 10 original business types) and Habit Tycoon status at the same time.', isHidden: true },
 ];
 
 @Injectable({
@@ -200,6 +224,18 @@ export class AchievementsService {
     }
 
     return data || [];
+  }
+
+  /**
+   * Whether a specific habit has earned all 6 milestone badges — the
+   * condition that unlocks Habit Tycoon (tier 2) business types for that
+   * habit. Pass the result of getEarnedMilestones() rather than refetching.
+   */
+  allMilestonesEarnedForHabit(habitBusinessId: string, earned: EarnedMilestone[]): boolean {
+    const earnedKeys = new Set(
+      earned.filter(m => m.habit_business_id === habitBusinessId).map(m => m.milestone_key)
+    );
+    return MILESTONE_DEFINITIONS.every(def => earnedKeys.has(def.key));
   }
 
   /**

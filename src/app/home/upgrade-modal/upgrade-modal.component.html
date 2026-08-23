@@ -18,13 +18,16 @@
   <div class="scrollable-content">
     <div class="current-business-info">
       <div class="business-header">
-        <img
-          *ngIf="habitBusiness.business_icon | businessIconSrc as iconSrc"
-          [src]="iconSrc"
-          [alt]="habitBusiness.business_name"
-          class="business-icon-img"
-        />
-        <div *ngIf="!(habitBusiness.business_icon | businessIconSrc)" class="business-icon">{{ habitBusiness.business_icon }}</div>
+        <div class="business-type-icon-wrap">
+          <span *ngIf="habitBusiness.business_tier === 2" class="tycoon-banner">HABIT TYCOON</span>
+          <img
+            *ngIf="habitBusiness.business_icon | businessIconSrc as iconSrc"
+            [src]="iconSrc"
+            [alt]="habitBusiness.business_name"
+            class="business-icon-img"
+          />
+          <div *ngIf="!(habitBusiness.business_icon | businessIconSrc)" class="business-icon">{{ habitBusiness.business_icon }}</div>
+        </div>
         <div class="business-details">
           <h2>{{ habitBusiness.business_name }}</h2>
           <p class="habit-description">{{ habitBusiness.habit_description }}</p>
@@ -36,14 +39,14 @@
           <ion-icon name="cash" color="success"></ion-icon>
           <div class="info-content">
             <div class="info-label">Sell Value</div>
-            <div class="info-value">${{ currentBusinessValue | number:'1.2-2' }}</div>
+            <div class="info-value">${{ formatMoney(currentBusinessValue) }}</div>
           </div>
         </div>
         <div class="info-card">
           <ion-icon name="wallet" color="primary"></ion-icon>
           <div class="info-content">
             <div class="info-label">Your Cash</div>
-            <div class="info-value">${{ userCash | number:'1.2-2' }}</div>
+            <div class="info-value">${{ formatMoney(userCash) }}</div>
           </div>
         </div>
       </div>
@@ -72,13 +75,16 @@
           </div>
 
           <div class="option-header">
-            <img
-              *ngIf="businessType.icon | businessIconSrc as iconSrc"
-              [src]="iconSrc"
-              [alt]="businessType.name"
-              class="business-type-icon-img"
-            />
-            <div *ngIf="!(businessType.icon | businessIconSrc)" class="business-type-icon">{{ businessType.icon }}</div>
+            <div class="business-type-icon-wrap">
+              <span *ngIf="businessType.tier === 2" class="tycoon-banner">HABIT TYCOON</span>
+              <img
+                *ngIf="businessType.icon | businessIconSrc as iconSrc"
+                [src]="iconSrc"
+                [alt]="businessType.name"
+                class="business-type-icon-img"
+              />
+              <div *ngIf="!(businessType.icon | businessIconSrc)" class="business-type-icon">{{ businessType.icon }}</div>
+            </div>
             <div class="business-type-name">{{ businessType.name }}</div>
           </div>
 
@@ -91,7 +97,7 @@
                 class="cost-amount"
                 [class.affordable-text]="canAffordUpgrade(businessType)"
                 [class.expensive-text]="!canAffordUpgrade(businessType)"
-                >${{ getUpgradeCost(businessType) | number:'1.2-2' }}</span
+                >${{ formatMoney(getUpgradeCost(businessType)) }}</span
               >
             </div>
 
@@ -100,7 +106,7 @@
                 <div class="progress-fill" [style.width.%]="affordPercent(businessType)"></div>
               </div>
               <div class="need-more">
-                Need ${{ getUpgradeCost(businessType) - userCash | number:'1.2-2' }} more
+                Need ${{ formatMoney(getUpgradeCost(businessType) - userCash) }} more
               </div>
             </div>
           </div>

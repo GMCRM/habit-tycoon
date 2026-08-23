@@ -26,7 +26,7 @@
       <div class="cash-banner">
         <div class="cash-main">
           <div class="cash-title">Available Capital</div>
-          <div class="cash-amount">${{ (userProfile?.cash || 0) | number:'1.2-2' }}</div>
+          <div class="cash-amount">${{ formatMoney(userProfile?.cash || 0) }}</div>
         </div>
         <div class="cash-subtitle">Turn a daily habit into a business</div>
       </div>

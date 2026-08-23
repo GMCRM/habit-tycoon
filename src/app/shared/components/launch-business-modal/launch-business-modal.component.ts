@@ -9,6 +9,7 @@ import { HabitBusinessService, BusinessType } from '../../../services/habit-busi
 import { AuthService } from '../../../services/auth.service';
 import { HabitCacheService } from '../../../services/habit-cache.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
+import { formatLargeNumber } from '../../currency-format.util';
 import { addIcons } from 'ionicons';
 import { rocket, close, checkmarkCircle, document, trophy, lockClosed, warning } from 'ionicons/icons';
 
@@ -61,7 +62,9 @@ export class LaunchBusinessModalComponent implements OnInit {
   async loadData() {
     this.loading = true;
     try {
-      this.businessTypes = await this.habitBusinessService.getBusinessTypes();
+      // Habit Tycoon (tier 2) businesses can only be reached by upgrading an
+      // existing, milestone-complete habit — never offered as a first business.
+      this.businessTypes = (await this.habitBusinessService.getBusinessTypes()).filter(bt => bt.tier !== 2);
 
       const { data: { user } } = await this.authService.getUser();
       if (user) {
@@ -109,6 +112,13 @@ export class LaunchBusinessModalComponent implements OnInit {
 
   canAffordType(businessType: BusinessType): boolean {
     return (this.userProfile?.cash ?? 0) >= businessType.base_cost;
+  }
+
+  /** A player's cash can run well into the billions+ once Habit Tycoon businesses are in play — abbreviate past that point. */
+  formatMoney(amount: number): string {
+    return Math.abs(amount) >= 1e9
+      ? formatLargeNumber(amount)
+      : amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   get canAfford(): boolean {

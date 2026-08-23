@@ -5,6 +5,7 @@ import {
 } from '@ionic/angular/standalone';
 import { HabitBusiness } from '../../services/habit-business.service';
 import { BusinessIconPipe } from '../../shared/pipes/business-icon.pipe';
+import { formatLargeNumber } from '../../shared/currency-format.util';
 
 @Component({
   selector: 'app-upgrade-modal',
@@ -64,6 +65,18 @@ export class UpgradeModalComponent implements OnInit {
     const cost = this.getUpgradeCost(businessType);
     if (cost <= 0) return 100;
     return Math.min(100, Math.max(0, (this.userCash / cost) * 100));
+  }
+
+  /**
+   * Dollar amounts here can run from single digits (tier-1 businesses) up to
+   * the tens of billions and beyond (Habit Tycoon tier), where an exact
+   * "$10,000,000,000.00" stops being readable — abbreviate once an amount
+   * crosses a billion; below that, show the exact figure as before.
+   */
+  formatMoney(amount: number): string {
+    return Math.abs(amount) >= 1e9
+      ? formatLargeNumber(amount)
+      : amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   private async showErrorToast(message: string) {

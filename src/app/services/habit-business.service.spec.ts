@@ -813,4 +813,55 @@ describe('HabitBusinessService', () => {
       expect(habitQuery.update).not.toHaveBeenCalledWith(jasmine.objectContaining({ cash: jasmine.anything() }));
     });
   });
+
+  // ==========================================================================
+  // TEST GROUP 12: Habit Tycoon Gating
+  // "Test that Habit Tycoon (tier 2) business types are only offered once a
+  //  habit has earned all 6 milestone achievements."
+  // ==========================================================================
+  describe('Group 12 – Habit Tycoon Gating', () => {
+    it('should report unlocked once a habit has earned all 6 milestones', async () => {
+      const q = makeQuery();
+      q.select.and.returnValue(q);
+      q.eq.and.resolveTo({ count: 6, error: null });
+      mockSupabaseClient.from.and.callFake((table: string) => {
+        if (table === 'habit_milestone_achievements') return q;
+        return makeQuery();
+      });
+
+      const unlocked = await service.hasUnlockedTycoonTier('habit-1');
+
+      expect(unlocked).toBeTrue();
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('habit_milestone_achievements');
+      expect(q.eq).toHaveBeenCalledWith('habit_business_id', 'habit-1');
+    });
+
+    it('should report locked when fewer than 6 milestones are earned', async () => {
+      const q = makeQuery();
+      q.select.and.returnValue(q);
+      q.eq.and.resolveTo({ count: 3, error: null });
+      mockSupabaseClient.from.and.callFake((table: string) => {
+        if (table === 'habit_milestone_achievements') return q;
+        return makeQuery();
+      });
+
+      const unlocked = await service.hasUnlockedTycoonTier('habit-1');
+
+      expect(unlocked).toBeFalse();
+    });
+
+    it('should fail closed (locked) if the milestone count query errors', async () => {
+      const q = makeQuery();
+      q.select.and.returnValue(q);
+      q.eq.and.resolveTo({ count: null, error: { message: 'network error' } });
+      mockSupabaseClient.from.and.callFake((table: string) => {
+        if (table === 'habit_milestone_achievements') return q;
+        return makeQuery();
+      });
+
+      const unlocked = await service.hasUnlockedTycoonTier('habit-1');
+
+      expect(unlocked).toBeFalse();
+    });
+  });
 });
