@@ -384,12 +384,18 @@ export class HomePage implements OnInit, OnDestroy {
     );
     // Refresh reactively whenever a habit changes elsewhere: a business
     // launched from elsewhere (e.g. the bottom-nav "+" button while already
-    // on /home never navigates, so ionViewWillEnter won't refire), or a
+    // on /home never navigates, so ionViewWillEnter won't refire), a
     // completion/undo pushed in by HabitRealtimeService from another
-    // signed-in device — without this, cash/streak/pending-count here stay
-    // stale until the user manually navigates back to this page.
+    // signed-in device, or — critically — a dividend just paid into this
+    // account's cash by someone else's habit completion, which
+    // HabitRealtimeService also reports via its user_profiles subscription.
+    // refreshUserProfile() is what actually re-reads cash/net_worth;
+    // loadDashboardData() alone never touches userProfile, so without it a
+    // dividend payout stayed invisible here until the user next navigated
+    // away and back.
     this.habitCreatedSub = this.habitUpdateService.updates$.subscribe(event => {
       if (event && !this.isLoading) {
+        this.refreshUserProfile();
         this.loadDashboardData();
       }
     });

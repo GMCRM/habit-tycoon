@@ -5,16 +5,19 @@ import { SupabaseService } from './supabase.service';
 import { HabitUpdateService } from './habit-update.service';
 
 /**
- * Pushes cross-device habit-completion changes into the existing
- * HabitUpdateService bus. Without this, a completion made on one device is
- * only known to that device's in-memory state — a second device/session
- * stays stale until it happens to refetch (navigation, app restart).
+ * Pushes cross-device habit-completion changes, and dividend/cash changes
+ * from OTHER users' actions, into the existing HabitUpdateService bus.
+ * Without this, a completion made on one device — or a dividend someone
+ * else's habit completion just paid into this account — is only known once
+ * this client happens to refetch (navigation, app restart, or the 20s poll
+ * fallback below).
  *
- * Subscribes to Postgres changes on `habit_completions` for the signed-in
- * user (RLS-scoped) and translates INSERT/DELETE rows into the same
- * completion/undo events a local habit-card completion already emits, so
- * habit-grid's live patch and the home dashboard refresh both fire exactly
- * as if the change happened locally.
+ * Subscribes to Postgres changes on `habit_completions` (INSERT/DELETE) and
+ * `user_profiles` (UPDATE) for the signed-in user (RLS-scoped) and
+ * translates them into the same completion/undo/resync events a local
+ * habit-card completion already emits, so habit-grid's live patch and the
+ * home dashboard's cash display both refresh as soon as the change lands —
+ * a dividend payout no longer waits on the poll or a manual navigation.
  */
 @Injectable({
   providedIn: 'root',
@@ -60,6 +63,17 @@ export class HabitRealtimeService {
           const row = payload.old as { habit_business_id?: string; completed_at?: string };
           if (!row.habit_business_id) return;
           this.habitUpdateService.emitHabitUndo(row.habit_business_id, this.toLocalDateString(row.completed_at));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'user_profiles', filter: `id=eq.${userId}` },
+        () => {
+          // Someone else's habit completion (a dividend payout, most
+          // commonly) just changed this user's cash/net_worth — a plain
+          // resync is enough, home.page.ts's subscriber re-reads the
+          // profile from here.
+          this.habitUpdateService.emitResync();
         }
       )
       .subscribe((status) => {
