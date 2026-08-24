@@ -18,6 +18,7 @@ import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitCardComponent } from '../shared/components/habit-card/habit-card.component';
+import { formatLargeNumber } from '../shared/currency-format.util';
 import { addIcons } from 'ionicons';
 import { alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, trendingUpOutline, wallet, cash, logoUsd, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
 
@@ -399,9 +400,17 @@ export class HomePage implements OnInit, OnDestroy {
     this.habitCreatedSub?.unsubscribe();
   }
 
-  /** A habit-card action (complete/undo/delete/upgrade/edit/JV) landed successfully — refresh cash + the dashboard list. */
+  /**
+   * A habit-card action (complete/undo/delete/upgrade/edit/JV) landed successfully — refresh cash + the dashboard list.
+   * Uses refreshUserProfile() rather than loadCurrentUser(): habit-card also emits a
+   * HabitUpdateService event alongside `changed`, which this page's own updates$ subscriber
+   * (see ngOnInit) reacts to by calling loadDashboardData() — synchronously setting isLoading
+   * true before this handler runs. loadCurrentUser() bails out immediately whenever isLoading
+   * is already true, so it would silently no-op here and leave the displayed cash stale until
+   * the next full page load. refreshUserProfile() has no such guard.
+   */
   async onCardChanged() {
-    await this.loadCurrentUser();
+    await this.refreshUserProfile();
     await this.loadDashboardData();
   }
 
@@ -414,26 +423,7 @@ export class HomePage implements OnInit, OnDestroy {
    * Format large numbers for display (1.1K, 1.1M, 1.1B, 1.1T, etc.)
    */
   formatLargeNumber(amount: number): string {
-    if (amount >= 1000000000000) {
-      // Trillions
-      const trillions = amount / 1000000000000;
-      return trillions >= 10 ? `${Math.floor(trillions)}T` : `${trillions.toFixed(1)}T`;
-    } else if (amount >= 1000000000) {
-      // Billions
-      const billions = amount / 1000000000;
-      return billions >= 10 ? `${Math.floor(billions)}B` : `${billions.toFixed(1)}B`;
-    } else if (amount >= 1000000) {
-      // Millions
-      const millions = amount / 1000000;
-      return millions >= 10 ? `${Math.floor(millions)}M` : `${millions.toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      // Thousands
-      const thousands = amount / 1000;
-      return thousands >= 10 ? `${Math.floor(thousands)}K` : `${thousands.toFixed(1)}K`;
-    } else {
-      // Less than 1 thousand, show exact amount with commas for readability
-      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+    return formatLargeNumber(amount);
   }
 
   // Daily stat numbers abbreviate (1K, 1M, 1T...) once they hit this size.

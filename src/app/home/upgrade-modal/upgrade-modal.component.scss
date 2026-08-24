@@ -205,6 +205,27 @@
   padding-right: 72px;
 }
 
+.business-type-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.tycoon-banner {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ion-color-success, #2dd36f);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  z-index: 1;
+}
+
 .business-type-icon-img {
   width: 48px;
   height: 48px;

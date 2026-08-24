@@ -219,9 +219,6 @@
                       <h4>
                         {{ request.sender_profile?.name || 'Unknown User' }}
                       </h4>
-                      <p class="request-email">
-                        {{ request.sender_profile?.email }}
-                      </p>
                       <p class="request-time">
                         {{ formatTimeAgo(request.created_at) }}
                       </p>
@@ -266,9 +263,6 @@
                       <h4>
                         {{ request.recipient_profile?.name || 'Unknown User' }}
                       </h4>
-                      <p class="request-email">
-                        {{ request.recipient_profile?.email }}
-                      </p>
                       <p class="request-status">
                         Pending since {{ formatTimeAgo(request.created_at) }}
                       </p>

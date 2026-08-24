@@ -160,6 +160,23 @@ button, span, div, ion-button {
         display: inline-flex;
       }
 
+      // Habit Tycoon status: green banner across the top of the icon, the
+      // visual marker that this business has reached tier 2.
+      .tycoon-banner {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--ion-color-success, #2dd36f);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        line-height: 1;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+        white-space: nowrap;
+        z-index: 1;
+      }
+
       // Streak-bonus % baked into base pay when this business was bought
       // from the Marketplace — mirrors the "+X%" badge shown on the listing.
       .market-bonus-badge {
@@ -626,6 +643,11 @@ button, span, div, ion-button {
       .business-icon-img {
         width: 130px;
         height: 130px;
+      }
+
+      .tycoon-banner {
+        font-size: 0.72rem;
+        top: -12px;
       }
 
       .business-info {

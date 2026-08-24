@@ -832,16 +832,6 @@ h2 {
         text-shadow: 0 0 6px rgba(255, 215, 0, 0.3); // Add glow
       }
       
-      .request-email {
-        margin: 0 0 8px 0; // Increased bottom margin
-        color: rgba(255, 255, 255, 0.8); // Better contrast
-        font-size: 0.9rem; // Slightly larger
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.4;
-      }
-      
       .request-time,
       .request-status {
         margin: 0;
@@ -873,6 +863,38 @@ h2 {
         
         &[color="danger"] {
           --box-shadow: 0 2px 8px rgba(var(--ion-color-danger-rgb), 0.3);
+        }
+      }
+    }
+  }
+}
+
+// On narrow screens the name/time column and the two action buttons no
+// longer fit on one row without truncating the name or squishing the
+// buttons — stack the actions below the details and let Accept/Decline
+// share the full width so they stay easy to tap.
+@media (max-width: 480px) {
+  .request-card {
+    ion-card-content {
+      padding: 16px;
+    }
+
+    .request-info {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+
+      .request-details h4 {
+        white-space: normal;
+        overflow-wrap: break-word;
+      }
+
+      .request-actions {
+        width: 100%;
+
+        ion-button {
+          flex: 1;
+          height: 42px; // Larger tap target on touch screens
         }
       }
     }

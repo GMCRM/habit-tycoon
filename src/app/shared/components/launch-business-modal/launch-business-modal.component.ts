@@ -6,13 +6,12 @@ import {
   IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonTextarea, IonSpinner
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, BusinessType } from '../../../services/habit-business.service';
-import { JointVentureService } from '../../../services/joint-venture.service';
 import { AuthService } from '../../../services/auth.service';
 import { HabitCacheService } from '../../../services/habit-cache.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
-import { FriendPickerModalComponent } from '../friend-picker-modal/friend-picker-modal.component';
+import { formatLargeNumber } from '../../currency-format.util';
 import { addIcons } from 'ionicons';
-import { rocket, close, checkmarkCircle, document, trophy, lockClosed, warning, peopleCircle } from 'ionicons/icons';
+import { rocket, close, checkmarkCircle, document, trophy, lockClosed, warning } from 'ionicons/icons';
 
 @Component({
   selector: 'app-launch-business-modal',
@@ -43,12 +42,6 @@ export class LaunchBusinessModalComponent implements OnInit {
   activeDays: number[] = [1, 2, 3, 4, 5]; // Mon–Fri default
   goalValue = 1;
 
-  // Joint venture: friends who want to share the exact same habit split the
-  // cost evenly and all co-own a single business. v1 scope restricts a
-  // joint venture to a plain daily habit — see joint_venture_habit_shape_check.
-  // Picking any friends is what turns Joint Venture mode on — see `isJointVenture`.
-  selectedFriendIds: string[] = [];
-
   readonly dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   readonly dayDows   = [0, 1, 2, 3, 4, 5, 6];
 
@@ -56,11 +49,10 @@ export class LaunchBusinessModalComponent implements OnInit {
 
   constructor(
     private habitBusinessService: HabitBusinessService,
-    private jointVentureService: JointVentureService,
     private authService: AuthService,
     private habitCacheService: HabitCacheService
   ) {
-    addIcons({ rocket, close, checkmarkCircle, document, trophy, lockClosed, warning, peopleCircle });
+    addIcons({ rocket, close, checkmarkCircle, document, trophy, lockClosed, warning });
   }
 
   async ngOnInit() {
@@ -70,7 +62,9 @@ export class LaunchBusinessModalComponent implements OnInit {
   async loadData() {
     this.loading = true;
     try {
-      this.businessTypes = await this.habitBusinessService.getBusinessTypes();
+      // Habit Tycoon (tier 2) businesses can only be reached by upgrading an
+      // existing, milestone-complete habit — never offered as a first business.
+      this.businessTypes = (await this.habitBusinessService.getBusinessTypes()).filter(bt => bt.tier !== 2);
 
       const { data: { user } } = await this.authService.getUser();
       if (user) {
@@ -111,112 +105,24 @@ export class LaunchBusinessModalComponent implements OnInit {
   }
 
   selectRewardLevel(businessType: BusinessType) {
-    // Tiers the player can't afford at the current friend count are locked
-    // out here; adding more friends lowers `shareForType` and re-enables them.
     if (!this.canAffordType(businessType)) return;
     this.selectedBusinessTypeId = businessType.id;
     this.selectedBusinessType = businessType;
   }
 
-  /**
-   * What this tier would actually cost this player right now: the full
-   * price solo, or their split share once Joint Venture friends are chosen
-   * (before that, it's still the full price — a JV needs at least one
-   * other owner to split anything).
-   */
-  shareForType(businessType: BusinessType): number {
-    if (!this.isJointVenture || this.jvOwnerCount < 2) return businessType.base_cost;
-    const othersShare = Math.round((businessType.base_cost / this.jvOwnerCount) * 100) / 100;
-    return Math.round((businessType.base_cost - othersShare * (this.jvOwnerCount - 1)) * 100) / 100;
-  }
-
   canAffordType(businessType: BusinessType): boolean {
-    return (this.userProfile?.cash ?? 0) >= this.shareForType(businessType);
+    return (this.userProfile?.cash ?? 0) >= businessType.base_cost;
   }
 
-  /** Joint Venture mode is implicit: as soon as at least one friend is chosen, it's on. */
-  get isJointVenture(): boolean {
-    return this.selectedFriendIds.length > 0;
-  }
-
-  /** Total co-owners once launched: this player + everyone selected in the friend picker. */
-  get jvOwnerCount(): number {
-    return this.selectedFriendIds.length + 1;
-  }
-
-  /**
-   * The most expensive business this player's cash can unlock via a Joint
-   * Venture split, assuming the cost is shared evenly across the current
-   * owner count: cash * owners >= cost  <=>  cost / owners <= cash. This is
-   * the number the Investment Package tiles below light up against.
-   */
-  get jvMaxUnlockedCost(): number {
-    return Math.round((this.userProfile?.cash ?? 0) * this.jvOwnerCount * 100) / 100;
-  }
-
-  /** Every non-initiating co-owner's share — same rounding rule the server uses. */
-  get jvShareOthers(): number {
-    if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
-    return Math.round((this.selectedBusinessType.base_cost / this.jvOwnerCount) * 100) / 100;
-  }
-
-  /** This player's own share — absorbs the rounding remainder so the total collected equals base_cost exactly. */
-  get jvCreatorShare(): number {
-    if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
-    return this.shareForType(this.selectedBusinessType);
-  }
-
-  /** Per-completion earnings each co-owner gets — base_pay split across owners, rounded up to the cent, same as the server. */
-  get jvBasePayShare(): number {
-    if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
-    return Math.ceil((this.selectedBusinessType.base_pay / this.jvOwnerCount) * 100) / 100;
-  }
-
-  /** Group streak-bonus cap as a percentage, added on top of the always-paid base share — scales with owner count instead of a flat 200%. */
-  get jvMaxStreakMultiplierPercent(): number {
-    if (this.jvOwnerCount < 2) return 0;
-    return this.jvOwnerCount * 20 + 200;
-  }
-
-  /** Each co-owner's max possible payout per completion once the group streak is maxed: base share + the bonus on top of it. */
-  get jvMaxPayPerOwner(): number {
-    if (!this.selectedBusinessType || this.jvOwnerCount < 2) return 0;
-    return Math.ceil(this.jvBasePayShare * (1 + this.jvMaxStreakMultiplierPercent / 100) * 100) / 100;
-  }
-
-  async openFriendPicker() {
-    const modal = await this.modalController.create({
-      component: FriendPickerModalComponent,
-      componentProps: {
-        modalController: this.modalController,
-        initialSelectedFriendIds: this.selectedFriendIds
-      }
-    });
-    await modal.present();
-    const { data } = await modal.onDidDismiss();
-    if (data?.selectedFriendIds) {
-      this.selectedFriendIds = data.selectedFriendIds;
-      if (this.isJointVenture) {
-        // v1 scope: a joint venture is always a plain daily habit — lock the
-        // schedule/completions-per-day inputs rather than hide them, so it's
-        // clear why they're fixed.
-        this.recurrenceInterval = '24h';
-        this.goalValue = 1;
-      }
-      // Fewer friends can push the current split share back out of reach —
-      // drop the selection rather than leave a now-locked tile selected.
-      if (this.selectedBusinessType && !this.canAffordType(this.selectedBusinessType)) {
-        this.selectedBusinessTypeId = null;
-        this.selectedBusinessType = null;
-      }
-    }
+  /** A player's cash can run well into the billions+ once Habit Tycoon businesses are in play — abbreviate past that point. */
+  formatMoney(amount: number): string {
+    return Math.abs(amount) >= 1e9
+      ? formatLargeNumber(amount)
+      : amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   get canAfford(): boolean {
     if (!this.userProfile || !this.selectedBusinessType) return false;
-    if (this.isJointVenture) {
-      return this.userProfile.cash >= this.jvCreatorShare;
-    }
     return this.userProfile.cash >= this.selectedBusinessType.base_cost;
   }
 
@@ -246,8 +152,7 @@ export class LaunchBusinessModalComponent implements OnInit {
     }
 
     if (!this.canAfford) {
-      const needed = this.isJointVenture ? this.jvCreatorShare : this.selectedBusinessType?.base_cost;
-      await this.showToast(`Insufficient funds. You need $${needed} but only have $${this.userProfile?.cash}`, 'danger');
+      await this.showToast(`Insufficient funds. You need $${this.selectedBusinessType?.base_cost} but only have $${this.userProfile?.cash}`, 'danger');
       return;
     }
 
@@ -259,29 +164,6 @@ export class LaunchBusinessModalComponent implements OnInit {
     try {
       if (!this.userProfile) {
         throw new Error('User profile not loaded. Please refresh the page and try again.');
-      }
-
-      if (this.isJointVenture) {
-        const { data: { user } } = await this.authService.getUser();
-        if (!user) {
-          throw new Error('User not authenticated');
-        }
-
-        const result = await this.jointVentureService.createProposal(
-          user.id,
-          this.selectedBusinessType!.id,
-          this.habitName.trim(),
-          this.habitDescription.trim(),
-          this.selectedFriendIds
-        );
-
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to create joint venture proposal');
-        }
-
-        await this.showToast(`🤝 Invites sent! "${this.habitName}" goes live once everyone accepts and pays their share.`, 'success');
-        this.modalController.dismiss({ created: false, jointVentureProposed: true });
-        return;
       }
 
       const request = {
