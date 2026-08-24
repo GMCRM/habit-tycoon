@@ -18,8 +18,9 @@ export class UpgradeModalComponent implements OnInit {
   @Input() habitBusiness!: HabitBusiness;
   @Input() upgradeOptions: any[] = [];
   @Input() userCash: number = 0;
+  /** Informational only (shown as "Sell Value") — the old business is listed on the Marketplace at this price when the upgrade goes through, but it no longer discounts the upgrade cost itself; upgrades are always full price. */
   @Input() currentBusinessValue: number = 0;
-  /** Joint venture: the cost splits evenly N ways with no trade-in credit — shows/gates on this user's own share instead of the full amount. 1 for a normal single-owner upgrade. */
+  /** Joint venture: the cost splits evenly N ways — shows/gates on this user's own share instead of the full amount. 1 for a normal single-owner upgrade. */
   @Input() costDivisor: number = 1;
   @Input() isJointVenture: boolean = false;
   @Input() modalController: any;
@@ -45,14 +46,14 @@ export class UpgradeModalComponent implements OnInit {
     this.modalController.dismiss({
       selectedBusinessType: businessType,
       // Full-cost preview only — the joint-venture RPC recomputes the real
-      // per-owner share itself (full new-tier cost, no trade-in credit, see
+      // per-owner share itself (full new-tier cost, see
       // propose_joint_venture_upgrade) and ignores this value entirely.
-      upgradeCost: businessType.base_cost - this.currentBusinessValue
+      upgradeCost: businessType.base_cost
     });
   }
 
   getUpgradeCost(businessType: any): number {
-    const fullCost = businessType.base_cost - this.currentBusinessValue;
+    const fullCost = businessType.base_cost;
     return this.costDivisor > 1 ? Math.round((fullCost / this.costDivisor) * 100) / 100 : fullCost;
   }
 
