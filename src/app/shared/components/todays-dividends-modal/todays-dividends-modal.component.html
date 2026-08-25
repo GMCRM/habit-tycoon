@@ -1,0 +1,89 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="trending-up" color="success"></ion-icon>
+        Today's Stock Dividends
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="manualRefresh()" [disabled]="isRefreshing" class="refresh-btn">
+        <ion-icon name="refresh" [class.spinning]="isRefreshing"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="dividends-modal-content">
+  <div *ngIf="isLoading" class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="hero-card">
+      <div class="hero-label">Received Today</div>
+      <div class="hero-value">${{ fmt(todaysStockEarnings) }}</div>
+      <div class="hero-sub" *ngIf="items.length > 0">
+        {{ completedCount }} of {{ items.length }} businesses have paid out today
+      </div>
+    </div>
+
+    <div *ngIf="items.length === 0" class="empty-state">
+      <ion-icon name="trending-up" color="medium"></ion-icon>
+      <h3>No stock holdings yet</h3>
+      <p>Buy shares in a friend's business from the Stocks tab to start earning dividends whenever they complete their habit.</p>
+    </div>
+
+    <div *ngIf="items.length > 0" class="holdings-list">
+      <div
+        class="holding-row"
+        *ngFor="let item of items; trackBy: trackByHoldingId"
+        [class.is-completed]="statusFor(item) === 'completed'"
+        [class.is-resting]="statusFor(item) === 'resting'"
+        [class.is-pending]="statusFor(item) === 'pending'"
+      >
+        <img
+          *ngIf="item.businessIcon | businessIconSrc as iconSrc"
+          [src]="iconSrc"
+          [alt]="item.businessName"
+          class="business-icon-img"
+        />
+        <div *ngIf="!(item.businessIcon | businessIconSrc)" class="business-icon-emoji">
+          {{ item.businessIcon || '📈' }}
+        </div>
+
+        <div class="holding-info">
+          <div class="holding-name">{{ item.businessName }}</div>
+          <div class="holding-owner">Owned by {{ ownerLabel(item) }}</div>
+          <div class="holding-shares">{{ item.sharesOwned }} {{ item.sharesOwned === 1 ? 'share' : 'shares' }}</div>
+        </div>
+
+        <div class="holding-right">
+          <div class="holding-amount">${{ fmt(item.dividendPerCompletion) }}</div>
+          <div class="status-pill" [ngSwitch]="statusFor(item)">
+            <ng-container *ngSwitchCase="'completed'">
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <span>Completed</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'resting'">
+              <ion-icon name="moon-outline"></ion-icon>
+              <span>Resting Today</span>
+            </ng-container>
+            <ng-container *ngSwitchCase="'pending'">
+              <ion-icon name="time-outline"></ion-icon>
+              <span>Not Yet Completed</span>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="live-note">
+      <span class="live-dot"></span>
+      Updates automatically every minute &mdash; last refreshed {{ lastUpdatedAt | date:'shortTime' }}
+    </div>
+  </ng-container>
+</ion-content>

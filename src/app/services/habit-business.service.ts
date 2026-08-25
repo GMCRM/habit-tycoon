@@ -117,6 +117,24 @@ export interface StockHolding {
   };
 }
 
+/** One stock holding's dividend status, as shown in the home screen's
+ *  "Today's Stock Dividends" popup — see get_todays_dividend_status. */
+export interface DividendStatusItem {
+  holdingId: string;
+  stockId: string;
+  businessId: string;
+  businessName: string;
+  businessIcon: string;
+  ownerId: string;
+  ownerName: string;
+  isJointVenture: boolean;
+  coOwnerCount: number;
+  sharesOwned: number;
+  dividendPerCompletion: number;
+  completedToday: boolean;
+  isActiveToday: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -1775,6 +1793,49 @@ export class HabitBusinessService {
     } catch (error) {
       console.error('Error in getTodaysStockDividends:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Per-business breakdown behind the "Today's Stock Dividends" home screen
+   * stat: every stock this user holds, who owns/runs the business, the
+   * estimated dividend per completion for this holding, and whether that
+   * business has completed its habit today. Backed by get_todays_dividend_status,
+   * which reads completion status off habit_completions directly (not
+   * current_progress) so it stays accurate even for a business whose owner
+   * hasn't opened the app today.
+   */
+  async getTodaysDividendStatus(userId: string): Promise<DividendStatusItem[]> {
+    try {
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const { data, error } = await this.supabase.rpc('get_todays_dividend_status', {
+        user_uuid: userId,
+        p_client_timezone: clientTimezone
+      });
+
+      if (error) {
+        console.error('Error fetching today\'s dividend status:', error);
+        throw error;
+      }
+
+      return (data || []).map((row: any) => ({
+        holdingId: row.holding_id,
+        stockId: row.stock_id,
+        businessId: row.business_id,
+        businessName: row.business_name,
+        businessIcon: row.business_icon,
+        ownerId: row.owner_id,
+        ownerName: row.owner_name,
+        isJointVenture: row.is_joint_venture,
+        coOwnerCount: row.co_owner_count || 0,
+        sharesOwned: row.shares_owned,
+        dividendPerCompletion: row.dividend_per_completion,
+        completedToday: row.completed_today,
+        isActiveToday: row.is_active_today
+      }));
+    } catch (error) {
+      console.error('Error in getTodaysDividendStatus:', error);
+      return [];
     }
   }
 

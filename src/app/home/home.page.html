@@ -128,9 +128,8 @@
         </ion-card>
 
         <ion-card
-          class="stat-card"
-          [class.clickable-card]="isStatAbbreviated(todaysStockEarnings)"
-          (click)="showExactStatValue('Today\'s Stock Dividends', todaysStockEarnings, true)"
+          class="stat-card clickable-card"
+          (click)="openTodaysDividendsModal()"
         >
           <ion-card-content>
             <div class="stat-content">
