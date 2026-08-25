@@ -1,9 +1,8 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonButton, IonIcon } from '@ionic/angular/standalone';
+import { ModalController } from '@ionic/angular/standalone';
 import { SocialService } from '../../../services/social.service';
-import { addIcons } from 'ionicons';
-import { closeOutline } from 'ionicons/icons';
+import { AchievementReactionsModalComponent } from '../achievement-reactions-modal/achievement-reactions-modal.component';
 
 export interface AchievementReaction {
   reactor_id: string;
@@ -28,7 +27,7 @@ export interface AchievementReaction {
 @Component({
   selector: 'app-achievement-reaction-bar',
   standalone: true,
-  imports: [CommonModule, IonButton, IonIcon],
+  imports: [CommonModule],
   templateUrl: './achievement-reaction-bar.component.html',
   styleUrls: ['./achievement-reaction-bar.component.scss']
 })
@@ -44,12 +43,12 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
   reactions: AchievementReaction[] = [];
   loaded = false;
   pickerOpen = false;
-  popupOpen = false;
   busy = false;
 
-  constructor(private socialService: SocialService) {
-    addIcons({ closeOutline });
-  }
+  constructor(
+    private socialService: SocialService,
+    private modalController: ModalController
+  ) {}
 
   ngOnInit(): void {
     this.loadReactions();
@@ -118,14 +117,17 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
     }
   }
 
-  openPopup(event: Event): void {
+  async openPopup(event: Event): Promise<void> {
     event.stopPropagation();
     if (this.reactions.length === 0) return;
-    this.popupOpen = true;
-  }
-
-  closePopup(event?: Event): void {
-    event?.stopPropagation();
-    this.popupOpen = false;
+    const modal = await this.modalController.create({
+      component: AchievementReactionsModalComponent,
+      componentProps: {
+        reactions: this.reactions,
+        modalController: this.modalController
+      },
+      cssClass: 'achievement-reactions-modal'
+    });
+    await modal.present();
   }
 }
