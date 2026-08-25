@@ -7,6 +7,7 @@ import {
   IonCard, IonCardContent, IonSegment, IonSegmentButton,
   IonButton, IonIcon, IonLabel, IonBadge, IonSkeletonText,
   IonAccordion, IonAccordionGroup, IonItem, IonToggle,
+  IonPopover, IonList,
   ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { Subscription } from 'rxjs';
@@ -31,7 +32,7 @@ import {
   notifications, checkmark, close, notificationsOutline, settings, trashOutline, storefront,
   helpCircleOutline, chevronBack, chevronForward, mailOutline, paperPlaneOutline,
   handLeftOutline, trendingUpOutline, peopleOutline, flameOutline, trophyOutline,
-  diamondOutline, starOutline, sparklesOutline, ribbonOutline } from 'ionicons/icons';
+  diamondOutline, starOutline, sparklesOutline, ribbonOutline, funnelOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-social',
@@ -43,6 +44,7 @@ import {
     IonCard, IonSegment, IonSegmentButton,
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSkeletonText,
     IonAccordion, IonAccordionGroup, IonItem, IonToggle,
+    IonPopover, IonList,
     BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe,
     JointVentureNotificationCardComponent, AchievementReactionBarComponent
   ],
@@ -89,6 +91,10 @@ export class SocialPage implements OnInit, OnDestroy {
   // UI state
   isLoading = false;
 
+  // Notifications tab: which time range of the notifications feed is shown —
+  // defaults to the last 7 days, filterable via the funnel icon's popover.
+  notificationsFilter: 'week' | 'month' | 'all' = 'week';
+
   // Toggle states for the Net Worth / Habit Cash display above the Marketplace/Stocks sub-tabs
   showDetailedNetWorth = false;
   showDetailedCash = false;
@@ -113,7 +119,7 @@ export class SocialPage implements OnInit, OnDestroy {
     private jointVentureService: JointVentureService,
     private receiptService: WeeklyReceiptService
   ) {
-    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline,chevronBack,chevronForward,mailOutline,paperPlaneOutline,handLeftOutline,trendingUpOutline,peopleOutline,flameOutline,trophyOutline,diamondOutline,starOutline,sparklesOutline,ribbonOutline});
+    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline,chevronBack,chevronForward,mailOutline,paperPlaneOutline,handLeftOutline,trendingUpOutline,peopleOutline,flameOutline,trophyOutline,diamondOutline,starOutline,sparklesOutline,ribbonOutline,funnelOutline});
 
     this.leaderboardWeekStart = this.receiptService.getWeekStart();
 
@@ -733,104 +739,24 @@ export class SocialPage implements OnInit, OnDestroy {
     this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
   }
 
-  async markNotificationAsRead(notificationId: string) {
-    try {
-      await this.socialService.markPokeAsRead(notificationId);
-
-      // Update local state
-      const notification = this.notifications.find(n => n.id === notificationId);
-      if (notification) {
-        notification.is_read = true;
-        this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
-
-        // Show success feedback
-        const toast = await this.toastController.create({
-          message: '✅ Notification marked as read',
-          duration: 1500,
-          color: 'success'
-        });
-        await toast.present();
-      }
-    } catch (error) {
-      console.error('❌ Error marking notification as read:', error);
-      const toast = await this.toastController.create({
-        message: `Failed to mark notification as read: ${(error as any)?.message || 'Unknown error'}`,
-        duration: 3000,
-        color: 'danger'
-      });
-      await toast.present();
-    }
+  setNotificationsFilter(filter: 'week' | 'month' | 'all') {
+    this.notificationsFilter = filter;
   }
 
-  async markAllNotificationsAsRead() {
-    try {
-      const unreadNotifications = this.notifications.filter(n => !n.is_read);
-      
-      if (unreadNotifications.length === 0) {
-        const toast = await this.toastController.create({
-          message: '✅ All notifications are already read',
-          duration: 2000,
-          color: 'medium'
-        });
-        await toast.present();
-        return;
-      }
-      
-      // Mark all unread notifications as read with better error handling
-      const results = await Promise.allSettled(
-        unreadNotifications.map(notification => this.socialService.markPokeAsRead(notification.id))
-      );
-      
-      // Count successes and failures
-      let successCount = 0;
-      let failureCount = 0;
-      
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          successCount++;
-          // Update local state for successful updates
-          const notification = unreadNotifications[index];
-          const localNotification = this.notifications.find(n => n.id === notification.id);
-          if (localNotification) {
-            localNotification.is_read = true;
-          }
-        } else {
-          failureCount++;
-          console.error(`❌ Failed to mark notification ${unreadNotifications[index].id} as read:`, result.reason);
-        }
-      });
-
-      if (successCount > 0) {
-        this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
-      }
-
-      // Show appropriate toast message
-      if (failureCount === 0) {
-        const toast = await this.toastController.create({
-          message: `✅ Marked ${successCount} notifications as read`,
-          duration: 2000,
-          color: 'success'
-        });
-        await toast.present();
-      } else if (successCount > 0) {
-        const toast = await this.toastController.create({
-          message: `⚠️ Marked ${successCount} as read, ${failureCount} failed`,
-          duration: 3000,
-          color: 'warning'
-        });
-        await toast.present();
-      } else {
-        throw new Error(`All ${failureCount} notifications failed to update`);
-      }
-    } catch (error) {
-      console.error('❌ Error marking all notifications as read:', error);
-      const toast = await this.toastController.create({
-        message: `Failed to mark notifications as read: ${(error as any)?.message || 'Unknown error'}`,
-        duration: 4000,
-        color: 'danger'
-      });
-      await toast.present();
+  /** Notifications feed narrowed to the selected time range (friend requests are unaffected). */
+  get filteredNotifications(): any[] {
+    if (this.notificationsFilter === 'all') {
+      return this.notifications;
     }
+    const days = this.notificationsFilter === 'week' ? 7 : 30;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return this.notifications.filter(n => new Date(n.created_at).getTime() >= cutoff);
+  }
+
+  get notificationsFilterLabel(): string {
+    return this.notificationsFilter === 'week' ? 'this week'
+      : this.notificationsFilter === 'month' ? 'this month'
+      : '';
   }
 
   async deleteNotification(notificationId: string) {
@@ -1233,16 +1159,8 @@ export class SocialPage implements OnInit, OnDestroy {
   }
 
   // Getter methods for template use
-  get unreadNotificationsCount(): number {
-    return this.notifications.filter(n => !n.is_read).length;
-  }
-
   get totalNotificationsBadgeCount(): number {
-    return this.unreadNotificationsCount + this.pendingRequests.length;
-  }
-
-  get hasUnreadNotifications(): boolean {
-    return this.unreadNotificationsCount > 0;
+    return this.notifications.length + this.pendingRequests.length;
   }
 
   /** Unresolved purchase (1) + friends' listings posted since this user last viewed the Marketplace tab. */

@@ -948,6 +948,16 @@ ion-badge {
       --padding-top: 8px;
       --padding-bottom: 8px;
     }
+
+    .filter-trigger-button {
+      --padding-start: 8px;
+      --padding-end: 8px;
+      margin: 0;
+
+      ion-icon {
+        font-size: 1.3rem;
+      }
+    }
   }
 
   .notifications-list {
@@ -962,24 +972,7 @@ ion-badge {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     margin: 0;
-    cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-    &.unread {
-      border-color: rgba(255, 215, 0, 0.35);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-
-      .notification-content {
-        .notification-icon {
-          background: rgba(255, 215, 0, 0.12);
-          border-color: rgba(255, 215, 0, 0.3);
-        }
-
-        .notification-message {
-          font-weight: 600;
-        }
-      }
-    }
 
     &:hover {
       border-color: rgba(255, 215, 0, 0.25);
@@ -1032,16 +1025,6 @@ ion-badge {
           margin: 0;
         }
 
-        .new-badge {
-          flex-shrink: 0;
-          font-size: 0.62rem;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          padding: 3px 7px;
-          border-radius: 6px;
-        }
-
         .notification-time {
           color: rgba(255, 255, 255, 0.5);
           font-size: 0.78rem;
@@ -1070,6 +1053,26 @@ ion-badge {
         }
       }
     }
+  }
+}
+
+// Notifications time-range popover — rendered in an overlay outside
+// .notifications-tab, so styled at the top level rather than nested.
+.notifications-filter-popover {
+  --width: 180px;
+
+  ion-item {
+    --padding-start: 16px;
+    font-size: 0.9rem;
+
+    ion-icon {
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .filter-option-selected {
+    --color: var(--ion-color-primary);
+    font-weight: 600;
   }
 }
 

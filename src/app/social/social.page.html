@@ -173,14 +173,52 @@
           <div class="notifications-header">
             <h2><ion-icon name="notifications-outline"></ion-icon>Notifications</h2>
             <ion-button
-              fill="outline"
+              id="notifications-filter-trigger"
+              fill="clear"
               color="medium"
               size="small"
-              (click)="markAllNotificationsAsRead()"
-              *ngIf="hasUnreadNotifications"
+              class="filter-trigger-button"
             >
-              Mark All Read
+              <ion-icon slot="icon-only" name="funnel-outline"></ion-icon>
             </ion-button>
+            <ion-popover
+              trigger="notifications-filter-trigger"
+              [dismissOnSelect]="true"
+              side="bottom"
+              alignment="end"
+              class="notifications-filter-popover"
+            >
+              <ng-template>
+                <ion-content>
+                  <ion-list lines="none">
+                    <ion-item
+                      button
+                      [class.filter-option-selected]="notificationsFilter === 'week'"
+                      (click)="setNotificationsFilter('week')"
+                    >
+                      <ion-label>This Week</ion-label>
+                      <ion-icon *ngIf="notificationsFilter === 'week'" name="checkmark" slot="end"></ion-icon>
+                    </ion-item>
+                    <ion-item
+                      button
+                      [class.filter-option-selected]="notificationsFilter === 'month'"
+                      (click)="setNotificationsFilter('month')"
+                    >
+                      <ion-label>This Month</ion-label>
+                      <ion-icon *ngIf="notificationsFilter === 'month'" name="checkmark" slot="end"></ion-icon>
+                    </ion-item>
+                    <ion-item
+                      button
+                      [class.filter-option-selected]="notificationsFilter === 'all'"
+                      (click)="setNotificationsFilter('all')"
+                    >
+                      <ion-label>All</ion-label>
+                      <ion-icon *ngIf="notificationsFilter === 'all'" name="checkmark" slot="end"></ion-icon>
+                    </ion-item>
+                  </ion-list>
+                </ion-content>
+              </ng-template>
+            </ion-popover>
           </div>
 
           <!-- Skeleton placeholders while notifications/requests are still loading —
@@ -274,10 +312,10 @@
           </div>
 
           <div
-            *ngIf="notifications.length > 0; else noNotifications"
+            *ngIf="filteredNotifications.length > 0; else noNotifications"
             class="notifications-list fade-in-content"
           >
-            <ng-container *ngFor="let notification of notifications; trackBy: trackById">
+            <ng-container *ngFor="let notification of filteredNotifications; trackBy: trackById">
               <!-- Joint venture notifications (invite, upgrade request, deletion vote,
                    resolution) use the home-card visual style: icon large and centered,
                    name, then message underneath — not this row layout. -->
@@ -291,28 +329,17 @@
             <ion-card
               *ngIf="!isJointVentureNotification(notification)"
               class="notification-card"
-              [class.unread]="!notification.is_read"
             >
               <ion-card-content>
                 <div class="notification-content">
                   <div class="notification-icon">
                     <ion-icon [name]="getNotificationIcon(notification)"></ion-icon>
                   </div>
-                  <div
-                    class="notification-details"
-                    (click)="markNotificationAsRead(notification.id)"
-                  >
+                  <div class="notification-details">
                     <div class="notification-message-row">
                       <p class="notification-message">
                         {{ notification.message }}
                       </p>
-                      <ion-badge
-                        *ngIf="!notification.is_read"
-                        color="primary"
-                        class="new-badge"
-                      >
-                        New
-                      </ion-badge>
                     </div>
                     <p class="notification-time">
                       {{ formatTimeAgo(notification.created_at) }}
@@ -345,7 +372,15 @@
 
           <ng-template #noNotifications>
             <div
-              *ngIf="pendingRequests.length === 0 && sentRequests.length === 0 && !isLoading"
+              *ngIf="notifications.length > 0 && !isLoading"
+              class="empty-state fade-in-content"
+            >
+              <ion-icon name="notifications-outline"></ion-icon>
+              <h3>No notifications {{ notificationsFilterLabel }}</h3>
+              <p>Widen the filter above to see older notifications.</p>
+            </div>
+            <div
+              *ngIf="notifications.length === 0 && pendingRequests.length === 0 && sentRequests.length === 0 && !isLoading"
               class="empty-state fade-in-content"
             >
               <ion-icon name="notifications-outline"></ion-icon>
