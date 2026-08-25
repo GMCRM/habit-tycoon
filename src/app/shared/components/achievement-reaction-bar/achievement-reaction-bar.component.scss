@@ -1,0 +1,155 @@
+.reaction-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.reaction-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 14px;
+  padding: 3px 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    background: rgba(255, 215, 0, 0.16);
+  }
+}
+
+.reaction-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 0.95rem;
+}
+
+.reaction-chip-count {
+  font-size: 0.72rem;
+  color: var(--ion-color-medium);
+}
+
+.react-control {
+  position: relative;
+}
+
+.react-toggle {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &.reacted {
+    border-color: rgba(255, 215, 0, 0.4);
+    background: rgba(255, 215, 0, 0.08);
+  }
+}
+
+.emoji-picker {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  gap: 4px;
+  background: var(--business-item-background, #1e1e1e);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 20px;
+  padding: 6px 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.emoji-option {
+  background: transparent;
+  border: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &.selected {
+    background: rgba(255, 215, 0, 0.18);
+  }
+
+  &:active {
+    transform: scale(1.2);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.reaction-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.reaction-popup {
+  width: 100%;
+  max-width: 420px;
+  max-height: 60vh;
+  background: var(--business-item-background, #1e1e1e);
+  border-radius: 16px 16px 0 0;
+  padding: 12px 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.reaction-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--ion-text-color);
+  }
+}
+
+.reaction-popup-list {
+  overflow-y: auto;
+}
+
+.reaction-popup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.reaction-popup-name {
+  font-size: 0.9rem;
+  color: var(--ion-text-color);
+}
+
+.reaction-popup-emoji {
+  font-size: 1.1rem;
+}

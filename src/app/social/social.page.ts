@@ -24,6 +24,7 @@ import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { StocksContentComponent } from '../stocks/stocks-content/stocks-content.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { JointVentureNotificationCardComponent } from '../shared/components/joint-venture-notification-card/joint-venture-notification-card.component';
+import { AchievementReactionBarComponent } from '../shared/components/achievement-reaction-bar/achievement-reaction-bar.component';
 import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
@@ -41,7 +42,7 @@ import {
     IonCardContent, IonButton, IonIcon, IonLabel, IonBadge, IonSkeletonText,
     IonAccordion, IonAccordionGroup, IonItem, IonToggle,
     BottomNavComponent, StocksContentComponent, CommonModule, RouterLink, BusinessIconPipe,
-    JointVentureNotificationCardComponent
+    JointVentureNotificationCardComponent, AchievementReactionBarComponent
   ],
 })
 export class SocialPage implements OnInit, OnDestroy {

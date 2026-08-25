@@ -644,6 +644,79 @@ export class SocialService {
     }
   }
 
+  // Achievement reactions
+  //
+  // Reactions are keyed by achiever + achievement identity (achievement_key,
+  // plus habit_business_id for milestones) rather than by an individual
+  // notification row, because one achievement fans out to a social_pokes row
+  // per friend (plus a self row for the achiever) — see
+  // 20260825000000_achievement_reactions.sql for why.
+  async getAchievementReactions(
+    achieverId: string,
+    achievementType: 'general' | 'milestone',
+    achievementKey: string,
+    habitBusinessId: string | null = null
+  ): Promise<{ reactor_id: string; reactor_name: string; emoji: string; created_at: string }[]> {
+    try {
+      const { data, error } = await this.supabase.rpc('get_achievement_reactions', {
+        p_achiever_id: achieverId,
+        p_achievement_type: achievementType,
+        p_achievement_key: achievementKey,
+        p_habit_business_id: habitBusinessId
+      });
+
+      if (error) {
+        console.error('Error loading achievement reactions:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error loading achievement reactions:', error);
+      return [];
+    }
+  }
+
+  async reactToAchievement(
+    achieverId: string,
+    achievementType: 'general' | 'milestone',
+    achievementKey: string,
+    habitBusinessId: string | null,
+    emoji: string
+  ): Promise<void> {
+    const { error } = await this.supabase.rpc('react_to_achievement', {
+      p_achiever_id: achieverId,
+      p_achievement_type: achievementType,
+      p_achievement_key: achievementKey,
+      p_habit_business_id: habitBusinessId,
+      p_emoji: emoji
+    });
+
+    if (error) {
+      console.error('Error reacting to achievement:', error);
+      throw error;
+    }
+  }
+
+  async removeAchievementReaction(
+    achieverId: string,
+    achievementType: 'general' | 'milestone',
+    achievementKey: string,
+    habitBusinessId: string | null
+  ): Promise<void> {
+    const { error } = await this.supabase.rpc('remove_achievement_reaction', {
+      p_achiever_id: achieverId,
+      p_achievement_type: achievementType,
+      p_achievement_key: achievementKey,
+      p_habit_business_id: habitBusinessId
+    });
+
+    if (error) {
+      console.error('Error removing achievement reaction:', error);
+      throw error;
+    }
+  }
+
   // Lightweight count for badges (unread notifications + pending friend requests),
   // mirroring social.page.ts's totalNotificationsBadgeCount without the heavy profile enrichment.
   // Shared across all bottom-nav instances so marking a notification as read anywhere

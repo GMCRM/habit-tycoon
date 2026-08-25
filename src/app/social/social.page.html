@@ -361,6 +361,14 @@
                     <p class="notification-time">
                       {{ formatTimeAgo(notification.created_at) }}
                     </p>
+                    <app-achievement-reaction-bar
+                      *ngIf="notification.type === 'friend_milestone' || notification.type === 'general_achievement'"
+                      [achieverId]="notification.from_user_id"
+                      [achievementType]="notification.type === 'friend_milestone' ? 'milestone' : 'general'"
+                      [achievementKey]="notification.type === 'friend_milestone' ? notification.metadata?.milestone_key : notification.metadata?.achievement_key"
+                      [habitBusinessId]="notification.metadata?.habit_business_id || null"
+                      [currentUserId]="currentUser?.id"
+                    ></app-achievement-reaction-bar>
                   </div>
                   <div class="notification-actions">
                     <ion-button

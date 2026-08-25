@@ -1,0 +1,55 @@
+<div class="reaction-bar" *ngIf="loaded && (reactions.length > 0 || !isAchiever)">
+  <button
+    type="button"
+    class="reaction-summary"
+    *ngIf="reactions.length > 0"
+    (click)="openPopup($event)"
+  >
+    <span class="reaction-chip" *ngFor="let g of groupedReactions">
+      <span class="reaction-chip-emoji">{{ g.emoji }}</span>
+      <span class="reaction-chip-count" *ngIf="g.count > 1">{{ g.count }}</span>
+    </span>
+  </button>
+
+  <div class="react-control" *ngIf="!isAchiever">
+    <button
+      type="button"
+      class="react-toggle"
+      [class.reacted]="!!myReaction"
+      (click)="togglePicker($event)"
+    >
+      <span *ngIf="myReaction; else reactLabel">{{ myReaction }}</span>
+      <ng-template #reactLabel>React</ng-template>
+    </button>
+
+    <div class="emoji-picker" *ngIf="pickerOpen">
+      <button
+        type="button"
+        class="emoji-option"
+        *ngFor="let e of emojiOptions"
+        [class.selected]="myReaction === e"
+        [disabled]="busy"
+        (click)="selectEmoji(e, $event)"
+      >
+        {{ e }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="reaction-popup-backdrop" *ngIf="popupOpen" (click)="closePopup($event)">
+  <div class="reaction-popup" (click)="$event.stopPropagation()">
+    <div class="reaction-popup-header">
+      <h4>Reactions</h4>
+      <ion-button fill="clear" size="small" (click)="closePopup($event)">
+        <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </div>
+    <div class="reaction-popup-list">
+      <div class="reaction-popup-row" *ngFor="let r of reactions">
+        <span class="reaction-popup-name">{{ r.reactor_name }}</span>
+        <span class="reaction-popup-emoji">{{ r.emoji }}</span>
+      </div>
+    </div>
+  </div>
+</div>
