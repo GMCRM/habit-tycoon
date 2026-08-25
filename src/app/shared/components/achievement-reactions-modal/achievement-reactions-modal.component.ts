@@ -20,13 +20,13 @@ import { AchievementReaction } from '../achievement-reaction-bar/achievement-rea
 })
 export class AchievementReactionsModalComponent {
   @Input() reactions: AchievementReaction[] = [];
-  @Input() modalController: any;
+  @Input() dismissModal!: () => void;
 
   constructor() {
     addIcons({ close });
   }
 
   dismiss(): void {
-    this.modalController.dismiss();
+    this.dismissModal();
   }
 }

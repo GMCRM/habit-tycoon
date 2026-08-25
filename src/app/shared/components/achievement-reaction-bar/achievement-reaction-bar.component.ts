@@ -46,6 +46,15 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
   busy = false;
   popupBusy = false;
 
+  // Shared across every reaction bar instance on the page: without this, tapping
+  // the summary badge on one notification while another notification's reactions
+  // popup is still open (or mid-dismiss) stacks a second ion-modal on top of the
+  // first. Each modal's own dismiss() only ever closes itself now (see
+  // AchievementReactionsModalComponent), but two identical-looking modals stacked
+  // like that still reads as "the X button doesn't work" and "I have to tap
+  // several times" until both are cleared.
+  private static openModal: HTMLIonModalElement | null = null;
+
   constructor(
     private socialService: SocialService,
     private modalController: ModalController
@@ -121,19 +130,32 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
   async openPopup(event: Event): Promise<void> {
     event.stopPropagation();
     if (this.reactions.length === 0 || this.popupBusy) return;
+    // A popup left over from another notification's reaction bar (or one still
+    // mid-dismiss) would otherwise stack a second modal on top of it.
+    if (AchievementReactionBarComponent.openModal) {
+      await AchievementReactionBarComponent.openModal.dismiss();
+    }
     this.popupBusy = true;
+    let modal: HTMLIonModalElement | undefined;
     try {
-      const modal = await this.modalController.create({
+      modal = await this.modalController.create({
         component: AchievementReactionsModalComponent,
         componentProps: {
           reactions: this.reactions,
-          modalController: this.modalController
+          // A closure, not the ModalController, so dismiss() always targets this
+          // exact modal instance instead of whichever overlay happens to be
+          // topmost when the user taps X.
+          dismissModal: () => modal!.dismiss()
         },
         cssClass: 'achievement-reactions-modal'
       });
+      AchievementReactionBarComponent.openModal = modal;
       await modal.present();
       await modal.onDidDismiss();
     } finally {
+      if (AchievementReactionBarComponent.openModal === modal) {
+        AchievementReactionBarComponent.openModal = null;
+      }
       this.popupBusy = false;
     }
   }
