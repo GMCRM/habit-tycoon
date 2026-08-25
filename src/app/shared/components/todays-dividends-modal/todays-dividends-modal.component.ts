@@ -31,11 +31,17 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
   @Input() userId: string = '';
   /** This viewer's display name, used as the "from" name on a reminder sent from here. */
   @Input() userName: string = '';
-  /** Exact "already received today" total from the home screen stat card
-   *  the user tapped — shown as the hero figure so the popup's headline
-   *  number always matches what they clicked on. */
+  /** Initial "already received today" total from the home screen stat card,
+   *  shown only as a seed so there's no flash of $0 before the modal's own
+   *  fetch resolves. If the home screen hadn't finished computing it yet
+   *  when the user opened the modal, this arrives as 0 — so it's always
+   *  superseded by the live fetch in load() below, never trusted on its own. */
   @Input() todaysStockEarnings: number = 0;
   @Input() modalController: any;
+
+  /** Live total, fetched and refreshed by this modal — see load(). This is
+   *  what the template renders, never the raw todaysStockEarnings input. */
+  liveTodaysStockEarnings = 0;
 
   items: DividendStatusItem[] = [];
   isLoading = true;
@@ -58,6 +64,7 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+    this.liveTodaysStockEarnings = this.todaysStockEarnings;
     await this.load();
     this.refreshIntervalId = setInterval(() => this.load(true), REFRESH_INTERVAL_MS);
   }
@@ -77,7 +84,15 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
       this.isRefreshing = true;
     }
     try {
-      this.items = await this.habitBusinessService.getTodaysDividendStatus(this.userId);
+      const [items, liveEarnings] = await Promise.all([
+        this.habitBusinessService.getTodaysDividendStatus(this.userId),
+        this.habitBusinessService.getTodaysStockDividends(this.userId).catch(err => {
+          console.error('❌ Error refreshing today\'s dividend total (non-critical):', err);
+          return this.liveTodaysStockEarnings;
+        })
+      ]);
+      this.items = items;
+      this.liveTodaysStockEarnings = liveEarnings;
       this.lastUpdatedAt = new Date();
       this.syncReminderHistory();
     } finally {
