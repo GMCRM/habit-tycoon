@@ -36,20 +36,3 @@
     </div>
   </div>
 </div>
-
-<div class="reaction-popup-backdrop" *ngIf="popupOpen" (click)="closePopup($event)">
-  <div class="reaction-popup" (click)="$event.stopPropagation()">
-    <div class="reaction-popup-header">
-      <h4>Reactions</h4>
-      <ion-button fill="clear" size="small" (click)="closePopup($event)">
-        <ion-icon name="close-outline" slot="icon-only"></ion-icon>
-      </ion-button>
-    </div>
-    <div class="reaction-popup-list">
-      <div class="reaction-popup-row" *ngFor="let r of reactions">
-        <span class="reaction-popup-name">{{ r.reactor_name }}</span>
-        <span class="reaction-popup-emoji">{{ r.emoji }}</span>
-      </div>
-    </div>
-  </div>
-</div>
