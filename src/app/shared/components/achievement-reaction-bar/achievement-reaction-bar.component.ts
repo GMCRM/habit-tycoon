@@ -44,6 +44,7 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
   loaded = false;
   pickerOpen = false;
   busy = false;
+  popupBusy = false;
 
   constructor(
     private socialService: SocialService,
@@ -119,15 +120,21 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
 
   async openPopup(event: Event): Promise<void> {
     event.stopPropagation();
-    if (this.reactions.length === 0) return;
-    const modal = await this.modalController.create({
-      component: AchievementReactionsModalComponent,
-      componentProps: {
-        reactions: this.reactions,
-        modalController: this.modalController
-      },
-      cssClass: 'achievement-reactions-modal'
-    });
-    await modal.present();
+    if (this.reactions.length === 0 || this.popupBusy) return;
+    this.popupBusy = true;
+    try {
+      const modal = await this.modalController.create({
+        component: AchievementReactionsModalComponent,
+        componentProps: {
+          reactions: this.reactions,
+          modalController: this.modalController
+        },
+        cssClass: 'achievement-reactions-modal'
+      });
+      await modal.present();
+      await modal.onDidDismiss();
+    } finally {
+      this.popupBusy = false;
+    }
   }
 }
