@@ -979,6 +979,14 @@ ion-badge {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     margin: 0;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    // ion-card's shadow :host hardcodes overflow:hidden and contain:content;
+    // the reaction bar's emoji picker pops up above the react button and
+    // must not get clipped by either. Both are plain properties (not CSS
+    // variables), so overriding them from outside the shadow tree needs
+    // !important to win over the :host rule — `contain` alone still clips
+    // overflowing content even when `overflow` is visible.
+    overflow: visible !important;
+    contain: none !important;
 
     &:hover {
       border-color: rgba(255, 215, 0, 0.25);
