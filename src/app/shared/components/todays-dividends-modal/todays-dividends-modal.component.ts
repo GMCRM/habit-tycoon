@@ -125,7 +125,7 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
               await this.socialService.sendStockholderReminder(
                 this.userId,
                 item.ownerId,
-                item.businessName,
+                item.businessId,
                 this.userName || 'A fellow investor'
               );
 

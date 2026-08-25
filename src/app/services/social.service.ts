@@ -593,14 +593,21 @@ export class SocialService {
     }
   }
 
-  async sendStockholderReminder(fromUserId: string, toUserId: string, businessName: string, fromUserName: string): Promise<void> {
+  /**
+   * habitBusinessId (not a business name) — the message is read by the habit's
+   * OWNER, so the function looks up their own private business_name server-side
+   * rather than trusting a client-supplied string, which would only ever be the
+   * public business type name a stockholder is allowed to see (see
+   * TodaysDividendsModalComponent, the only caller of this method).
+   */
+  async sendStockholderReminder(fromUserId: string, toUserId: string, habitBusinessId: string, fromUserName: string): Promise<void> {
     try {
       // Use the SQL function to send the stockholder reminder
       const { data, error } = await this.supabase
         .rpc('send_stockholder_reminder', {
           from_user_id: fromUserId,
           to_user_id: toUserId,
-          business_name: businessName,
+          habit_business_id: habitBusinessId,
           from_user_name: fromUserName
         });
 
