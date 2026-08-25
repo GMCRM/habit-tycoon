@@ -49,9 +49,16 @@
   -webkit-tap-highlight-color: transparent;
 
   &.reacted {
-    border-color: rgba(255, 215, 0, 0.4);
-    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(0, 255, 136, 0.4);
+    background: rgba(0, 255, 136, 0.08);
   }
+}
+
+.react-toggle-plus {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .emoji-picker {

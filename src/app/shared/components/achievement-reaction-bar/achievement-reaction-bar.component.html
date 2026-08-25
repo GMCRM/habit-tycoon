@@ -18,7 +18,7 @@
       [class.reacted]="!!myReaction"
       (click)="togglePicker($event)"
     >
-      <span *ngIf="myReaction; else reactLabel">{{ myReaction }}</span>
+      <span *ngIf="myReaction; else reactLabel" class="react-toggle-plus">+</span>
       <ng-template #reactLabel>React</ng-template>
     </button>
 
