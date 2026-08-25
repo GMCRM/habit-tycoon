@@ -726,18 +726,26 @@ export class SocialService {
 
   async getTotalNotificationBadgeCount(userId: string): Promise<number> {
     try {
-      const [pokes, pendingCount, marketplaceBadgeCount] = await Promise.all([
+      const [pokes, pendingRequests, marketplaceBadgeCount] = await Promise.all([
         this.getUserPokes(userId),
         this.supabase
           .from('friendships')
-          .select('id', { count: 'exact', head: true })
+          .select('created_at')
           .eq('friend_id', userId)
           .eq('status', 'pending'),
         this.marketplaceService.getMarketplaceBadgeCount(userId)
       ]);
 
-      const unreadPokes = pokes.filter((p: any) => !p.is_read).length;
-      return unreadPokes + (pendingCount.count || 0) + marketplaceBadgeCount;
+      // Same "last seen" cutoff social.page.ts's totalNotificationsBadgeCount uses,
+      // so the bottom-nav badge (refreshed on every page, including on app restart
+      // at the home screen) agrees with the Notifications tab instead of falling
+      // back to a stale is_read-based count that never got cleared.
+      const lastSeen = this.getNotificationsLastSeenTime(userId);
+      const newPokes = pokes.filter((p: any) => new Date(p.created_at).getTime() > lastSeen).length;
+      const newRequests = (pendingRequests.data || []).filter(
+        (r: any) => new Date(r.created_at).getTime() > lastSeen
+      ).length;
+      return newPokes + newRequests + marketplaceBadgeCount;
     } catch (error) {
       console.error('Error loading notification badge count:', error);
       return 0;
