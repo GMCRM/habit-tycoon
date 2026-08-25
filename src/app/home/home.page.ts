@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonContent, IonCard, IonCardContent,
   IonCardHeader, IonCardTitle, IonGrid, IonRow, IonCol, IonButton, IonIcon,
-  IonList, IonItem, IonLabel, IonBadge, IonInput, IonSkeletonText, ToastController, AlertController
+  IonList, IonItem, IonLabel, IonBadge, IonInput, IonSkeletonText, ToastController, AlertController, ModalController
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
@@ -18,6 +18,7 @@ import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitCardComponent } from '../shared/components/habit-card/habit-card.component';
+import { TodaysDividendsModalComponent } from '../shared/components/todays-dividends-modal/todays-dividends-modal.component';
 import { formatLargeNumber } from '../shared/currency-format.util';
 import { addIcons } from 'ionicons';
 import { alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, trendingUpOutline, wallet, cash, logoUsd, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
@@ -83,7 +84,8 @@ export class HomePage implements OnInit, OnDestroy {
     private habitIntervalService: HabitIntervalService,
     private offlineQueueService: OfflineQueueService,
     private habitCacheService: HabitCacheService,
-    private jointVentureService: JointVentureService
+    private jointVentureService: JointVentureService,
+    private modalController: ModalController
   ) {
     addIcons({ alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, trendingUpOutline, wallet, cash, logoUsd, settings, helpCircle, close, analytics, shield });
     this.setRandomTagline();
@@ -491,6 +493,27 @@ export class HomePage implements OnInit, OnDestroy {
       return this.abbreviateStatNumber(value);
     }
     return value.toLocaleString('en-US');
+  }
+
+  /**
+   * Open the "Today's Stock Dividends" breakdown: every stock this user
+   * holds, who owns/runs each business, the estimated dividend per
+   * completion, and whether that business has completed its habit today.
+   * The modal fetches and periodically re-fetches its own data (see
+   * TodaysDividendsModalComponent) so it stays live while open.
+   */
+  async openTodaysDividendsModal() {
+    if (!this.currentUser) return;
+    const modal = await this.modalController.create({
+      component: TodaysDividendsModalComponent,
+      componentProps: {
+        modalController: this.modalController,
+        userId: this.currentUser.id,
+        todaysStockEarnings: this.todaysStockEarnings
+      },
+      cssClass: 'todays-dividends-modal'
+    });
+    await modal.present();
   }
 
   /**
