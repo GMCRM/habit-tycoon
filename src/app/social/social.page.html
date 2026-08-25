@@ -315,7 +315,7 @@
             *ngIf="filteredNotifications.length > 0; else noNotifications"
             class="notifications-list fade-in-content"
           >
-            <ng-container *ngFor="let notification of filteredNotifications; trackBy: trackById">
+            <ng-container *ngFor="let notification of visibleNotifications; trackBy: trackById">
               <!-- Joint venture notifications (invite, upgrade request, deletion vote,
                    resolution) use the home-card visual style: icon large and centered,
                    name, then message underneath — not this row layout. -->
@@ -369,6 +369,17 @@
             </ion-card>
             </ng-container>
           </div>
+
+          <ion-button
+            *ngIf="hasMoreNotifications"
+            expand="block"
+            fill="clear"
+            color="medium"
+            class="view-more-button"
+            (click)="showMoreNotifications()"
+          >
+            View More
+          </ion-button>
 
           <ng-template #noNotifications>
             <div

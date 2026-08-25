@@ -94,6 +94,10 @@ export class SocialPage implements OnInit, OnDestroy {
   // Notifications tab: which time range of the notifications feed is shown —
   // defaults to the last 7 days, filterable via the funnel icon's popover.
   notificationsFilter: 'week' | 'month' | 'all' = 'week';
+  // How many of the filtered notifications are currently shown — grows by
+  // NOTIFICATIONS_PAGE_SIZE each time "View More" is clicked.
+  private readonly notificationsPageSize = 10;
+  notificationsVisibleCount = this.notificationsPageSize;
 
   // Toggle states for the Net Worth / Habit Cash display above the Marketplace/Stocks sub-tabs
   showDetailedNetWorth = false;
@@ -741,6 +745,7 @@ export class SocialPage implements OnInit, OnDestroy {
 
   setNotificationsFilter(filter: 'week' | 'month' | 'all') {
     this.notificationsFilter = filter;
+    this.notificationsVisibleCount = this.notificationsPageSize;
   }
 
   /** Notifications feed narrowed to the selected time range (friend requests are unaffected). */
@@ -751,6 +756,19 @@ export class SocialPage implements OnInit, OnDestroy {
     const days = this.notificationsFilter === 'week' ? 7 : 30;
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
     return this.notifications.filter(n => new Date(n.created_at).getTime() >= cutoff);
+  }
+
+  /** Filtered notifications truncated to the current page size, for "View More" pagination. */
+  get visibleNotifications(): any[] {
+    return this.filteredNotifications.slice(0, this.notificationsVisibleCount);
+  }
+
+  get hasMoreNotifications(): boolean {
+    return this.filteredNotifications.length > this.notificationsVisibleCount;
+  }
+
+  showMoreNotifications() {
+    this.notificationsVisibleCount += this.notificationsPageSize;
   }
 
   get notificationsFilterLabel(): string {

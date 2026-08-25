@@ -966,6 +966,12 @@ ion-badge {
     gap: 12px;
   }
 
+  .view-more-button {
+    margin-top: 12px;
+    --color: var(--ion-color-primary);
+    font-weight: 600;
+  }
+
   .notification-card {
     background: var(--business-item-background);
     border: 1px solid rgba(255, 255, 255, 0.08);
