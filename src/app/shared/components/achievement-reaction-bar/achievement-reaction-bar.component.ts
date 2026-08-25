@@ -41,6 +41,7 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
   readonly emojiOptions = ['🎉', '♥️', '🤩', '🤑', '🙌', '👍'];
 
   reactions: AchievementReaction[] = [];
+  groupedReactions: { emoji: string; count: number }[] = [];
   loaded = false;
   pickerOpen = false;
   busy = false;
@@ -80,14 +81,6 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
     return this.reactions.find(r => r.reactor_id === this.currentUserId)?.emoji || null;
   }
 
-  get groupedReactions(): { emoji: string; count: number }[] {
-    const counts = new Map<string, number>();
-    for (const r of this.reactions) {
-      counts.set(r.emoji, (counts.get(r.emoji) || 0) + 1);
-    }
-    return Array.from(counts.entries()).map(([emoji, count]) => ({ emoji, count }));
-  }
-
   async loadReactions(): Promise<void> {
     if (!this.achieverId || !this.achievementKey) return;
     this.reactions = await this.socialService.getAchievementReactions(
@@ -96,6 +89,19 @@ export class AchievementReactionBarComponent implements OnInit, OnChanges {
       this.achievementKey,
       this.habitBusinessId
     );
+    // Computed once here rather than as a template-bound getter: a getter
+    // returning a fresh array/objects on every change-detection pass makes
+    // *ngFor treat the chips as all-new each check. Combined with presenting
+    // the reactions modal (which keeps this view attached and ticking), that
+    // was enough to pin Angular in an infinite change-detection loop the
+    // instant the popup opened — freezing the whole page, which is what made
+    // the "React" taps feel like they needed several tries and the modal's X
+    // look dead.
+    const counts = new Map<string, number>();
+    for (const r of this.reactions) {
+      counts.set(r.emoji, (counts.get(r.emoji) || 0) + 1);
+    }
+    this.groupedReactions = Array.from(counts.entries()).map(([emoji, count]) => ({ emoji, count }));
     this.loaded = true;
   }
 
