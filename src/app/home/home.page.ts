@@ -509,6 +509,7 @@ export class HomePage implements OnInit, OnDestroy {
       componentProps: {
         modalController: this.modalController,
         userId: this.currentUser.id,
+        userName: this.userProfile?.name || this.currentUser.email || 'A fellow investor',
         todaysStockEarnings: this.todaysStockEarnings
       },
       cssClass: 'todays-dividends-modal'

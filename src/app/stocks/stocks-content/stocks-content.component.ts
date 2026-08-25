@@ -136,10 +136,6 @@ export class StocksContentComponent implements OnInit {
   selectedBuyBusiness: FriendBusiness | null = null;
   buyQuantity = 0;
 
-  // Reminder tracking properties
-  dailyReminders: { [businessId: string]: string } = {}; // businessId -> date sent
-  habitCompletionStatus: { [businessId: string]: boolean } = {}; // businessId -> completed status
-  
   // Filter properties
   selectedOwnerFilter: string = '';
   streakSortDirection: 'asc' | 'desc' | null = null;
@@ -240,9 +236,6 @@ export class StocksContentComponent implements OnInit {
         this.loadFriendBusinesses(),
         this.loadPortfolio()
       ]);
-      
-      // Load reminder history after portfolio data is loaded
-      this.loadReminderHistory();
     } catch (error) {
       console.error('Error loading stocks data:', error);
     }
@@ -290,38 +283,6 @@ export class StocksContentComponent implements OnInit {
       
       const toast = await this.toastController.create({
         message: `👋 Sent motivation poke for ${businessName}!`,
-        duration: 3000,
-        color: 'success'
-      });
-      await toast.present();
-    } catch (error: any) {
-      const toast = await this.toastController.create({
-        message: `❌ ${error.message}`,
-        duration: 3000,
-        color: 'danger'
-      });
-      await toast.present();
-    }
-  }
-
-  async sendStockholderReminder(friendId: string, businessName: string, friendName: string) {
-    if (!this.currentUser?.id) {
-      return;
-    }
-
-    try {
-      // Get current user's name for the notification
-      const currentUserName = this.userProfile?.name || this.currentUser?.email || 'A stockholder';
-
-      await this.socialService.sendStockholderReminder(
-        this.currentUser.id, 
-        friendId, 
-        businessName,
-        currentUserName
-      );
-      
-      const toast = await this.toastController.create({
-        message: `📩 Sent stockholder reminder to ${friendName} about ${businessName}!`,
         duration: 3000,
         color: 'success'
       });
@@ -937,158 +898,6 @@ export class StocksContentComponent implements OnInit {
         color: isOfflineQueued ? 'warning' : 'danger'
       });
       await toast.present();
-    }
-  }
-
-  /**
-   * Check if user has already sent a reminder today for this business
-   */
-  hasAlreadyRemindedToday(businessId: string): boolean {
-    const today = new Date().toDateString();
-    return this.dailyReminders[businessId] === today;
-  }
-
-  /**
-   * Check if the habit business owner has completed their habit for the current period
-   */
-  isHabitCompleted(holding: any): boolean {
-    // Check if we have completion status cached
-    if (this.habitCompletionStatus[holding.businessId] !== undefined) {
-      return this.habitCompletionStatus[holding.businessId];
-    }
-
-    // current_progress/goal_value are already scoped to the business's
-    // current period by the backend, regardless of recurrence frequency.
-    return (holding.currentProgress || 0) >= (holding.goalValue || 1);
-  }
-
-  /**
-   * Check if remind button should be disabled
-   */
-  isRemindButtonDisabled(holding: any): boolean {
-    return this.hasAlreadyRemindedToday(holding.businessId) || this.isHabitCompleted(holding);
-  }
-
-  /**
-   * Get tooltip text for disabled remind button
-   */
-  getRemindButtonTooltip(holding: any): string {
-    if (this.hasAlreadyRemindedToday(holding.businessId)) {
-      return 'You can only send one reminder per day';
-    }
-    if (this.isHabitCompleted(holding)) {
-      return `${holding.ownerName} has already completed their habit today`;
-    }
-    return '';
-  }
-
-  /**
-   * Mark that a reminder was sent today for this business
-   */
-  markReminderSent(businessId: string): void {
-    const today = new Date().toDateString();
-    this.dailyReminders[businessId] = today;
-
-    // Store in localStorage for persistence across sessions
-    localStorage.setItem(this.getReminderStorageKey(businessId), today);
-  }
-
-  /**
-   * Load reminder history from localStorage
-   */
-  loadReminderHistory(): void {
-    this.portfolio.forEach(holding => {
-      const storedDate = localStorage.getItem(this.getReminderStorageKey(holding.businessId));
-      if (storedDate) {
-        this.dailyReminders[holding.businessId] = storedDate;
-      }
-    });
-  }
-
-  /**
-   * Reminder state key, scoped to the current user - without this, "already
-   * reminded today" leaks across accounts signed into the same device
-   * (localStorage is shared, but who sent the reminder is not).
-   */
-  private getReminderStorageKey(businessId: string): string {
-    return `reminder_${this.currentUser?.id}_${businessId}`;
-  }
-
-  /**
-   * Send a reminder to the habit business owner
-   */
-  async sendReminder(holding: any) {
-    if (!this.currentUser || !holding) {
-      return;
-    }
-
-    // Check if reminder is disabled
-    if (this.isRemindButtonDisabled(holding)) {
-      const toast = await this.toastController.create({
-        message: this.getRemindButtonTooltip(holding),
-        duration: 3000,
-        color: 'warning'
-      });
-      await toast.present();
-      return;
-    }
-
-    try {
-      // Show confirmation dialog
-      const alert = await this.alertController.create({
-        header: 'Send Reminder',
-        message: `Send a reminder to ${holding.ownerName} to complete their ${holding.businessName} habit?`,
-        buttons: [
-          {
-            text: 'Cancel',
-            role: 'cancel'
-          },
-          {
-            text: 'Send Reminder',
-            handler: async () => {
-              try {
-                // Send the reminder using the social service
-                await this.socialService.sendStockholderReminder(
-                  this.currentUser.id,
-                  holding.ownerId,
-                  holding.businessName,
-                  this.userProfile?.name || this.currentUser.email || 'A fellow investor'
-                );
-
-                // Mark reminder as sent
-                this.markReminderSent(holding.businessId);
-
-                // Show success message
-                const successToast = await this.toastController.create({
-                  message: `✅ Reminder sent to ${holding.ownerName}!`,
-                  duration: 3000,
-                  color: 'success'
-                });
-                await successToast.present();
-
-              } catch (error) {
-                console.error('❌ Detailed error sending reminder:', {
-                  error,
-                  errorMessage: (error as any)?.message,
-                  holding,
-                  currentUser: this.currentUser
-                });
-                const errorToast = await this.toastController.create({
-                  message: `❌ Failed to send reminder: ${(error as any)?.message || 'Please try again.'}`,
-                  duration: 4000,
-                  color: 'danger'
-                });
-                await errorToast.present();
-              }
-            }
-          }
-        ]
-      });
-
-      await alert.present();
-
-    } catch (error) {
-      console.error('Error creating reminder alert:', error);
     }
   }
 

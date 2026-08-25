@@ -2,9 +2,10 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon,
-  IonButtons, IonSpinner
+  IonButtons, IonSpinner, AlertController, ToastController
 } from '@ionic/angular/standalone';
 import { HabitBusinessService, DividendStatusItem } from '../../../services/habit-business.service';
+import { SocialService } from '../../../services/social.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
 import { trendingUp, close, checkmarkCircle, timeOutline, moonOutline, refresh } from 'ionicons/icons';
@@ -28,6 +29,8 @@ const REFRESH_INTERVAL_MS = 60_000;
 })
 export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
   @Input() userId: string = '';
+  /** This viewer's display name, used as the "from" name on a reminder sent from here. */
+  @Input() userName: string = '';
   /** Exact "already received today" total from the home screen stat card
    *  the user tapped — shown as the hero figure so the popup's headline
    *  number always matches what they clicked on. */
@@ -40,7 +43,17 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
   lastUpdatedAt = new Date();
   private refreshIntervalId: any;
 
-  constructor(private habitBusinessService: HabitBusinessService) {
+  // businessId -> date (toDateString()) a reminder was last sent for it,
+  // capped at one per business per day. Scoped by userId below since
+  // localStorage is shared across accounts on the same device.
+  private dailyReminders: { [businessId: string]: string } = {};
+
+  constructor(
+    private habitBusinessService: HabitBusinessService,
+    private socialService: SocialService,
+    private alertController: AlertController,
+    private toastController: ToastController
+  ) {
     addIcons({ trendingUp, close, checkmarkCircle, timeOutline, moonOutline, refresh });
   }
 
@@ -66,10 +79,80 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
     try {
       this.items = await this.habitBusinessService.getTodaysDividendStatus(this.userId);
       this.lastUpdatedAt = new Date();
+      this.syncReminderHistory();
     } finally {
       this.isLoading = false;
       this.isRefreshing = false;
     }
+  }
+
+  /** Pulls in today's already-sent reminders (per business) from localStorage. */
+  private syncReminderHistory() {
+    const today = new Date().toDateString();
+    for (const item of this.items) {
+      const stored = localStorage.getItem(this.getReminderStorageKey(item.businessId));
+      if (stored === today) {
+        this.dailyReminders[item.businessId] = stored;
+      }
+    }
+  }
+
+  private getReminderStorageKey(businessId: string): string {
+    return `reminder_${this.userId}_${businessId}`;
+  }
+
+  hasAlreadyRemindedToday(businessId: string): boolean {
+    return this.dailyReminders[businessId] === new Date().toDateString();
+  }
+
+  /** Only businesses still due today and not yet completed can be reminded. */
+  canRemind(item: DividendStatusItem): boolean {
+    return this.statusFor(item) === 'pending';
+  }
+
+  async sendReminder(item: DividendStatusItem) {
+    if (!this.userId || this.hasAlreadyRemindedToday(item.businessId)) return;
+
+    const alert = await this.alertController.create({
+      header: 'Send Reminder',
+      message: `Send a reminder to ${item.ownerName} to complete their ${item.businessName} habit?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Send Reminder',
+          handler: async () => {
+            try {
+              await this.socialService.sendStockholderReminder(
+                this.userId,
+                item.ownerId,
+                item.businessName,
+                this.userName || 'A fellow investor'
+              );
+
+              const today = new Date().toDateString();
+              this.dailyReminders[item.businessId] = today;
+              localStorage.setItem(this.getReminderStorageKey(item.businessId), today);
+
+              const toast = await this.toastController.create({
+                message: `✅ Reminder sent to ${item.ownerName}!`,
+                duration: 3000,
+                color: 'success'
+              });
+              await toast.present();
+            } catch (error) {
+              console.error('❌ Error sending stockholder reminder:', error);
+              const toast = await this.toastController.create({
+                message: `❌ Failed to send reminder: ${(error as any)?.message || 'Please try again.'}`,
+                duration: 4000,
+                color: 'danger'
+              });
+              await toast.present();
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   async manualRefresh() {

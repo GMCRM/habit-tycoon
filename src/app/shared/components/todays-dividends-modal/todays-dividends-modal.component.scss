@@ -199,6 +199,21 @@
   }
 }
 
+.remind-button {
+  margin: 0;
+  height: 22px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: none;
+  --padding-start: 4px;
+  --padding-end: 4px;
+
+  &[disabled] {
+    --color: rgba(255, 255, 255, 0.35);
+    opacity: 1;
+  }
+}
+
 .is-completed .status-pill {
   color: var(--ion-color-success);
   background: rgba(var(--ion-color-success-rgb), 0.14);

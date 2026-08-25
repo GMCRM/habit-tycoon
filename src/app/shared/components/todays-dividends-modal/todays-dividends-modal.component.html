@@ -77,6 +77,17 @@
               <span>Not Yet Completed</span>
             </ng-container>
           </div>
+          <ion-button
+            *ngIf="canRemind(item)"
+            fill="clear"
+            size="small"
+            color="success"
+            class="remind-button"
+            [disabled]="hasAlreadyRemindedToday(item.businessId)"
+            (click)="sendReminder(item)"
+          >
+            {{ hasAlreadyRemindedToday(item.businessId) ? 'Reminded' : 'Remind' }}
+          </ion-button>
         </div>
       </div>
     </div>

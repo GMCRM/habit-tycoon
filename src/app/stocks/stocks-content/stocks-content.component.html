@@ -654,27 +654,6 @@
                     <ion-icon name="trending-down" slot="start"></ion-icon>
                     Sell
                   </ion-button>
-                  <ion-button
-                    fill="clear"
-                    size="small"
-                    (click)="sendReminder(holding)"
-                    class="remind-button"
-                    [disabled]="isRemindButtonDisabled(holding)"
-                    [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                    [style.--color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                    [style.opacity]="isRemindButtonDisabled(holding) ? '0.5' : '1'"
-                  >
-                    <span
-                      [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                      >👉</span
-                    >
-                    <span
-                      [style.color]="isRemindButtonDisabled(holding) ? '#999999 !important' : '#3880ff !important'"
-                    >
-                      {{ hasAlreadyRemindedToday(holding.businessId) ?
-                      'Reminded' : 'Remind' }}
-                    </span>
-                  </ion-button>
                 </div>
               </div>
             </div>
