@@ -272,8 +272,14 @@ export class SocialPage implements OnInit, OnDestroy {
       // Best-effort, doesn't block the rest of the page from loading
       this.loadMarketplaceData();
 
-      // Keep the bottom-nav badge(s) in sync with the freshly loaded notifications/requests.
-      this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
+      // If the Notifications tab was already selected (e.g. restored from localStorage on
+      // load), the notifications we just fetched are about to be shown, so clear their badge
+      // immediately instead of waiting for a segment change that won't happen.
+      if (this.selectedSegment === 'notifications') {
+        this.markNotificationsSeen();
+      } else {
+        this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
+      }
 
       // If leaderboard failed or is empty, create a simple fallback with just the user
       if (leaderboard.status === 'rejected' || this.friendsLeaderboard.length === 0) {
@@ -308,6 +314,8 @@ export class SocialPage implements OnInit, OnDestroy {
 
     if (this.selectedSegment === 'marketplace') {
       this.markMarketplaceListingsSeen();
+    } else if (this.selectedSegment === 'notifications') {
+      this.markNotificationsSeen();
     }
   }
 
@@ -377,6 +385,13 @@ export class SocialPage implements OnInit, OnDestroy {
   private markMarketplaceListingsSeen() {
     if (!this.currentUser) return;
     this.marketplaceService.markListingsSeen(this.currentUser.id);
+    this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
+  }
+
+  /** Clears the notifications badge for this user and syncs the bottom-nav count. */
+  private markNotificationsSeen() {
+    if (!this.currentUser) return;
+    this.socialService.markNotificationsSeen(this.currentUser.id);
     this.socialService.setNotificationBadgeCount(this.bottomNavBadgeCount);
   }
 
@@ -1177,8 +1192,13 @@ export class SocialPage implements OnInit, OnDestroy {
   }
 
   // Getter methods for template use
+  /** Notifications + friend requests created since the user last viewed the Notifications tab. */
   get totalNotificationsBadgeCount(): number {
-    return this.notifications.length + this.pendingRequests.length;
+    if (!this.currentUser) return 0;
+    const lastSeen = this.socialService.getNotificationsLastSeenTime(this.currentUser.id);
+    const newNotifications = this.notifications.filter(n => new Date(n.created_at).getTime() > lastSeen).length;
+    const newRequests = this.pendingRequests.filter(r => new Date(r.created_at).getTime() > lastSeen).length;
+    return newNotifications + newRequests;
   }
 
   /** Unresolved purchase (1) + friends' listings posted since this user last viewed the Marketplace tab. */

@@ -754,6 +754,21 @@ export class SocialService {
     this.notificationBadgeCountSubject.next(Math.max(0, count));
   }
 
+  private getNotificationsLastSeenKey(viewerId: string): string {
+    return `notifications-last-seen-${viewerId}`;
+  }
+
+  /** Timestamp (ms) this user last viewed the Notifications tab; pokes/requests created after this count toward the badge. */
+  getNotificationsLastSeenTime(viewerId: string): number {
+    const stored = localStorage.getItem(this.getNotificationsLastSeenKey(viewerId));
+    return stored ? parseInt(stored, 10) : 0;
+  }
+
+  /** Call when the user opens the Notifications tab, to clear the notifications badge. */
+  markNotificationsSeen(viewerId: string): void {
+    localStorage.setItem(this.getNotificationsLastSeenKey(viewerId), Date.now().toString());
+  }
+
   async markPokeAsRead(pokeId: string): Promise<void> {
     try {
       const { error } = await this.supabase
