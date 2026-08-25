@@ -5,16 +5,16 @@
 .jv-notification-card {
   position: relative;
   background: var(--business-item-background);
-  border: 1px solid rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   padding: 16px 16px 14px 16px;
   margin: 0 0 12px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   text-align: center;
 
   &.unread {
-    background: linear-gradient(135deg, var(--business-item-background) 0%, rgba(255, 215, 0, 0.08) 100%);
-    border-left: 4px solid var(--ion-color-primary);
+    border-color: rgba(255, 215, 0, 0.35);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -47,7 +47,8 @@
 
 .jv-icon {
   font-size: 3rem;
-  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.35));
+  color: var(--ion-color-primary);
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.25));
 }
 
 .jv-icon-img {
@@ -62,7 +63,6 @@
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--ion-color-primary);
-  text-shadow: 0 0 6px rgba(255, 215, 0, 0.25);
 }
 
 // Description text itself is hidden; this button just opens a popup with it —
@@ -118,10 +118,17 @@
 }
 
 .jv-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin: 0 0 4px 0;
   font-size: 0.9rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.85);
+
+  ion-icon {
+    font-size: 1rem;
+  }
 }
 
 .jv-actions {

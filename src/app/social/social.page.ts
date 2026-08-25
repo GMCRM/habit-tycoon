@@ -29,7 +29,9 @@ import { addIcons } from 'ionicons';
 import {
   people, personAdd, arrowBack, medalOutline, star, checkmarkCircle, business,
   notifications, checkmark, close, notificationsOutline, settings, trashOutline, storefront,
-  helpCircleOutline, chevronBack, chevronForward } from 'ionicons/icons';
+  helpCircleOutline, chevronBack, chevronForward, mailOutline, paperPlaneOutline,
+  handLeftOutline, trendingUpOutline, peopleOutline, flameOutline, trophyOutline,
+  diamondOutline, starOutline, sparklesOutline, ribbonOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-social',
@@ -111,7 +113,7 @@ export class SocialPage implements OnInit, OnDestroy {
     private jointVentureService: JointVentureService,
     private receiptService: WeeklyReceiptService
   ) {
-    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline,chevronBack,chevronForward});
+    addIcons({settings,people,notificationsOutline,notifications,medalOutline,personAdd,trashOutline,checkmark,close,arrowBack,star,checkmarkCircle,business,storefront,helpCircleOutline,chevronBack,chevronForward,mailOutline,paperPlaneOutline,handLeftOutline,trendingUpOutline,peopleOutline,flameOutline,trophyOutline,diamondOutline,starOutline,sparklesOutline,ribbonOutline});
 
     this.leaderboardWeekStart = this.receiptService.getWeekStart();
 
@@ -692,6 +694,32 @@ export class SocialPage implements OnInit, OnDestroy {
 
   isJointVentureNotification(notification: any): boolean {
     return this.jointVentureNotificationTypes.has(notification?.type);
+  }
+
+  private readonly notificationTypeIcons: Record<string, string> = {
+    habit_reminder: 'hand-left-outline',
+    stockholder_reminder: 'trending-up-outline',
+    joint_venture_reminder: 'people-outline',
+  };
+
+  private readonly milestoneIcons: Record<string, string> = {
+    streak_7: 'flame-outline',
+    streak_30: 'trophy-outline',
+    streak_100: 'diamond-outline',
+    completions_10: 'star-outline',
+    completions_50: 'sparkles-outline',
+    completions_100: 'ribbon-outline',
+  };
+
+  /** Icon shown in the notification's leading badge — no emoji, matching notification type/milestone. */
+  getNotificationIcon(notification: any): string {
+    if (notification?.type === 'friend_milestone') {
+      return this.milestoneIcons[notification.metadata?.milestone_key] || 'star-outline';
+    }
+    if (notification?.type === 'general_achievement') {
+      return 'ribbon-outline';
+    }
+    return this.notificationTypeIcons[notification?.type] || 'notifications-outline';
   }
 
   /** Called after a joint-venture notification card's Accept/Decline/Pay/Vote action resolves. */

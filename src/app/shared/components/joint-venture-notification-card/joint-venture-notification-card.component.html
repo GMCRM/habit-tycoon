@@ -21,7 +21,7 @@
         [alt]="businessName"
         class="jv-icon jv-icon-img"
       />
-      <span *ngIf="!(icon | businessIconSrc)" class="jv-icon">{{ icon }}</span>
+      <ion-icon *ngIf="!(icon | businessIconSrc)" name="people-circle" class="jv-icon"></ion-icon>
     </div>
   </div>
 
@@ -43,7 +43,9 @@
     <ion-icon name="time-outline"></ion-icon>{{ expiresInLabel }}
   </p>
 
-  <p *ngIf="!isActionable" class="jv-outcome">{{ resolvedOutcomeLabel }}</p>
+  <p *ngIf="!isActionable" class="jv-outcome">
+    <ion-icon [name]="outcomeIcon"></ion-icon>{{ resolvedOutcomeLabel }}
+  </p>
 
   <!-- Invite: Accept & Pay / Decline -->
   <div *ngIf="notification.type === 'joint_venture_invite'" class="jv-actions">

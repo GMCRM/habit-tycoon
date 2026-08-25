@@ -64,7 +64,7 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
   }
 
   get icon(): string {
-    return this.metadata.new_business_icon || this.metadata.business_icon || '🤝';
+    return this.metadata.new_business_icon || this.metadata.business_icon || '';
   }
 
   get businessName(): string {
@@ -87,16 +87,37 @@ export class JointVentureNotificationCardComponent implements OnInit, OnDestroy 
 
   get resolvedOutcomeLabel(): string {
     switch (this.metadata.outcome) {
-      case 'funded': return '✅ Funded and live';
-      case 'expired': return '⌛ Expired — refunded';
-      case 'declined': return '🚫 Declined — refunded';
-      case 'upgraded': return '⬆️ Upgrade applied';
-      case 'upgrade_expired': return '⌛ Upgrade expired — refunded';
-      case 'upgrade_declined': return '🚫 Upgrade declined — refunded';
-      case 'deleted': return '🗑️ Deleted';
-      case 'vote_failed': return '🚫 Vote failed — business stays';
-      case 'vote_expired': return '⌛ Vote expired — business stays';
+      case 'funded': return 'Funded and active';
+      case 'expired': return 'Expired — refunded';
+      case 'declined': return 'Declined — refunded';
+      case 'upgraded': return 'Upgrade applied';
+      case 'upgrade_expired': return 'Upgrade expired — refunded';
+      case 'upgrade_declined': return 'Upgrade declined — refunded';
+      case 'deleted': return 'Deleted';
+      case 'vote_failed': return 'Vote failed — business retained';
+      case 'vote_expired': return 'Vote expired — business retained';
       default: return '';
+    }
+  }
+
+  /** Icon shown when the resolved outcome has no business icon to display. */
+  get outcomeIcon(): string {
+    switch (this.metadata.outcome) {
+      case 'funded':
+      case 'upgraded':
+        return 'checkmark-circle';
+      case 'expired':
+      case 'upgrade_expired':
+      case 'vote_expired':
+        return 'time-outline';
+      case 'declined':
+      case 'upgrade_declined':
+      case 'vote_failed':
+        return 'close-circle';
+      case 'deleted':
+        return 'trash-outline';
+      default:
+        return 'people-circle';
     }
   }
 
