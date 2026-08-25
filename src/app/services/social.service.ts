@@ -603,12 +603,14 @@ export class SocialService {
   async sendStockholderReminder(fromUserId: string, toUserId: string, habitBusinessId: string, fromUserName: string): Promise<void> {
     try {
       // Use the SQL function to send the stockholder reminder
+      const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const { data, error } = await this.supabase
         .rpc('send_stockholder_reminder', {
           from_user_id: fromUserId,
           to_user_id: toUserId,
           habit_business_id: habitBusinessId,
-          from_user_name: fromUserName
+          from_user_name: fromUserName,
+          p_client_timezone: clientTimezone
         });
 
       if (error) {

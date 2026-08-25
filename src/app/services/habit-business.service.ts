@@ -133,6 +133,10 @@ export interface DividendStatusItem {
   dividendPerCompletion: number;
   completedToday: boolean;
   isActiveToday: boolean;
+  /** Whether this viewer already sent a stockholder reminder for this
+   *  business today (local midnight-to-midnight, per get_todays_dividend_status).
+   *  DB-backed via social_pokes — see 20260825080000_db_backed_daily_stockholder_reminder_limit.sql. */
+  remindedToday: boolean;
 }
 
 @Injectable({
@@ -1831,7 +1835,8 @@ export class HabitBusinessService {
         sharesOwned: row.shares_owned,
         dividendPerCompletion: row.dividend_per_completion,
         completedToday: row.completed_today,
-        isActiveToday: row.is_active_today
+        isActiveToday: row.is_active_today,
+        remindedToday: row.reminded_today
       }));
     } catch (error) {
       console.error('Error in getTodaysDividendStatus:', error);

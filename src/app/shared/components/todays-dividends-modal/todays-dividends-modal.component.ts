@@ -49,11 +49,6 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
   lastUpdatedAt = new Date();
   private refreshIntervalId: any;
 
-  // businessId -> date (toDateString()) a reminder was last sent for it,
-  // capped at one per business per day. Scoped by userId below since
-  // localStorage is shared across accounts on the same device.
-  private dailyReminders: { [businessId: string]: string } = {};
-
   constructor(
     private habitBusinessService: HabitBusinessService,
     private socialService: SocialService,
@@ -94,30 +89,17 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
       this.items = items;
       this.liveTodaysStockEarnings = liveEarnings;
       this.lastUpdatedAt = new Date();
-      this.syncReminderHistory();
     } finally {
       this.isLoading = false;
       this.isRefreshing = false;
     }
   }
 
-  /** Pulls in today's already-sent reminders (per business) from localStorage. */
-  private syncReminderHistory() {
-    const today = new Date().toDateString();
-    for (const item of this.items) {
-      const stored = localStorage.getItem(this.getReminderStorageKey(item.businessId));
-      if (stored === today) {
-        this.dailyReminders[item.businessId] = stored;
-      }
-    }
-  }
-
-  private getReminderStorageKey(businessId: string): string {
-    return `reminder_${this.userId}_${businessId}`;
-  }
-
+  /** Whether this viewer already sent a reminder for this business today.
+   *  DB-backed (social_pokes, via get_todays_dividend_status) and resets at
+   *  local midnight — see 20260825080000_db_backed_daily_stockholder_reminder_limit.sql. */
   hasAlreadyRemindedToday(businessId: string): boolean {
-    return this.dailyReminders[businessId] === new Date().toDateString();
+    return !!this.items.find(i => i.businessId === businessId)?.remindedToday;
   }
 
   /** Only businesses still due today and not yet completed can be reminded. */
@@ -144,9 +126,7 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
                 this.userName || 'A fellow investor'
               );
 
-              const today = new Date().toDateString();
-              this.dailyReminders[item.businessId] = today;
-              localStorage.setItem(this.getReminderStorageKey(item.businessId), today);
+              item.remindedToday = true;
 
               const toast = await this.toastController.create({
                 message: `✅ Reminder sent to ${item.ownerName}!`,
@@ -156,8 +136,15 @@ export class TodaysDividendsModalComponent implements OnInit, OnDestroy {
               await toast.present();
             } catch (error) {
               console.error('❌ Error sending stockholder reminder:', error);
+              const message = (error as any)?.message || '';
+              // Server-side dedup rejected it (e.g. already reminded from another
+              // device) — sync local state so the button reflects reality rather
+              // than staying enabled for a retry that will only fail again.
+              if (message.includes('already sent a reminder')) {
+                item.remindedToday = true;
+              }
               const toast = await this.toastController.create({
-                message: `❌ Failed to send reminder: ${(error as any)?.message || 'Please try again.'}`,
+                message: `❌ Failed to send reminder: ${message || 'Please try again.'}`,
                 duration: 4000,
                 color: 'danger'
               });
