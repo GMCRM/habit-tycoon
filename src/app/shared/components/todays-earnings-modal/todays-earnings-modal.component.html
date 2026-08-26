@@ -24,37 +24,35 @@
       <div class="hero-label">Earned Today</div>
       <div class="hero-value">${{ fmt(liveTodaysEarnings) }}</div>
       <div class="hero-sub" *ngIf="items.length > 0">
-        {{ totalCompletions }} completion{{ totalCompletions === 1 ? '' : 's' }} across {{ items.length }} habit{{ items.length === 1 ? '' : 's' }}
+        {{ items.length }} earning{{ items.length === 1 ? '' : 's' }} today
       </div>
     </div>
 
     <div *ngIf="items.length === 0" class="empty-state">
       <ion-icon name="logo-usd" color="medium"></ion-icon>
       <h3>No earnings yet today</h3>
-      <p>Complete a habit to start earning &mdash; today's breakdown will show up here.</p>
+      <p>Complete a habit, collect a dividend, or sell some stock &mdash; today's breakdown will show up here.</p>
     </div>
 
-    <div *ngIf="items.length > 0" class="habits-list">
-      <div class="habit-row" *ngFor="let item of items; trackBy: trackByHabitId">
+    <div *ngIf="items.length > 0" class="earnings-list">
+      <div class="earning-row" *ngFor="let item of items; trackBy: trackByItemId">
         <img
-          *ngIf="item.businessIcon | businessIconSrc as iconSrc"
+          *ngIf="item.icon | businessIconSrc as iconSrc"
           [src]="iconSrc"
-          [alt]="item.businessName"
-          class="business-icon-img"
+          alt=""
+          class="item-icon-img"
         />
-        <div *ngIf="!(item.businessIcon | businessIconSrc)" class="business-icon-emoji">
-          {{ item.businessIcon || '💪' }}
+        <div *ngIf="!(item.icon | businessIconSrc)" class="item-icon-emoji">{{ item.icon }}</div>
+
+        <div class="item-info">
+          <div class="item-title">{{ item.title }}</div>
+          <div class="item-subtitle">{{ item.subtitle }}</div>
         </div>
 
-        <div class="habit-info">
-          <div class="habit-name">{{ item.businessName }}</div>
-          <div class="habit-completions">
-            <ion-icon name="checkmark-circle"></ion-icon>
-            {{ item.completionsCount }} completion{{ item.completionsCount === 1 ? '' : 's' }}
-          </div>
+        <div class="item-right">
+          <div class="item-amount">+${{ fmt(item.amount) }}</div>
+          <div class="item-time">{{ item.timestamp | date:'shortTime' }}</div>
         </div>
-
-        <div class="habit-amount">${{ fmt(item.totalEarnings) }}</div>
       </div>
     </div>
   </ng-container>

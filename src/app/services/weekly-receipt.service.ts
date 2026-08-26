@@ -98,6 +98,32 @@ export class WeeklyReceiptService {
     return this.bucketByDay(weekStart, weekEnd, items);
   }
 
+  /**
+   * Every cash-moving line item from today alone (local day), sorted most
+   * recent first — every source that can add or remove habit cash, since
+   * get_weekly_receipt is date-range-generic despite its name. Used for the
+   * "Today's Habit Earnings" breakdown popup, which further filters to
+   * amount > 0 (money in) since it's only interested in earnings.
+   */
+  async getTodaysReceiptItems(): Promise<ReceiptLineItem[]> {
+    const dayStart = this.startOfLocalDay(new Date());
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const { data, error } = await this.supabase.rpc('get_weekly_receipt', {
+      p_week_start: dayStart.toISOString(),
+      p_week_end: dayEnd.toISOString(),
+    });
+
+    if (error) {
+      console.error('Error fetching today\'s receipt items:', error);
+      throw error;
+    }
+
+    const items = ((data || []) as WeeklyReceiptRow[]).map((row) => this.toLineItem(row));
+    items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return items;
+  }
+
   private toLineItem(row: WeeklyReceiptRow): ReceiptLineItem {
     const amount = Number(row.amount) || 0;
     let title = row.primary_label;

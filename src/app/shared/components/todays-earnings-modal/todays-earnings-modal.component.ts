@@ -4,10 +4,10 @@ import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon,
   IonButtons, IonSpinner
 } from '@ionic/angular/standalone';
-import { HabitBusinessService, TodaysEarningsBreakdownItem } from '../../../services/habit-business.service';
+import { WeeklyReceiptService, ReceiptLineItem } from '../../../services/weekly-receipt.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { addIcons } from 'ionicons';
-import { logoUsd, close, checkmarkCircle } from 'ionicons/icons';
+import { logoUsd, close } from 'ionicons/icons';
 
 @Component({
   selector: 'app-todays-earnings-modal',
@@ -20,21 +20,24 @@ import { logoUsd, close, checkmarkCircle } from 'ionicons/icons';
   ]
 })
 export class TodaysEarningsModalComponent implements OnInit {
-  @Input() userId: string = '';
   /** Initial total from the home screen stat card, shown only as a seed so
    *  there's no flash of $0 before this modal's own fetch resolves — always
-   *  superseded by the live per-habit sum computed in load() below. */
+   *  superseded by the live sum computed in load() below. */
   @Input() todaysEarnings: number = 0;
   @Input() modalController: any;
 
-  /** Live total, derived from the fetched breakdown — see load(). */
+  /** Live total, derived from the fetched items — see load(). */
   liveTodaysEarnings = 0;
 
-  items: TodaysEarningsBreakdownItem[] = [];
+  /** Every source that added to habit cash today — habit completions,
+   *  stock dividends, stock sales, business/marketplace sales, and joint
+   *  venture refunds — filtered from the full today's receipt to amount > 0
+   *  since this popup is only interested in money coming in. */
+  items: ReceiptLineItem[] = [];
   isLoading = true;
 
-  constructor(private habitBusinessService: HabitBusinessService) {
-    addIcons({ logoUsd, close, checkmarkCircle });
+  constructor(private weeklyReceiptService: WeeklyReceiptService) {
+    addIcons({ logoUsd, close });
   }
 
   async ngOnInit() {
@@ -43,28 +46,21 @@ export class TodaysEarningsModalComponent implements OnInit {
   }
 
   private async load() {
-    if (!this.userId) {
-      this.isLoading = false;
-      return;
-    }
     try {
-      this.items = await this.habitBusinessService.getTodaysEarningsBreakdown(this.userId);
-      this.liveTodaysEarnings = this.items.reduce((total, item) => total + item.totalEarnings, 0);
+      const todaysItems = await this.weeklyReceiptService.getTodaysReceiptItems();
+      this.items = todaysItems.filter(item => item.amount > 0);
+      this.liveTodaysEarnings = this.items.reduce((total, item) => total + item.amount, 0);
     } finally {
       this.isLoading = false;
     }
-  }
-
-  get totalCompletions(): number {
-    return this.items.reduce((total, item) => total + item.completionsCount, 0);
   }
 
   fmt(n: number | undefined): string {
     return Math.abs(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  trackByHabitId(_index: number, item: TodaysEarningsBreakdownItem): string {
-    return item.habitBusinessId;
+  trackByItemId(_index: number, item: ReceiptLineItem): string {
+    return item.id;
   }
 
   dismiss() {

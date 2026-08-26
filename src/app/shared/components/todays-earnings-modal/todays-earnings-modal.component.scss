@@ -76,13 +76,13 @@
   }
 }
 
-.habits-list {
+.earnings-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.habit-row {
+.earning-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -93,31 +93,31 @@
   padding: 12px 14px;
 }
 
-.business-icon-img {
-  width: 40px;
-  height: 40px;
+.item-icon-img {
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   border-radius: 22%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.business-icon-emoji {
-  width: 40px;
-  height: 40px;
+.item-icon-emoji {
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.habit-info {
+.item-info {
   min-width: 0;
   flex: 1;
 }
 
-.habit-name {
+.item-title {
   font-weight: 700;
   color: #ffffff;
   font-size: 14.5px;
@@ -126,23 +126,29 @@
   white-space: nowrap;
 }
 
-.habit-completions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.item-subtitle {
   font-size: 12px;
-  color: var(--ion-color-success);
-  margin-top: 2px;
-
-  ion-icon {
-    font-size: 13px;
-  }
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.habit-amount {
+.item-right {
   flex-shrink: 0;
+  text-align: right;
+}
+
+.item-amount {
   font-weight: 700;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--ion-color-success);
   white-space: nowrap;
+}
+
+.item-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
 }

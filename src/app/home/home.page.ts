@@ -520,10 +520,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /**
-   * Open the "Today's Habit Earnings" breakdown: every habit completed
-   * today and how much each one earned. The modal fetches its own live
-   * per-habit totals (see TodaysEarningsModalComponent) seeded from the
-   * home screen's current total so there's no flash of $0.
+   * Open the "Today's Habit Earnings" breakdown: every source that added
+   * to habit cash today — habit completions, stock dividends, stock sales,
+   * business/marketplace sales, and joint venture refunds (via the same
+   * get_weekly_receipt RPC behind the weekly receipt page, scoped to just
+   * today — see TodaysEarningsModalComponent). Seeded from the home
+   * screen's current total so there's no flash of $0.
    */
   async openTodaysEarningsModal() {
     if (!this.currentUser) return;
@@ -531,7 +533,6 @@ export class HomePage implements OnInit, OnDestroy {
       component: TodaysEarningsModalComponent,
       componentProps: {
         modalController: this.modalController,
-        userId: this.currentUser.id,
         todaysEarnings: this.todaysEarnings
       },
       cssClass: 'todays-earnings-modal'
