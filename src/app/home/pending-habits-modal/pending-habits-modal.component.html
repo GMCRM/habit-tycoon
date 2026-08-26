@@ -28,12 +28,20 @@
   <ion-list *ngIf="orderedHabits.length > 0" class="pending-list" lines="none">
     <ion-reorder-group [disabled]="false" (ionReorderEnd)="handleReorder($event)">
       <ion-item
-        *ngFor="let hb of orderedHabits; trackBy: trackByHabitId; let i = index"
+        *ngFor="let hb of orderedHabits; trackBy: trackByHabitId"
         class="pending-row"
       >
-        <div class="pending-index" slot="start">{{ i + 1 }}</div>
+        <ion-reorder slot="start"></ion-reorder>
         <ion-label class="pending-name">{{ hb.business_name }}</ion-label>
-        <ion-reorder slot="end"></ion-reorder>
+        <div
+          slot="end"
+          class="pending-complete-button"
+          [class.is-completing]="completingIds.has(hb.id)"
+          aria-label="Complete"
+          (click)="handleCompleteTap(hb, $event)"
+        >
+          <ion-icon name="checkmark-circle" class="button-icon"></ion-icon>
+        </div>
       </ion-item>
     </ion-reorder-group>
   </ion-list>

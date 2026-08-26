@@ -12,6 +12,7 @@ import { JointVentureService, JointVentureStatusRow } from '../../../services/jo
 import { OfflineQueuedError } from '../../../services/offline-queue.service';
 import { HabitUpdateService } from '../../../services/habit-update.service';
 import { HabitIntervalService } from '../../../services/habit-interval.service';
+import { HabitCompletionService } from '../../../services/habit-completion.service';
 import { CountdownTickService } from '../../../services/countdown-tick.service';
 import { SoundService } from '../../../services/sound.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
@@ -79,6 +80,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     private jointVentureService: JointVentureService,
     private habitUpdateService: HabitUpdateService,
     private habitIntervalService: HabitIntervalService,
+    private habitCompletionService: HabitCompletionService,
     private countdownTickService: CountdownTickService,
     private soundService: SoundService,
     private toastController: ToastController,
@@ -211,7 +213,14 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     if (this.completing) return;
     this.completing = true;
     try {
-      await this.runCompleteHabit();
+      const result = await this.habitCompletionService.complete(this.hb);
+      if (result.completed) {
+        if (result.offlineQueued) {
+          if (this.hb.is_joint_venture) this.optimisticJvCheckedIn = true;
+          this.offlineQueued.emit();
+        }
+        this.changed.emit();
+      }
     } finally {
       this.completing = false;
     }
@@ -241,68 +250,6 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async runCompleteHabit() {
-    if (this.hb.is_joint_venture) {
-      // No "missed yesterday" backdating for joint ventures — retroactively
-      // flipping whether a past day was "full attendance" for a shared
-      // streak is a correctness minefield with unclear UX value.
-      await this.runJointVentureCheckIn();
-      return;
-    }
-    const missedYesterday = this.habitIntervalService.didMissYesterday(this.hb);
-    if (missedYesterday) {
-      await this.showMissedYesterdayAlert();
-    } else {
-      await this.completeHabitBusiness();
-    }
-  }
-
-  private async completeHabitBusiness() {
-    try {
-      const { earnings } = await this.habitBusinessService.completeHabit(this.hb.id);
-      this.soundService.playComplete();
-      await this.toast(`🎉 Habit "${this.hb.business_name}" completed! +$${earnings.toFixed(2)} earned`, 'success');
-      this.habitUpdateService.emitHabitCompletion(this.hb.id);
-      this.changed.emit();
-    } catch (error) {
-      const isOfflineQueued = error instanceof OfflineQueuedError;
-      const errorMessage = (error as any)?.message || 'Unknown error occurred';
-      await this.toast(isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to complete habit: ${errorMessage}`, isOfflineQueued ? 'warning' : 'danger');
-      if (isOfflineQueued) {
-        this.habitUpdateService.emitHabitCompletion(this.hb.id);
-        this.offlineQueued.emit();
-      }
-    }
-  }
-
-  private async runJointVentureCheckIn() {
-    const occurredAt = new Date();
-    try {
-      const result = await this.jointVentureService.checkIn(this.hb.id, occurredAt);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to check in');
-      }
-      const earnings = (result.earnings || 0).toFixed(2);
-      const remaining = (result.total || 0) - (result.checked_in || 0);
-      const message = result.finalized
-        ? `🎉 Everyone checked in! +$${earnings} earned — streak now ${result.streak} day${result.streak === 1 ? '' : 's'}!`
-        : `✅ You're in! +$${earnings} earned — waiting on ${remaining} more co-owner${remaining === 1 ? '' : 's'} for today's streak bonus.`;
-      this.soundService.playComplete();
-      await this.toast(message, 'success', 4000);
-      this.habitUpdateService.emitHabitCompletion(this.hb.id);
-      this.changed.emit();
-    } catch (error: any) {
-      const isOfflineQueued = error instanceof OfflineQueuedError;
-      const errorMessage = error?.message || 'Failed to check in';
-      await this.toast(isOfflineQueued ? `📡 ${errorMessage}` : `❌ ${errorMessage}`, isOfflineQueued ? 'warning' : 'danger');
-      if (isOfflineQueued) {
-        this.optimisticJvCheckedIn = true;
-        this.habitUpdateService.emitHabitCompletion(this.hb.id);
-        this.offlineQueued.emit();
-      }
-    }
-  }
-
   private async undoJvCheckIn() {
     try {
       const result = await this.jointVentureService.undoCheckIn(this.hb.id);
@@ -316,73 +263,6 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     } catch (error: any) {
       await this.toast(`❌ ${error?.message || 'Failed to undo check-in'}`, 'danger');
     }
-  }
-
-  /**
-   * Show a prompt when the user tries to complete a habit they missed yesterday.
-   * Lets them choose to mark yesterday or today as complete.
-   */
-  private async showMissedYesterdayAlert(): Promise<void> {
-    return new Promise<void>((resolve) => {
-      let resolved = false;
-      const done = () => {
-        if (!resolved) {
-          resolved = true;
-          resolve();
-        }
-      };
-
-      const showTodayOption = this.isTodayActiveDay();
-
-      const buttons: any[] = [
-        { text: 'Cancel', role: 'cancel', handler: () => done() },
-        {
-          text: 'Yesterday',
-          handler: () => {
-            (async () => {
-              try {
-                await this.habitBusinessService.completeHabitYesterday(this.hb.id);
-                this.soundService.playComplete();
-                await this.toast(`✅ "${this.hb.business_name}" marked complete for yesterday! Earnings added.`, 'success');
-                this.habitUpdateService.emitHabitCompletion(this.hb.id);
-                this.changed.emit();
-              } catch (error) {
-                const isOfflineQueued = error instanceof OfflineQueuedError;
-                const errorMessage = (error as any)?.message || 'Unknown error occurred';
-                await this.toast(isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed: ${errorMessage}`, isOfflineQueued ? 'warning' : 'danger');
-                if (isOfflineQueued) {
-                  this.habitUpdateService.emitHabitCompletion(this.hb.id);
-                  this.offlineQueued.emit();
-                }
-              } finally {
-                done();
-              }
-            })();
-          }
-        }
-      ];
-
-      if (showTodayOption) {
-        buttons.push({
-          text: 'Today',
-          handler: () => {
-            (async () => {
-              try {
-                await this.completeHabitBusiness();
-              } finally {
-                done();
-              }
-            })();
-          }
-        });
-      }
-
-      this.alertController.create({
-        header: '⏰ Forgot to mark your habit yesterday?',
-        message: 'You missed marking this habit yesterday. Did you complete it? You can still mark it as complete.\n\nSelect which day to complete:',
-        buttons
-      }).then(alert => alert.present());
-    });
   }
 
   private async undoHabitCompletion() {

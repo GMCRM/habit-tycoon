@@ -5,8 +5,9 @@ import {
   IonList, IonItem, IonLabel, IonReorderGroup, IonReorder, ReorderEndCustomEvent
 } from '@ionic/angular/standalone';
 import { HabitBusiness } from '../../services/habit-business.service';
+import { HabitCompletionService } from '../../services/habit-completion.service';
 import { addIcons } from 'ionicons';
-import { calendarOutline, close, checkmarkDoneCircle } from 'ionicons/icons';
+import { calendarOutline, close, checkmarkDoneCircle, checkmarkCircle } from 'ionicons/icons';
 
 @Component({
   selector: 'app-pending-habits-modal',
@@ -28,8 +29,11 @@ export class PendingHabitsModalComponent {
   /** Local working copy so drags animate instantly without waiting on the parent's own habits array to re-render. */
   orderedHabits: HabitBusiness[] = [];
 
-  constructor() {
-    addIcons({ calendarOutline, close, checkmarkDoneCircle });
+  /** Ids currently mid-complete-tap, so their button can show a busy state and repeat taps are ignored. */
+  completingIds = new Set<string>();
+
+  constructor(private habitCompletionService: HabitCompletionService) {
+    addIcons({ calendarOutline, close, checkmarkDoneCircle, checkmarkCircle });
   }
 
   ngOnInit() {
@@ -39,6 +43,22 @@ export class PendingHabitsModalComponent {
   async handleReorder(ev: ReorderEndCustomEvent) {
     this.orderedHabits = ev.detail.complete(this.orderedHabits);
     await this.onReorder(this.orderedHabits.map(hb => hb.id));
+  }
+
+  /** Complete a habit right from the list — same one-tap flow as the Home screen's card, minus the wait to see it disappear there too. */
+  async handleCompleteTap(hb: HabitBusiness, event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.completingIds.has(hb.id)) return;
+    this.completingIds.add(hb.id);
+    try {
+      const result = await this.habitCompletionService.complete(hb);
+      if (result.completed) {
+        this.orderedHabits = this.orderedHabits.filter(item => item.id !== hb.id);
+      }
+    } finally {
+      this.completingIds.delete(hb.id);
+    }
   }
 
   trackByHabitId(_index: number, hb: HabitBusiness): string {
