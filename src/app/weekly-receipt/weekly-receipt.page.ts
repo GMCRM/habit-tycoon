@@ -23,6 +23,7 @@ import {
   GeneralAchievementCategory,
 } from '../services/achievements.service';
 import { AuthService } from '../services/auth.service';
+import { formatLargeNumber } from '../shared/currency-format.util';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
@@ -472,6 +473,12 @@ export class WeeklyReceiptPage implements OnInit {
   }
 
   formatMoney(amount: number): string {
+    if (amount >= 100000) {
+      return formatLargeNumber(amount);
+    }
+    if (amount >= 10000) {
+      return Math.round(amount).toLocaleString('en-US');
+    }
     return (amount === 0 ? 0 : amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
