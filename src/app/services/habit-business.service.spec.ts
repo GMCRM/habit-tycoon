@@ -656,8 +656,11 @@ describe('HabitBusinessService', () => {
       expect(normalResult).toBe(20); // 100/5 = 20
     });
 
-    // Goal value validation should reject out-of-range values
-    it('should reject goal_value below 1 or above 99 when updating habit', async () => {
+    // Goal value validation should reject out-of-range values. Bound
+    // matches createHabitBusiness's (1-20) — previously update allowed up
+    // to 99, an inconsistency with create's 1-20 limit (and the UI's own
+    // max="20" input) that's since been fixed.
+    it('should reject goal_value below 1 or above 20 when updating habit', async () => {
       // Mock the getUser and habit lookup
       const habitQuery = makeQuery({
         data: { id: 'h1', user_id: 'user-1' },
@@ -671,11 +674,11 @@ describe('HabitBusinessService', () => {
 
       await expectAsync(
         service.updateHabitBusiness('h1', { goal_value: 0 })
-      ).toBeRejectedWithError(/Goal value must be between 1 and 99/);
+      ).toBeRejectedWithError(/Goal value must be between 1 and 20/);
 
       await expectAsync(
         service.updateHabitBusiness('h1', { goal_value: 100 })
-      ).toBeRejectedWithError(/Goal value must be between 1 and 99/);
+      ).toBeRejectedWithError(/Goal value must be between 1 and 20/);
     });
 
     // getLocalDateString should return consistent YYYY-MM-DD in local timezone

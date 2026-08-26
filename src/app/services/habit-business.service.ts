@@ -177,6 +177,13 @@ export class HabitBusinessService {
     // refresh from the server so the UI drops the "pending sync" numbers in
     // favor of true ones.
     this.offlineQueue.onDrainComplete(() => this.reconcileAfterSync());
+
+    // Correct the cache's own copy of an offline-created habit's id as soon
+    // as its createHabitBusiness mutation syncs, rather than relying solely
+    // on the full reconcileAfterSync() refresh above — if that reconciliation
+    // itself fails right after (e.g. a flaky reconnect), the cache would
+    // otherwise keep referencing the now-nonexistent temp id indefinitely.
+    this.offlineQueue.onTempIdResolved((tempId, realId) => this.habitCache.renameHabitId(tempId, realId));
   }
 
   /** Full refresh of the local cache from the server, run once after a successful queue drain. */
@@ -548,6 +555,13 @@ export class HabitBusinessService {
         throw new Error('User not authenticated');
       }
 
+      // Validate goal_value — checked before the cash lookup below so a bad
+      // request fails the same way (and on the same check) whether the
+      // device is online or offline; see the offline branch above.
+      if (request.goal_value < 1 || request.goal_value > 20) {
+        throw new Error('Goal value must be between 1 and 20');
+      }
+
       // Check if user has enough cash
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
@@ -563,11 +577,6 @@ export class HabitBusinessService {
         const errorMsg = `Insufficient funds. Need $${businessType.base_cost.toFixed(2)}, but you only have $${profile.cash.toFixed(2)}`;
         await this.showErrorToast(errorMsg);
         throw new Error(errorMsg);
-      }
-
-      // Validate goal_value
-      if (request.goal_value < 1 || request.goal_value > 20) {
-        throw new Error('Goal value must be between 1 and 20');
       }
 
       // Get current user's habits count to set appropriate order
@@ -793,8 +802,8 @@ export class HabitBusinessService {
       if (!cachedHabit) {
         throw new Error("This habit isn't available offline yet — open it once while connected first.");
       }
-      if (updates.goal_value !== undefined && (updates.goal_value < 1 || updates.goal_value > 99)) {
-        throw new Error('Goal value must be between 1 and 99');
+      if (updates.goal_value !== undefined && (updates.goal_value < 1 || updates.goal_value > 20)) {
+        throw new Error('Goal value must be between 1 and 20');
       }
       await this.habitCache.patchHabit(habitBusinessId, { ...updates, updated_at: new Date().toISOString() });
       await this.offlineQueue.enqueue('updateHabitBusiness', [habitBusinessId, updates], `Update "${cachedHabit.business_name}"`);
@@ -821,8 +830,8 @@ export class HabitBusinessService {
 
       // Validate goal_value if provided
       if (updates.goal_value !== undefined) {
-        if (updates.goal_value < 1 || updates.goal_value > 99) {
-          throw new Error('Goal value must be between 1 and 99');
+        if (updates.goal_value < 1 || updates.goal_value > 20) {
+          throw new Error('Goal value must be between 1 and 20');
         }
       }
 
@@ -1031,6 +1040,9 @@ export class HabitBusinessService {
   } | null {
     const now = new Date(occurredAt);
     const interval = this.habitIntervalService.resolveInterval(habit);
+    if (interval === 'specific_days' && !this.habitIntervalService.isTodayActiveDay(habit, now)) {
+      return null;
+    }
     const periodStart = this.habitIntervalService.getCurrentPeriodStart(interval, now);
 
     let currentProgress = habit.current_progress || 0;
@@ -1083,7 +1095,10 @@ export class HabitBusinessService {
       }
       const preview = this.previewCompletion(cachedHabit, occurredAt);
       if (!preview) {
-        const errorMsg = `Goal already completed! ${cachedHabit.current_progress}/${cachedHabit.goal_value || 1} done.`;
+        const interval = this.habitIntervalService.resolveInterval(cachedHabit);
+        const errorMsg = interval === 'specific_days' && !this.habitIntervalService.isTodayActiveDay(cachedHabit, new Date(occurredAt))
+          ? "This habit isn't scheduled for today."
+          : `Goal already completed! ${cachedHabit.current_progress}/${cachedHabit.goal_value || 1} done.`;
         await this.showErrorToast(errorMsg);
         throw new Error(errorMsg);
       }
@@ -1264,9 +1279,10 @@ export class HabitBusinessService {
       // in the offline queue from earlier this session), there's nothing to
       // reverse server-side — just cancel it out locally instead of queuing
       // a second mutation to undo the first once both eventually replay.
-      const cancelled =
-        (await this.offlineQueue.cancelLastQueued('completeHabit', args => args[0] === habitBusinessId)) ??
-        (await this.offlineQueue.cancelLastQueued('completeHabitYesterday', args => args[0] === habitBusinessId));
+      const cancelled = await this.offlineQueue.cancelLastQueuedOfTypes(
+        ['completeHabit', 'completeHabitYesterday'],
+        args => args[0] === habitBusinessId
+      );
 
       if (cancelled) {
         const delta = await this.habitCache.popPendingDelta(habitBusinessId);
@@ -1726,12 +1742,21 @@ export class HabitBusinessService {
   async getTodaysActualEarnings(userId: string): Promise<number> {
     try {
       // Use local date string to avoid timezone issues
-      const todayLocalDateString = this.getLocalDateString(new Date());
-      
+      const now = new Date();
+      const todayLocalDateString = this.getLocalDateString(now);
+      const localDayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const localDayEnd = new Date(localDayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      // Bound the query to today's local day range instead of pulling the
+      // user's entire completion history — an unbounded select is subject
+      // to PostgREST's default row cap, which for a long-time player could
+      // silently exclude today's rows once the cap is hit.
       const { data, error } = await this.supabase
         .from('habit_completions')
         .select('earnings, completed_at')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .gte('completed_at', localDayStart.toISOString())
+        .lt('completed_at', localDayEnd.toISOString());
 
       if (error) {
         console.error('Error fetching today\'s actual earnings:', error);
@@ -2440,15 +2465,12 @@ export class HabitBusinessService {
 
       const businessIds = lemonadeBusinesses.map(b => b.id);
 
-      // Direct update to fix lemonade stocks showing $100 instead of $1
-      const { error: updateError } = await this.supabase
-        .from('business_stocks')
-        .update({
-          current_stock_price: 1.00,
-          price_multiplier: 1.0,
-          last_price_update: new Date().toISOString()
-        })
-        .in('habit_business_id', businessIds);
+      // Server-side (admin-only) RPC — business_stocks' pricing columns can
+      // no longer be written directly by the client, see
+      // 20260826010000_fix_business_stocks_update_rls_hole.sql.
+      const { error: updateError } = await this.supabase.rpc('admin_reset_stock_prices', {
+        p_habit_business_ids: businessIds
+      });
 
       if (updateError) {
         throw updateError;

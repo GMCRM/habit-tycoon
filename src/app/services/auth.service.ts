@@ -483,38 +483,6 @@ export class AuthService {
     return data;
   }
 
-  // Testing method to get all profiles (for debugging)
-  async getAllProfiles() {
-    const { data, error } = await this.supabase
-      .from('user_profiles')
-      .select('*');
-    
-    if (error) {
-      console.error('Error getting all profiles:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  // Testing method to get all auth users (for debugging)
-  async getAllAuthUsers() {
-    try {
-      // Note: This requires admin privileges, might not work
-      const { data, error } = await this.supabase.auth.admin.listUsers();
-      
-      if (error) {
-        console.error('Error getting auth users:', error);
-        return [];
-      }
-      
-      return data.users;
-    } catch (error) {
-      console.error('Admin access not available:', error);
-      return [];
-    }
-  }
-
   async deleteUserProfile(userId: string) {
     const { data, error } = await this.supabase
       .from('user_profiles')
@@ -589,29 +557,12 @@ export class AuthService {
 
     // Clear stockholder progress for this user.
     // First, restore any owned shares back to the market so the pool stays accurate.
-    const { data: userHoldings } = await this.supabase
-      .from('stock_holdings')
-      .select('stock_id, shares_owned')
-      .eq('holder_id', user.id)
-      .gt('shares_owned', 0);
-
-    if (userHoldings && userHoldings.length > 0) {
-      for (const holding of userHoldings) {
-        const { data: stockRow } = await this.supabase
-          .from('business_stocks')
-          .select('shares_available')
-          .eq('id', holding.stock_id)
-          .single();
-        if (stockRow) {
-          await this.supabase
-            .from('business_stocks')
-            .update({
-              shares_available: stockRow.shares_available + holding.shares_owned,
-              updated_at: nowIso
-            })
-            .eq('id', holding.stock_id);
-        }
-      }
+    // business_stocks' share/price columns can't be written directly by the
+    // client (see 20260826010000_fix_business_stocks_update_rls_hole.sql),
+    // so this goes through a server-side RPC scoped to the caller's own holdings.
+    const { error: returnSharesError } = await this.supabase.rpc('return_user_stock_shares_to_market');
+    if (returnSharesError) {
+      console.warn('Reset cleanup warning for returning stock shares:', returnSharesError.message);
     }
 
     await runDelete('stock_dividend_distributions', [{ column: 'stockholder_id', value: user.id }]);

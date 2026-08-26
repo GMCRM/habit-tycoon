@@ -131,7 +131,7 @@ export class ResetPasswordPage implements OnInit {
 
       if (result.error) {
         const errorToast = await this.toastController.create({
-          message: 'Failed to update password: ' + (result.error as any)?.message || 'Unknown error',
+          message: 'Failed to update password: ' + ((result.error as any)?.message || 'Unknown error'),
           duration: 4000,
           position: 'top',
           color: 'danger'

@@ -62,6 +62,7 @@ export class OfflineQueueService {
   private handlers = new Map<string, MutationHandler>();
   private draining = false;
   private drainCompleteCallbacks: Array<() => void | Promise<void>> = [];
+  private tempIdResolvedCallbacks: Array<(tempId: string, realId: string) => void | Promise<void>> = [];
 
   // Cached synchronously so isOffline() can stay a plain boolean check (it's
   // called inline from many synchronous branches), while the actual truth
@@ -100,6 +101,11 @@ export class OfflineQueueService {
   /** Registers a callback fired once after a drain() that actually replayed at least one mutation empties the queue. */
   onDrainComplete(callback: () => void | Promise<void>): void {
     this.drainCompleteCallbacks.push(callback);
+  }
+
+  /** Registers a callback fired as soon as a queued mutation with a tempId (e.g. createHabitBusiness) replays successfully, with the real server id it resolved to. */
+  onTempIdResolved(callback: (tempId: string, realId: string) => void | Promise<void>): void {
+    this.tempIdResolvedCallbacks.push(callback);
   }
 
   isOffline(): boolean {
@@ -159,9 +165,22 @@ export class OfflineQueueService {
    * replayed reversal).
    */
   async cancelLastQueued(type: string, matchArgs: (args: any[]) => boolean): Promise<QueuedMutation | null> {
+    return this.cancelLastQueuedOfTypes([type], matchArgs);
+  }
+
+  /**
+   * Same as cancelLastQueued(), but considers several mutation types at once
+   * and cancels whichever matching mutation is actually most recent across
+   * all of them — not the most recent of the first type checked. Needed when
+   * more than one mutation type can produce the thing being undone (e.g. a
+   * habit completed both "today" and "yesterday" while offline, in either
+   * order): checking one type before the other would cancel the wrong queued
+   * mutation.
+   */
+  async cancelLastQueuedOfTypes(types: string[], matchArgs: (args: any[]) => boolean): Promise<QueuedMutation | null> {
     const queue = await this.getQueue();
     for (let i = queue.length - 1; i >= 0; i--) {
-      if (queue[i].type === type && matchArgs(queue[i].args)) {
+      if (types.includes(queue[i].type) && matchArgs(queue[i].args)) {
         const [removed] = queue.splice(i, 1);
         await this.saveQueue(queue);
         return removed;
@@ -195,10 +214,10 @@ export class OfflineQueueService {
   async drain(): Promise<void> {
     if (this.draining || this.isOffline()) return;
     this.draining = true;
-    let replayedAny = false;
 
     try {
       let queue = await this.getQueue();
+      const hadQueuedItems = queue.length > 0;
 
       while (queue.length > 0) {
         const mutation = queue[0];
@@ -214,7 +233,6 @@ export class OfflineQueueService {
 
         try {
           const result = await handler(...mutation.args);
-          replayedAny = true;
           let remaining = queue.slice(1);
 
           // This mutation resolved a placeholder id to a real one — rewrite
@@ -225,6 +243,14 @@ export class OfflineQueueService {
               ...m,
               args: m.args.map((a, idx) => (idx === 0 && a === mutation.tempId ? result.id : a)),
             }));
+
+            for (const cb of this.tempIdResolvedCallbacks) {
+              try {
+                await cb(mutation.tempId, result.id);
+              } catch (error) {
+                console.error('[OfflineQueue] onTempIdResolved callback failed:', error);
+              }
+            }
           }
 
           queue = remaining;
@@ -243,7 +269,11 @@ export class OfflineQueueService {
         }
       }
 
-      if (replayedAny && queue.length === 0) {
+      // Reconcile whenever the queue drains to empty, whether every
+      // mutation actually succeeded or some were dropped for a real
+      // (non-network) failure — either way, local optimistic state may now
+      // disagree with the server and needs a fresh pull to correct it.
+      if (hadQueuedItems && queue.length === 0) {
         for (const cb of this.drainCompleteCallbacks) {
           try {
             await cb();

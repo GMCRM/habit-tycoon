@@ -433,12 +433,16 @@ export class SocialService {
       throw new Error('You cannot send a friend request to yourself');
     }
 
-    // Check if friendship already exists in either direction
-    const { data: existingFriendship } = await this.supabase
-      .from('friendships')
-      .select('id, status')
-      .or(`and(user_id.eq.${userId},friend_id.eq.${friendUser.id}),and(user_id.eq.${friendUser.id},friend_id.eq.${userId})`)
-      .maybeSingle();
+    // Check if friendship already exists in either direction. Two plain
+    // .eq() queries instead of a string-built .or() filter — the ids here
+    // happen to always be trusted UUIDs today, but this avoids relying on
+    // that (a value containing `,`/`)`/`.` would otherwise corrupt or
+    // bypass the intended filter).
+    const [{ data: forwardFriendship }, { data: reverseFriendship }] = await Promise.all([
+      this.supabase.from('friendships').select('id, status').eq('user_id', userId).eq('friend_id', friendUser.id).maybeSingle(),
+      this.supabase.from('friendships').select('id, status').eq('user_id', friendUser.id).eq('friend_id', userId).maybeSingle(),
+    ]);
+    const existingFriendship = forwardFriendship || reverseFriendship;
 
     if (existingFriendship) {
       if (existingFriendship.status === 'accepted') {
@@ -493,14 +497,15 @@ export class SocialService {
     if (error) throw error;
   }
 
-  // Remove a friend (delete the friendship)
+  // Remove a friend (delete the friendship, in whichever direction it was created)
   async removeFriend(userId: string, friendId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('friendships')
-      .delete()
-      .or(`and(user_id.eq.${userId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${userId})`);
+    const [{ error: forwardError }, { error: reverseError }] = await Promise.all([
+      this.supabase.from('friendships').delete().eq('user_id', userId).eq('friend_id', friendId),
+      this.supabase.from('friendships').delete().eq('user_id', friendId).eq('friend_id', userId),
+    ]);
 
-    if (error) throw error;
+    if (forwardError) throw forwardError;
+    if (reverseError) throw reverseError;
   }
 
   // Challenges

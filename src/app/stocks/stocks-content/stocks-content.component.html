@@ -762,7 +762,7 @@
           <ion-button
             expand="block"
             color="danger"
-            [disabled]="!sellQuantity || sellQuantity <= 0 || sellQuantity > selectedHolding.shares"
+            [disabled]="!sellQuantity || sellQuantity <= 0 || sellQuantity > selectedHolding.shares || isLoading"
             (click)="confirmSell()"
           >
             Sell {{ sellQuantity || 0 }} Shares

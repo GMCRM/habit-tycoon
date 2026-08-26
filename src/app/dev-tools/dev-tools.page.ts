@@ -131,36 +131,6 @@ export class DevToolsPage {
     }
   }
 
-  // Add method to check all profiles in database
-  async checkAllProfiles() {
-    try {
-      const allProfiles = await this.authService.getAllProfiles();
-      console.log('All profiles found:', allProfiles);
-
-      const allUsers = await this.authService.getAllAuthUsers();
-      console.log('All auth users found:', allUsers);
-
-      // Check current auth user
-      const { data: { user } } = await this.authService.getUser();
-      console.log('Current auth user:', user);
-
-      // Show detailed profile info
-      let profileDetails = '';
-      if (allProfiles && allProfiles.length > 0) {
-        profileDetails = allProfiles.map((profile: any) => {
-          const isCurrentUser = user && profile.id === user.id ? ' (THIS IS YOU!)' : '';
-          return `ID: ${profile.id}${isCurrentUser}\nEmail: ${profile.email}\nName: ${profile.name}\nCash: $${profile.cash}\nCreated: ${profile.created_at}`;
-        }).join('\n\n');
-      }
-      
-      const currentUserInfo = user ? `\nCurrent User ID: ${user.id}\nCurrent User Email: ${user.email}` : '\nNo current user logged in';
-      
-      alert(`Found ${allProfiles?.length || 0} profiles and ${allUsers?.length || 0} auth users.\n\nProfile Details:\n${profileDetails}${currentUserInfo}\n\nCheck console for more details.`);
-    } catch (error) {
-      console.error('Error checking profiles:', error);
-      alert('Error checking profiles: ' + error);
-    }
-  }
 
   async deleteAccount() {
     if (!this.currentUser) {

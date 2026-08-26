@@ -867,7 +867,7 @@ export class StocksContentComponent implements OnInit {
    * Confirm and execute the sell transaction
    */
   async confirmSell() {
-    if (!this.selectedHolding || !this.sellQuantity || this.sellQuantity <= 0) {
+    if (!this.selectedHolding || !this.sellQuantity || this.sellQuantity <= 0 || this.isLoading) {
       return;
     }
 

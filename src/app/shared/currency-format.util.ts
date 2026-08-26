@@ -20,6 +20,9 @@ const UNITS: { threshold: number; suffix: string }[] = [
  * are shown exactly, with commas and two decimal places.
  */
 export function formatLargeNumber(amount: number): string {
+  if (amount < 0) {
+    return `-${formatLargeNumber(-amount)}`;
+  }
   for (const unit of UNITS) {
     if (amount >= unit.threshold) {
       const value = amount / unit.threshold;

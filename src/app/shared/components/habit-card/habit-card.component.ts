@@ -388,6 +388,8 @@ export class HabitCardComponent implements OnInit, OnDestroy {
 
   /** Undo the last completion for multi-completion habits (the small back-arrow button). */
   async undoLastCompletion() {
+    if (this.undoing) return;
+    this.undoing = true;
     try {
       await this.habitBusinessService.undoHabitCompletion(this.hb.id);
       this.soundService.playUndo();
@@ -402,6 +404,8 @@ export class HabitCardComponent implements OnInit, OnDestroy {
         this.habitUpdateService.emitHabitCompletion(this.hb.id);
         this.offlineQueued.emit();
       }
+    } finally {
+      this.undoing = false;
     }
   }
 

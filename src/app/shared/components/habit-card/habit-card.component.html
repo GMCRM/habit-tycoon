@@ -56,8 +56,9 @@
     <div
       *ngIf="isTodayActiveDay() && (hb.goal_value && hb.goal_value > 1) && getCurrentProgress() > 0 && !isGoalCompleted()"
       class="back-button"
+      [class.is-undoing]="undoing"
       aria-label="Undo last completion"
-      (click)="undoLastCompletion()"
+      (click)="!undoing && undoLastCompletion()"
     >
       <ion-icon
         name="arrow-undo"
