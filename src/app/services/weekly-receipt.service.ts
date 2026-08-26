@@ -158,8 +158,10 @@ export class WeeklyReceiptService {
         icon = '↩️';
         break;
       case 'business_sale':
-        title = `Sold business — ${row.primary_label}`;
-        subtitle = row.secondary_label;
+        // primary = the seller's own private habit name, secondary = the
+        // business type — show the type, not the habit name, in the title.
+        title = `Sold business — ${row.secondary_label}`;
+        subtitle = 'Marketplace sale';
         icon = '💰';
         break;
       case 'marketplace_purchase':
