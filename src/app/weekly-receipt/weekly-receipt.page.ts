@@ -112,7 +112,7 @@ export class WeeklyReceiptPage implements OnInit {
   error: string | null = null;
   receipt: WeeklyReceipt | null = null;
   weekStart!: Date;
-  isCurrentWeek = false;
+  selectedDate!: Date;
   showSummaryModal = false;
 
   activeTab: 'receipt' | 'achievements' = 'receipt';
@@ -159,7 +159,9 @@ export class WeeklyReceiptPage implements OnInit {
   }
 
   async ngOnInit() {
-    this.weekStart = this.receiptService.getWeekStart();
+    const today = new Date();
+    this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    this.weekStart = this.receiptService.getWeekStart(this.selectedDate);
     await this.loadWeek();
   }
 
@@ -403,8 +405,6 @@ export class WeeklyReceiptPage implements OnInit {
     this.error = null;
     try {
       this.receipt = await this.receiptService.getWeeklyReceipt(this.weekStart);
-      const currentWeekStart = this.receiptService.getWeekStart();
-      this.isCurrentWeek = this.weekStart.getTime() === currentWeekStart.getTime();
     } catch (e) {
       console.error('Failed to load weekly receipt', e);
       this.error = 'Could not load your receipt. Please try again.';
@@ -413,15 +413,40 @@ export class WeeklyReceiptPage implements OnInit {
     }
   }
 
-  async previousWeek() {
-    this.weekStart = this.receiptService.addWeeks(this.weekStart, -1);
-    await this.loadWeek();
+  async previousDay() {
+    if (this.loading) return;
+    await this.goToDate(this.addDays(this.selectedDate, -1));
   }
 
-  async nextWeek() {
-    if (this.isCurrentWeek) return;
-    this.weekStart = this.receiptService.addWeeks(this.weekStart, 1);
-    await this.loadWeek();
+  async nextDay() {
+    if (this.loading || this.isToday) return;
+    await this.goToDate(this.addDays(this.selectedDate, 1));
+  }
+
+  private async goToDate(date: Date) {
+    this.selectedDate = date;
+    const newWeekStart = this.receiptService.getWeekStart(date);
+    if (newWeekStart.getTime() !== this.weekStart.getTime()) {
+      this.weekStart = newWeekStart;
+      await this.loadWeek();
+    }
+  }
+
+  private addDays(date: Date, delta: number): Date {
+    const next = new Date(date);
+    next.setDate(next.getDate() + delta);
+    return next;
+  }
+
+  get isToday(): boolean {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return this.selectedDate.getTime() === todayStart.getTime();
+  }
+
+  get currentDay(): ReceiptDay | null {
+    if (!this.receipt) return null;
+    return this.receipt.days.find((d) => d.date.getTime() === this.selectedDate.getTime()) ?? null;
   }
 
   get weekRangeLabel(): string {

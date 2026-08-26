@@ -158,11 +158,36 @@ ion-toolbar {
     .week-current-tag {
       margin-top: 2px;
       font-size: 0.7rem;
-      color: var(--ion-color-success);
+      color: rgba(255, 255, 255, 0.55);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
+    .day-nav-total {
+      margin-top: 4px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255, 255, 255, 0.7);
+
+      &.positive {
+        color: var(--ion-color-success);
+      }
+
+      &.negative {
+        color: var(--ion-color-danger);
+      }
+    }
   }
+}
+
+.week-range-heading {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: -6px 0 12px;
 }
 
 // Weekly summary
@@ -331,58 +356,6 @@ ion-toolbar {
 // Day sections
 .day-section {
   margin-bottom: 20px;
-}
-
-.day-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 0 6px 8px 6px;
-  border-bottom: 2px solid rgba(255, 215, 0, 0.25);
-  margin-bottom: 4px;
-
-  .day-header-left {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .day-name {
-    color: var(--ion-color-primary);
-    font-weight: 700;
-    font-size: 1.05rem;
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
-  }
-
-  .day-date {
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 0.85rem;
-  }
-
-  .day-today-tag {
-    font-size: 0.65rem;
-    color: var(--ion-color-success);
-    border: 1px solid rgba(var(--ion-color-success-rgb), 0.4);
-    border-radius: 8px;
-    padding: 1px 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-
-  .day-total {
-    font-weight: 700;
-    font-size: 0.9rem;
-    font-variant-numeric: tabular-nums;
-    color: rgba(255, 255, 255, 0.7);
-
-    &.positive {
-      color: var(--ion-color-success);
-    }
-
-    &.negative {
-      color: var(--ion-color-danger);
-    }
-  }
 }
 
 .no-items {

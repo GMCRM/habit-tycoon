@@ -23,16 +23,22 @@
       <!-- ============================= RECEIPT TAB ============================= -->
       <ng-container *ngIf="activeTab === 'receipt'">
 
-      <!-- Week navigator -->
+      <!-- Day navigator -->
       <div class="week-nav">
-        <button class="week-nav-arrow" (click)="previousWeek()" [disabled]="loading" aria-label="Previous week">
+        <button class="week-nav-arrow" (click)="previousDay()" [disabled]="loading" aria-label="Previous day">
           <ion-icon name="chevron-back"></ion-icon>
         </button>
-        <div class="week-nav-label">
-          <span class="week-range">{{ weekRangeLabel }}</span>
-          <span class="week-current-tag" *ngIf="isCurrentWeek">This week</span>
+        <div class="week-nav-label" *ngIf="currentDay as day">
+          <span class="week-range">{{ day.isToday ? 'Today' : day.dayName }}</span>
+          <span class="week-current-tag">{{ day.dateLabel }}</span>
+          <span
+            class="day-nav-total"
+            *ngIf="hasAnyItems(day)"
+            [class.positive]="day.total > 0"
+            [class.negative]="day.total < 0"
+          >{{ amountLabel(day.total) }}</span>
         </div>
-        <button class="week-nav-arrow" (click)="nextWeek()" [disabled]="loading || isCurrentWeek" aria-label="Next week">
+        <button class="week-nav-arrow" (click)="nextDay()" [disabled]="loading || isToday" aria-label="Next day">
           <ion-icon name="chevron-forward"></ion-icon>
         </button>
       </div>
@@ -50,6 +56,8 @@
       </div>
 
       <ng-container *ngIf="!loading && !error && receipt">
+
+        <div class="week-range-heading">Week of {{ weekRangeLabel }}</div>
 
         <!-- Weekly summary (desktop / wide screens) -->
         <div class="summary-card">
@@ -95,22 +103,8 @@
           <p>Complete habits, trade stocks, or sell a business to see it itemized here.</p>
         </div>
 
-        <!-- Days -->
-        <div class="day-section" *ngFor="let day of receipt.days">
-          <div class="day-header">
-            <div class="day-header-left">
-              <span class="day-name" *ngIf="!day.isToday">{{ day.dayName }}</span>
-              <span class="day-date">{{ day.dateLabel }}</span>
-              <span class="day-today-tag" *ngIf="day.isToday">Today</span>
-            </div>
-            <span
-              class="day-total"
-              *ngIf="hasAnyItems(day)"
-              [class.positive]="day.total > 0"
-              [class.negative]="day.total < 0"
-            >{{ amountLabel(day.total) }}</span>
-          </div>
-
+        <!-- Selected day -->
+        <div class="day-section" *ngIf="currentDay as day">
           <div class="receipt-list" *ngIf="hasAnyItems(day); else noItems">
             <div class="receipt-row" *ngFor="let item of day.items">
               <img
