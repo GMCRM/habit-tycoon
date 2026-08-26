@@ -19,6 +19,7 @@ import { HabitIntervalService } from '../services/habit-interval.service';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitCardComponent } from '../shared/components/habit-card/habit-card.component';
 import { TodaysDividendsModalComponent } from '../shared/components/todays-dividends-modal/todays-dividends-modal.component';
+import { PendingHabitsModalComponent } from './pending-habits-modal/pending-habits-modal.component';
 import { formatLargeNumber } from '../shared/currency-format.util';
 import { DEFAULT_STARTING_BALANCE } from '../shared/default-profile.util';
 import { addIcons } from 'ionicons';
@@ -596,12 +597,65 @@ export class HomePage implements OnInit, OnDestroy {
     [this.habitBusinesses[indexA], this.habitBusinesses[indexB]] =
       [this.habitBusinesses[indexB], this.habitBusinesses[indexA]];
 
+    await this.persistHabitOrder();
+  }
+
+  /**
+   * Open the "Pending Habits" popup: just the to-do habits, draggable to
+   * reorder. Each drag persists immediately (same instant-apply behavior as
+   * the up/down arrows) and the new order carries straight over to the Home
+   * screen's To-Do group.
+   */
+  async openPendingHabitsModal() {
+    if (!this.currentUser) return;
+    const modal = await this.modalController.create({
+      component: PendingHabitsModalComponent,
+      componentProps: {
+        habits: [...this.todoHabitBusinesses],
+        onReorder: (orderedHabitIds: string[]) => this.applyPendingHabitsOrder(orderedHabitIds),
+        modalController: this.modalController
+      },
+      cssClass: 'pending-habits-modal'
+    });
+    await modal.present();
+  }
+
+  /**
+   * Apply a new drag order for the to-do habits from the pending-habits popup.
+   * Done habits keep whatever slots they already occupy in habitBusinesses —
+   * only the slots currently held by to-do items are refilled, in the new
+   * order — so done items interleaved between them don't get shuffled too.
+   */
+  private async applyPendingHabitsOrder(orderedTodoIds: string[]) {
+    const todoSlotIndexes = this.habitBusinesses
+      .map((hb, index) => ({ hb, index }))
+      .filter(({ hb }) => !this.isDoneForDisplay(hb))
+      .map(({ index }) => index);
+
+    // A completion landed mid-drag and shifted the to-do count — bail out
+    // rather than apply a stale mapping; the modal keeps its own copy so the
+    // in-progress drag still looks fine, it just won't have persisted this step.
+    if (todoSlotIndexes.length !== orderedTodoIds.length) return;
+
+    const byId = new Map(this.habitBusinesses.map(hb => [hb.id, hb]));
+    const reordered = [...this.habitBusinesses];
+    todoSlotIndexes.forEach((slotIndex, i) => {
+      const hb = byId.get(orderedTodoIds[i]);
+      if (hb) reordered[slotIndex] = hb;
+    });
+    this.habitBusinesses = reordered;
+
+    await this.persistHabitOrder();
+  }
+
+  /** Persists the current `habitBusinesses` array order, with the same offline-queue/error handling used by every reorder path. */
+  private async persistHabitOrder() {
     try {
       const orderedBusinessIds = this.habitBusinesses.map(hb => hb.id);
       await this.habitBusinessService.updateHabitBusinessOrder(this.currentUser.id, orderedBusinessIds);
     } catch (error) {
       if (error instanceof OfflineQueuedError) {
-        // Keep the optimistic swap — it's queued and will sync once online.
+        // Keep the optimistic order — it's queued and will sync once online.
         const queuedToast = await this.toastController.create({
           message: `📡 ${error.message}`,
           duration: 3000,

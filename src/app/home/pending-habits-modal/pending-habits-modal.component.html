@@ -1,0 +1,40 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="calendar-outline" color="warning"></ion-icon>
+        Pending Habits
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="pending-habits-modal-content">
+  <p class="modal-subtitle" *ngIf="orderedHabits.length > 0">
+    Drag to reorder — the new order carries over to your Home screen.
+  </p>
+
+  <div *ngIf="orderedHabits.length === 0" class="empty-state">
+    <ion-icon name="checkmark-done-circle" color="success"></ion-icon>
+    <h3>All caught up!</h3>
+    <p>Every habit due right now has already been completed.</p>
+  </div>
+
+  <ion-list *ngIf="orderedHabits.length > 0" class="pending-list" lines="none">
+    <ion-reorder-group [disabled]="false" (ionReorderEnd)="handleReorder($event)">
+      <ion-item
+        *ngFor="let hb of orderedHabits; trackBy: trackByHabitId; let i = index"
+        class="pending-row"
+      >
+        <div class="pending-index" slot="start">{{ i + 1 }}</div>
+        <ion-label class="pending-name">{{ hb.business_name }}</ion-label>
+        <ion-reorder slot="end"></ion-reorder>
+      </ion-item>
+    </ion-reorder-group>
+  </ion-list>
+</ion-content>

@@ -1,0 +1,97 @@
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.pending-habits-modal-content {
+  --background: var(--ion-color-light);
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 16px;
+}
+
+.modal-subtitle {
+  margin: 0 2px 14px 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+
+  ion-icon {
+    font-size: 44px;
+    margin-bottom: 8px;
+  }
+
+  h3 {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 4px 0;
+  }
+
+  p {
+    font-size: 13.5px;
+    line-height: 1.4;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+}
+
+.pending-list {
+  background: transparent;
+  padding: 0;
+}
+
+.pending-row {
+  --background: var(--business-item-background);
+  --border-radius: 12px;
+  --padding-start: 12px;
+  --inner-padding-end: 10px;
+  --min-height: 52px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid var(--ion-color-warning);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+  &.reorder-selected {
+    --background: rgba(255, 215, 0, 0.12);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.pending-index {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-inline-end: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.pending-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+ion-reorder {
+  color: rgba(255, 215, 0, 0.85);
+}
