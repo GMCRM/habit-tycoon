@@ -107,23 +107,12 @@
         <div class="day-section" *ngIf="currentDay as day">
           <div class="receipt-list" *ngIf="hasAnyItems(day); else noItems">
             <div class="receipt-row" *ngFor="let item of day.items">
-              <img
-                *ngIf="item.icon | businessIconSrc as iconSrc"
-                [src]="iconSrc"
-                alt=""
-                class="item-icon-img"
-              />
-              <div *ngIf="!(item.icon | businessIconSrc)" class="item-icon">{{ item.icon }}</div>
-              <div class="item-info">
-                <div class="item-title">{{ item.title }}</div>
-                <div class="item-subtitle">{{ item.subtitle }}</div>
+              <div class="item-business-type">{{ item.subtitle }}</div>
+              <div class="item-habit-name">{{ item.title }}</div>
+              <div class="item-amount" [class.positive]="item.amount > 0" [class.negative]="item.amount < 0">
+                {{ amountLabel(item.amount) }}
               </div>
-              <div class="item-right">
-                <div class="item-amount" [class.positive]="item.amount > 0" [class.negative]="item.amount < 0">
-                  {{ amountLabel(item.amount) }}
-                </div>
-                <div class="item-time">{{ timeLabel(item.timestamp) }}</div>
-              </div>
+              <div class="item-time">{{ timeLabel(item.timestamp) }}</div>
             </div>
           </div>
           <ng-template #noItems>
