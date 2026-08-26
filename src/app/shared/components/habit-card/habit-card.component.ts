@@ -608,8 +608,10 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       );
       this.changed.emit();
     } catch (error) {
+      const isOfflineQueued = error instanceof OfflineQueuedError;
       const errorMessage = (error as any)?.message || 'Unknown error occurred';
-      await this.toast(`❌ Failed to upgrade business: ${errorMessage}`, 'danger');
+      await this.toast(isOfflineQueued ? `📡 ${errorMessage}` : `❌ Failed to upgrade business: ${errorMessage}`, isOfflineQueued ? 'warning' : 'danger');
+      if (isOfflineQueued) this.offlineQueued.emit();
     }
   }
 

@@ -171,6 +171,7 @@ export class HabitBusinessService {
     this.offlineQueue.registerHandler('updateHabitBusiness', (habitBusinessId: string, updates: any) => this.updateHabitBusiness(habitBusinessId, updates));
     this.offlineQueue.registerHandler('deleteHabitBusiness', (habitBusinessId: string) => this.deleteHabitBusiness(habitBusinessId));
     this.offlineQueue.registerHandler('updateHabitBusinessOrder', (userId: string, orderedBusinessIds: string[]) => this.updateHabitBusinessOrder(userId, orderedBusinessIds));
+    this.offlineQueue.registerHandler('upgradeHabitBusiness', (habitBusinessId: string, newBusinessTypeId: number, upgradeCost: number) => this.upgradeHabitBusiness(habitBusinessId, newBusinessTypeId, upgradeCost));
 
     // Once every queued mutation has replayed successfully, the local cache
     // (habits, business types, profile) may be stale in ways the optimistic
@@ -678,111 +679,87 @@ export class HabitBusinessService {
   }
 
   /**
-   * Upgrade an existing habit-business to a new business type
+   * Upgrade an existing habit-business to a new business type.
+   *
+   * Online, this is a single call to the upgrade_habit_business RPC (see the
+   * migration of the same name), which does the whole thing — snapshot the
+   * old business to the Marketplace, mutate the business row, deduct cash,
+   * recalc net worth — as one DB transaction, so a failure partway through
+   * can no longer leave the business upgraded without payment (the old
+   * client-side sequential-calls version of this method could). The RPC
+   * derives the actual cost from the new tier's price server-side rather
+   * than trusting `upgradeCost`; that argument is only used here for the
+   * offline branch's cache-only affordability preview and is otherwise just
+   * threaded through so the offline-queue replay signature stays stable.
    */
   async upgradeHabitBusiness(habitBusinessId: string, newBusinessTypeId: number, upgradeCost: number): Promise<{ listedAt: string | null }> {
-    let listedAt: string | null = null;
+    if (this.offlineQueue.isOffline()) {
+      const businessType = (await this.habitCache.getBusinessTypes()).find(bt => bt.id === newBusinessTypeId);
+      const cachedHabit = (await this.habitCache.getHabits()).find(h => h.id === habitBusinessId);
+      if (!businessType || !cachedHabit) {
+        throw new Error("This upgrade isn't available offline yet — open the upgrade shop once while connected first.");
+      }
+      if (cachedHabit.is_joint_venture) {
+        throw new Error('This is a joint venture — use the group upgrade flow instead.');
+      }
+      // Mirrors the 24h cooldown habit-card.component.ts already checks
+      // client-side before opening the upgrade modal, and that the
+      // guard_habit_business_mutation_trigger enforces server-side — so a
+      // stale replay attempt fails offline the same way it would online.
+      if (cachedHabit.last_upgraded_at) {
+        const msRemaining = 24 * 60 * 60 * 1000 - (Date.now() - new Date(cachedHabit.last_upgraded_at).getTime());
+        if (msRemaining > 0) {
+          throw new Error(`This business was just upgraded — you can upgrade it again in ${Math.ceil(msRemaining / (60 * 60 * 1000))}h.`);
+        }
+      }
+      const profile = await this.habitCache.getProfile();
+      if (profile && profile.cash < upgradeCost) {
+        throw new Error(`Insufficient funds. Need $${upgradeCost}, but you only have $${profile.cash}`);
+      }
+
+      // The real Marketplace listing (and its server-computed price/queued
+      // listing time) can only be created online, same constraint
+      // deleteHabitBusiness's offline branch has — so this just applies the
+      // tier change optimistically and queues the real upgrade (which
+      // creates the real listing) for replay.
+      await this.habitCache.patchHabit(habitBusinessId, {
+        business_type_id: newBusinessTypeId,
+        business_icon: businessType.icon,
+        cost: businessType.base_cost,
+        earnings_per_completion: businessType.base_pay, // goal_value is always 1 for an upgrade
+        marketplace_bonus_percent: null,
+        updated_at: new Date().toISOString(),
+      });
+      await this.habitCache.adjustProfileCash(-upgradeCost);
+      await this.offlineQueue.enqueue('upgradeHabitBusiness', [habitBusinessId, newBusinessTypeId, upgradeCost], `Upgrade "${cachedHabit.business_name}"`);
+      // Unlike create/update/delete (whose optimistic result is immediately
+      // correct and final from the UI's perspective), upgrade's `listedAt`
+      // return value is used by the caller to distinguish "listed now" vs.
+      // "listed later" — offline, neither is true yet, so this needs its
+      // own explicit signal rather than overloading `listedAt: null`, which
+      // already means something else in the online path (the listing insert
+      // itself failed). OfflineQueuedError reuses the same handling this
+      // component already has for its other mutations.
+      throw new OfflineQueuedError(`You're offline — the upgrade to ${businessType.icon} ${businessType.name} will apply once you're back online.`);
+    }
     try {
-      // Get current user
       const { data: { user }, error: userError } = await this.supabase.auth.getUser();
       if (userError || !user) {
         throw new Error('User not authenticated');
       }
 
-      // Get the new business type details
-      const { data: newBusinessType, error: businessTypeError } = await this.supabase
-        .from('business_types')
-        .select('*')
-        .eq('id', newBusinessTypeId)
-        .single();
+      const { data, error } = await this.supabase.rpc('upgrade_habit_business', {
+        p_user_id: user.id,
+        p_habit_business_id: habitBusinessId,
+        p_new_business_type_id: newBusinessTypeId,
+      });
 
-      if (businessTypeError || !newBusinessType) {
-        throw new Error('Invalid new business type');
+      if (error) {
+        console.error('Error in upgrade_habit_business RPC:', error);
+        throw error;
       }
 
-      // Get the current (pre-upgrade) business details — this is snapshotted onto a
-      // Marketplace listing below, since the update further down mutates this same
-      // row in place and nothing else preserves the old business afterwards.
-      const { data: oldBusiness, error: oldBusinessError } = await this.supabase
-        .from('habit_businesses')
-        .select('*')
-        .eq('id', habitBusinessId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (oldBusinessError || !oldBusiness) {
-        throw new Error('Habit-business not found or you do not have permission to upgrade it');
-      }
-      if (oldBusiness.is_joint_venture) {
-        // Joint ventures upgrade via JointVentureService.proposeUpgrade() — a
-        // group-payment flow, not this single-owner in-place mutation. This
-        // guard is defense-in-depth (the RLS UPDATE policy already blocks the
-        // write below for a JV row) against a stale code path reaching here.
-        throw new Error('This is a joint venture — use the group upgrade flow instead.');
-      }
-
-      // Check if user has enough cash for the upgrade
-      const { data: profile, error: profileError } = await this.supabase
-        .from('user_profiles')
-        .select('cash')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Could not load user profile');
-      }
-
-      if (profile.cash < upgradeCost) {
-        throw new Error(`Insufficient funds. Need $${upgradeCost}, but you only have $${profile.cash}`);
-      }
-
-      // List the old business on the Marketplace before it's overwritten below.
-      // The upgrade itself always proceeds regardless of whether this insert
-      // succeeds or whether the listing ever sells.
-      try {
-        const listing = await this.createMarketplaceListing(user.id, oldBusiness, 'upgrade');
-        listedAt = listing.listedAt;
-      } catch (listingError) {
-        console.error('Error creating marketplace listing for upgraded business:', listingError);
-      }
-
-      // Update the habit-business with new business type details
-      const { error: updateError } = await this.supabase
-        .from('habit_businesses')
-        .update({
-          business_type_id: newBusinessTypeId,
-          business_icon: newBusinessType.icon,
-          cost: newBusinessType.base_cost,
-          earnings_per_completion: this.calculateReasonableEarnings(newBusinessType.base_pay, 1), // Use reasonable earnings calculation
-          marketplace_bonus_percent: null, // Earnings are fully recalculated by this upgrade, so any prior Marketplace bonus badge no longer applies
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', habitBusinessId)
-        .eq('user_id', user.id); // Ensure user owns this business
-
-      if (updateError) {
-        console.error('Error updating habit business:', updateError);
-        throw updateError;
-      }
-
-      // Deduct upgrade cost from user's cash
-      const newCash = profile.cash - upgradeCost;
-      const { error: updateCashError } = await this.supabase
-        .from('user_profiles')
-        .update({ 
-          cash: newCash,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateCashError) {
-        console.error('Error updating user cash after upgrade:', updateCashError);
-        // Note: The business was upgraded but cash wasn't deducted
-        // In a production app, you'd want to use a database transaction
-        throw new Error('Business upgraded but failed to deduct payment');
-      }
-
-      return { listedAt };
+      return { listedAt: data?.listed_at ?? null };
     } catch (error) {
       console.error('Error in upgradeHabitBusiness:', error);
       throw error;

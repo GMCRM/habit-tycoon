@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ToastController } from '@ionic/angular/standalone';
 
 import { HabitBusinessService } from './habit-business.service';
+import { OfflineQueuedError } from './offline-queue.service';
 
 describe('HabitBusinessService', () => {
   let service: HabitBusinessService;
@@ -199,103 +200,33 @@ describe('HabitBusinessService', () => {
   // ==========================================================================
   describe('Group 3 – Upgrades', () => {
 
-    // Upgrade should deduct the cost from user's cash
-    it('should deduct upgrade cost from user cash', async () => {
-      const businessTypesQuery = makeQuery({
-        data: { id: 2, icon: '🏭', base_cost: 500, base_pay: 50 },
-        error: null
-      });
-      const userProfilesQuery = makeQuery({
-        data: { cash: 600 },
-        error: null
-      });
-      const habitBusinessesQuery = makeQuery({
-        data: {
-          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
-          business_icon: '🍋', cost: 200, earnings_per_completion: 10, streak: 5
-        },
-        error: null
-      });
+    // Online, the whole upgrade (listing, business mutation, cash deduction,
+    // net-worth recalc) is one DB transaction inside the upgrade_habit_business
+    // RPC — the client's only job is to call it with the right params and
+    // pass through the result.
+    it('should call the upgrade_habit_business RPC with the right params and return listedAt', async () => {
+      const listedAt = new Date().toISOString();
+      mockSupabaseClient.rpc.and.resolveTo({ data: { listed_at: listedAt, new_cost: 500 }, error: null });
 
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_types') return businessTypesQuery;
-        if (table === 'user_profiles') return userProfilesQuery;
-        if (table === 'habit_businesses') return habitBusinessesQuery;
-        return makeQuery();
+      const result = await service.upgradeHabitBusiness('habit-1', 2, 500);
+
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('upgrade_habit_business', {
+        p_user_id: 'user-1',
+        p_habit_business_id: 'habit-1',
+        p_new_business_type_id: 2
       });
-
-      await service.upgradeHabitBusiness('habit-1', 2, 100);
-
-      // Cash should have been updated to 600 - 100 = 500
-      expect(userProfilesQuery.update).toHaveBeenCalledWith(
-        jasmine.objectContaining({ cash: 500 })
-      );
+      expect(result).toEqual({ listedAt });
     });
 
-    // Upgrade should fail if user doesn't have enough cash
-    it('should reject upgrade when user cannot afford the cost', async () => {
-      const businessTypesQuery = makeQuery({
-        data: { id: 2, icon: '🏭', base_cost: 500, base_pay: 50 },
-        error: null
-      });
-      const userProfilesQuery = makeQuery({
-        data: { cash: 20 },
-        error: null
-      });
-      const habitBusinessesQuery = makeQuery({
-        data: {
-          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
-          business_icon: '🍋', cost: 200, earnings_per_completion: 10, streak: 5
-        },
-        error: null
+    // The RPC is the source of truth for affordability/validity now — the
+    // client just needs to propagate its rejection rather than swallow it.
+    it('should reject upgrade when the RPC reports insufficient funds', async () => {
+      mockSupabaseClient.rpc.and.resolveTo({
+        data: null,
+        error: { message: 'Insufficient funds. Need $500, but you only have $20' }
       });
 
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_types') return businessTypesQuery;
-        if (table === 'user_profiles') return userProfilesQuery;
-        if (table === 'habit_businesses') return habitBusinessesQuery;
-        return makeQuery();
-      });
-
-      await expectAsync(service.upgradeHabitBusiness('habit-1', 2, 100)).toBeRejectedWithError(
-        'Insufficient funds. Need $100, but you only have $20'
-      );
-
-      // Business should NOT have been updated
-      expect(habitBusinessesQuery.update).not.toHaveBeenCalled();
-    });
-
-    // Upgrade should update the business icon and earnings to match the new type
-    it('should update business icon and recalculate earnings on upgrade', async () => {
-      const businessTypesQuery = makeQuery({
-        data: { id: 3, icon: '🏢', base_cost: 1000, base_pay: 200 },
-        error: null
-      });
-      const userProfilesQuery = makeQuery({ data: { cash: 5000 }, error: null });
-      const habitBusinessesQuery = makeQuery({
-        data: {
-          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
-          business_icon: '🍋', cost: 200, earnings_per_completion: 10, streak: 5
-        },
-        error: null
-      });
-
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_types') return businessTypesQuery;
-        if (table === 'user_profiles') return userProfilesQuery;
-        if (table === 'habit_businesses') return habitBusinessesQuery;
-        return makeQuery();
-      });
-
-      await service.upgradeHabitBusiness('habit-1', 3, 500);
-
-      expect(habitBusinessesQuery.update).toHaveBeenCalledWith(
-        jasmine.objectContaining({
-          business_type_id: 3,
-          business_icon: '🏢',
-          cost: 1000
-        })
-      );
+      await expectAsync(service.upgradeHabitBusiness('habit-1', 2, 500)).toBeRejected();
     });
 
     // Upgrade should fail when user is not authenticated
@@ -305,6 +236,33 @@ describe('HabitBusinessService', () => {
       await expectAsync(
         service.upgradeHabitBusiness('habit-1', 2, 100)
       ).toBeRejectedWithError('User not authenticated');
+    });
+
+    // Offline: no network call is attempted at all — the tier change is
+    // applied to the local cache optimistically and the real upgrade is
+    // queued for replay once back online.
+    it('should queue the upgrade and patch the cache when offline, without calling supabase', async () => {
+      const offlineQueue = (service as any).offlineQueue;
+      const habitCache = (service as any).habitCache;
+
+      spyOn(offlineQueue, 'isOffline').and.returnValue(true);
+      spyOn(offlineQueue, 'enqueue').and.resolveTo(undefined);
+      spyOn(habitCache, 'getBusinessTypes').and.resolveTo([{ id: 2, icon: '🏭', base_cost: 500, base_pay: 50 }]);
+      spyOn(habitCache, 'getHabits').and.resolveTo([
+        { id: 'habit-1', business_name: 'Lemonade Stand', cost: 200, is_joint_venture: false }
+      ]);
+      spyOn(habitCache, 'getProfile').and.resolveTo({ cash: 600, net_worth: 600 });
+      spyOn(habitCache, 'patchHabit').and.resolveTo(undefined);
+      spyOn(habitCache, 'adjustProfileCash').and.resolveTo(undefined);
+
+      await expectAsync(service.upgradeHabitBusiness('habit-1', 2, 500)).toBeRejectedWithError(OfflineQueuedError);
+
+      expect(mockSupabaseClient.rpc).not.toHaveBeenCalled();
+      expect(habitCache.patchHabit).toHaveBeenCalledWith('habit-1', jasmine.objectContaining({
+        business_type_id: 2, business_icon: '🏭', cost: 500, earnings_per_completion: 50
+      }));
+      expect(habitCache.adjustProfileCash).toHaveBeenCalledWith(-500);
+      expect(offlineQueue.enqueue).toHaveBeenCalledWith('upgradeHabitBusiness', ['habit-1', 2, 500], jasmine.any(String));
     });
   });
 
@@ -733,36 +691,22 @@ describe('HabitBusinessService', () => {
       expect(price).toBeCloseTo(693.11, 2);
     });
 
-    it('should list the old business on the Marketplace when upgrading, before overwriting the row', async () => {
-      const businessTypesQuery = makeQuery({
-        data: { id: 2, icon: '🏭', base_cost: 500, base_pay: 50 },
-        error: null
-      });
-      const userProfilesQuery = makeQuery({ data: { cash: 600 }, error: null });
-      const habitBusinessesQuery = makeQuery({
-        data: {
-          id: 'habit-1', business_type_id: 1, business_name: 'Lemonade Stand',
-          business_icon: '🍋', cost: 1000, earnings_per_completion: 10, streak: 23
-        },
-        error: null
-      });
-      mockSupabaseClient.from.and.callFake((table: string) => {
-        if (table === 'business_types') return businessTypesQuery;
-        if (table === 'user_profiles') return userProfilesQuery;
-        if (table === 'habit_businesses') return habitBusinessesQuery;
-        return makeQuery();
-      });
-      mockSupabaseClient.rpc.and.resolveTo({ data: { listing_price: 861, listed_at: new Date().toISOString() }, error: null });
+    it('should list the old business on the Marketplace when upgrading, atomically via the upgrade RPC', async () => {
+      const listedAt = new Date().toISOString();
+      mockSupabaseClient.rpc.and.resolveTo({ data: { listed_at: listedAt, new_cost: 500 }, error: null });
 
-      await service.upgradeHabitBusiness('habit-1', 2, 100);
+      const result = await service.upgradeHabitBusiness('habit-1', 2, 100);
 
-      // marketplace_listings has no client INSERT policy — the listing is created
-      // by the create_marketplace_listing SECURITY DEFINER RPC instead.
-      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('create_marketplace_listing', {
+      // marketplace_listings has no client INSERT policy — the listing (and
+      // the rest of the upgrade) is created server-side, inside the
+      // upgrade_habit_business SECURITY DEFINER RPC's own transaction,
+      // rather than via separate client calls.
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('upgrade_habit_business', {
         p_user_id: 'user-1',
         p_habit_business_id: 'habit-1',
-        p_reason: 'upgrade'
+        p_new_business_type_id: 2
       });
+      expect(result.listedAt).toBe(listedAt);
     });
 
     it('should list a deleted habit on the Marketplace instead of paying out immediately', async () => {
