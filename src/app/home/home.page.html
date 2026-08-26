@@ -92,9 +92,8 @@
       <!-- Stats Grid: all 3 cards shown together at every screen size -->
       <div class="stats-grid ion-margin-bottom">
         <ion-card
-          class="stat-card gold-accent"
-          [class.clickable-card]="isStatAbbreviated(pendingHabitsCount)"
-          (click)="showExactStatValue('Pending Habits', pendingHabitsCount, false)"
+          class="stat-card gold-accent clickable-card"
+          (click)="openPendingHabitsModal()"
         >
           <ion-card-content>
             <div class="stat-content">
