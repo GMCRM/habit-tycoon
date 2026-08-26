@@ -6,6 +6,7 @@ import { SupabaseService } from './supabase.service';
 import { OfflineQueueService, OfflineQueuedError } from './offline-queue.service';
 import { HabitCacheService } from './habit-cache.service';
 import { HabitUpdateService } from './habit-update.service';
+import { getLocalDateString } from '../shared/date.util';
 
 export interface BusinessType {
   id: number;
@@ -169,6 +170,7 @@ export class HabitBusinessService {
     this.offlineQueue.registerHandler('createHabitBusiness', (request: CreateHabitBusinessRequest) => this.createHabitBusiness(request));
     this.offlineQueue.registerHandler('updateHabitBusiness', (habitBusinessId: string, updates: any) => this.updateHabitBusiness(habitBusinessId, updates));
     this.offlineQueue.registerHandler('deleteHabitBusiness', (habitBusinessId: string) => this.deleteHabitBusiness(habitBusinessId));
+    this.offlineQueue.registerHandler('updateHabitBusinessOrder', (userId: string, orderedBusinessIds: string[]) => this.updateHabitBusinessOrder(userId, orderedBusinessIds));
 
     // Once every queued mutation has replayed successfully, the local cache
     // (habits, business types, profile) may be stale in ways the optimistic
@@ -978,21 +980,11 @@ export class HabitBusinessService {
   }
 
   /**
-   * Complete a habit and earn money
-   */
-  /**
-   * Get today's date in local timezone as YYYY-MM-DD string
-   */
-  /**
-   * Get date as YYYY-MM-DD string in user's local timezone
-   * This ensures consistent date representation regardless of timezone differences
+   * Get date as YYYY-MM-DD string in user's local timezone.
+   * This ensures consistent date representation regardless of timezone differences.
    */
   private getLocalDateString(date: Date = new Date()): string {
-    // Use local timezone to get consistent YYYY-MM-DD format
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return getLocalDateString(date);
   }
 
   /**
@@ -2406,8 +2398,22 @@ export class HabitBusinessService {
   /**
    * Purchase stock shares
    */
-  async purchaseStockShares(stockId: string, shares: number): Promise<any> {
+  async purchaseStockShares(stockId: string, shares: number, estimatedPricePerShare?: number): Promise<any> {
     if (this.offlineQueue.isOffline()) {
+      // estimatedPricePerShare is only ever passed by the live caller (never
+      // by queue replay, which always runs online) — a lightweight upfront
+      // affordability check against the last-known cached cash, so a
+      // purchase that's already unaffordable offline gets rejected now
+      // instead of silently queuing and being dropped later on replay.
+      if (estimatedPricePerShare !== undefined) {
+        const cachedProfile = await this.habitCache.getProfile();
+        const estimatedCost = estimatedPricePerShare * shares;
+        if (cachedProfile && cachedProfile.cash < estimatedCost) {
+          throw new Error(
+            `Insufficient funds to buy ${shares} share${shares === 1 ? '' : 's'} — estimated cost $${estimatedCost.toFixed(2)} exceeds your last known balance of $${cachedProfile.cash.toFixed(2)}.`
+          );
+        }
+      }
       await this.offlineQueue.enqueue('purchaseStockShares', [stockId, shares], `Buy ${shares} share${shares === 1 ? '' : 's'}`);
       throw new OfflineQueuedError("You're offline — this purchase will sync automatically once you're back online.");
     }
@@ -2793,6 +2799,10 @@ export class HabitBusinessService {
    * Update display order for multiple habit businesses (used for drag-and-drop reordering)
    */
   async updateHabitBusinessOrder(userId: string, orderedBusinessIds: string[]): Promise<void> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('updateHabitBusinessOrder', [userId, orderedBusinessIds], 'Reorder habits');
+      throw new OfflineQueuedError("You're offline — this reorder will sync automatically once you're back online.");
+    }
     try {
       // Update each habit business with its new display_order
       const updates = orderedBusinessIds.map((businessId, index) => ({

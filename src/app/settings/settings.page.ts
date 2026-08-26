@@ -22,6 +22,8 @@ import {
 } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
 import { SoundService } from '../services/sound.service';
+import { HabitCacheService } from '../services/habit-cache.service';
+import { OfflineQueueService } from '../services/offline-queue.service';
 import { Router, RouterLink } from '@angular/router';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { addIcons } from 'ionicons';
@@ -89,7 +91,9 @@ export class SettingsPage implements OnInit {
   constructor(
     private authService: AuthService,
     private soundService: SoundService,
-    private router: Router
+    private router: Router,
+    private habitCacheService: HabitCacheService,
+    private offlineQueueService: OfflineQueueService
   ) {
     addIcons({person,save,lockClosed,logoGoogle,trash,warning,logOutOutline,chatbubbleEllipses,documentText,volumeHigh});
   }
@@ -261,6 +265,13 @@ export class SettingsPage implements OnInit {
       if (error) {
         throw error;
       }
+
+      // Account deletion doesn't go through signOut(), so it isn't covered
+      // by AppComponent's SIGNED_OUT cache/queue clear — clear explicitly
+      // here too, so a next sign-in on this device never sees this
+      // account's cached data or replays its queued mutations.
+      void this.habitCacheService.clear();
+      void this.offlineQueueService.clearQueue();
 
       this.showToastMessage('Profile deleted successfully', 'success');
       

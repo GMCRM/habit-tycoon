@@ -57,6 +57,14 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   undoing = false;
   countdown = '...';
 
+  // Set when a joint-venture check-in is queued offline. jvStatusRows (an
+  // @Input loaded by the parent from the server) won't reflect it until the
+  // next successful sync, so this local flag keeps the button showing
+  // "checked in" in the meantime rather than looking like the tap did
+  // nothing. Not persisted anywhere — a fresh page load naturally resets it,
+  // by which point jvStatusRows should agree anyway.
+  private optimisticJvCheckedIn = false;
+
   /** How long after a joint-venture check-in the undo button stays available. */
   private readonly JV_UNDO_WINDOW_MS = 60 * 1000;
 
@@ -126,6 +134,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   // ─── Joint venture helpers — pure reads of the status rows the parent loaded ───
 
   isJvCheckedInToday(): boolean {
+    if (this.optimisticJvCheckedIn) return true;
     const mine = this.jvStatusRows.find(r => r.co_owner_id === this.currentUserId);
     return !!mine?.checked_in_today;
   }
@@ -267,8 +276,9 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   }
 
   private async runJointVentureCheckIn() {
+    const occurredAt = new Date();
     try {
-      const result = await this.jointVentureService.checkIn(this.hb.id);
+      const result = await this.jointVentureService.checkIn(this.hb.id, occurredAt);
       if (!result.success) {
         throw new Error(result.error || 'Failed to check in');
       }
@@ -282,7 +292,14 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       this.habitUpdateService.emitHabitCompletion(this.hb.id);
       this.changed.emit();
     } catch (error: any) {
-      await this.toast(`❌ ${error?.message || 'Failed to check in'}`, 'danger');
+      const isOfflineQueued = error instanceof OfflineQueuedError;
+      const errorMessage = error?.message || 'Failed to check in';
+      await this.toast(isOfflineQueued ? `📡 ${errorMessage}` : `❌ ${errorMessage}`, isOfflineQueued ? 'warning' : 'danger');
+      if (isOfflineQueued) {
+        this.optimisticJvCheckedIn = true;
+        this.habitUpdateService.emitHabitCompletion(this.hb.id);
+        this.offlineQueued.emit();
+      }
     }
   }
 

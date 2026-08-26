@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { HabitUpdateService } from './habit-update.service';
+import { getLocalDateString } from '../shared/date.util';
 
 /**
  * Pushes cross-device habit-completion changes, and dividend/cash changes
@@ -112,10 +113,6 @@ export class HabitRealtimeService {
 
   /** DELETE payloads only reliably carry the old row's primary/replica-identity columns; fall back to today if completed_at is missing. */
   private toLocalDateString(completedAt?: string): string {
-    const date = completedAt ? new Date(completedAt) : new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return getLocalDateString(completedAt ? new Date(completedAt) : new Date());
   }
 }

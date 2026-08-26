@@ -627,7 +627,7 @@ export class StocksContentComponent implements OnInit {
 
     try {
       this.isLoading = true;
-      const result = await this.habitBusinessService.purchaseStockShares(business.stockId!, shares);
+      const result = await this.habitBusinessService.purchaseStockShares(business.stockId!, shares, business.stockPrice);
 
       this.closeBuyModal();
 

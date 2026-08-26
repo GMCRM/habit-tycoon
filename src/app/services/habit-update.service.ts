@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { getLocalDateString } from '../shared/date.util';
 
 export interface HabitUpdateEvent {
   type: 'completion' | 'undo' | 'created' | 'resync';
@@ -16,19 +17,9 @@ export class HabitUpdateService {
   public updates$: Observable<HabitUpdateEvent | null> = this.updateSubject.asObservable();
 
   /**
-   * Get today's date in local timezone as YYYY-MM-DD string
-   */
-  private getLocalDateString(date: Date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  /**
    * Emit a habit completion event
    */
-  emitHabitCompletion(habitBusinessId: string, completionDate: string = this.getLocalDateString()) {
+  emitHabitCompletion(habitBusinessId: string, completionDate: string = getLocalDateString()) {
     this.updateSubject.next({
       type: 'completion',
       habitBusinessId,
@@ -40,7 +31,7 @@ export class HabitUpdateService {
   /**
    * Emit a habit undo event
    */
-  emitHabitUndo(habitBusinessId: string, completionDate: string = this.getLocalDateString()) {
+  emitHabitUndo(habitBusinessId: string, completionDate: string = getLocalDateString()) {
     this.updateSubject.next({
       type: 'undo',
       habitBusinessId,
@@ -56,7 +47,7 @@ export class HabitUpdateService {
     this.updateSubject.next({
       type: 'created',
       habitBusinessId,
-      completionDate: this.getLocalDateString(),
+      completionDate: getLocalDateString(),
       timestamp: Date.now()
     });
   }
@@ -74,7 +65,7 @@ export class HabitUpdateService {
     this.updateSubject.next({
       type: 'resync',
       habitBusinessId: '',
-      completionDate: this.getLocalDateString(),
+      completionDate: getLocalDateString(),
       timestamp: Date.now()
     });
   }

@@ -1,12 +1,15 @@
 import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import { IonApp, IonRouterOutlet, ToastController } from '@ionic/angular/standalone';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
+import { Subscription } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { WidgetBridge } from './services/widget-bridge.plugin';
 import { HabitRealtimeService } from './services/habit-realtime.service';
 import { HabitUpdateService } from './services/habit-update.service';
+import { HabitCacheService } from './services/habit-cache.service';
+import { OfflineQueueService } from './services/offline-queue.service';
 
 // If the app was backgrounded longer than this (ms), force a full reload so
 // Angular, Supabase auth, and all subscriptions start fresh.
@@ -24,6 +27,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private navigatedToHome = false;
   private isExchangingCode = false;
   private appUrlOpenListener: PluginListenerHandle | null = null;
+  private resumeListener: PluginListenerHandle | null = null;
+  private mutationsDroppedSub: Subscription | null = null;
   private hiddenAt: number | null = null;
   private onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
@@ -36,30 +41,45 @@ export class AppComponent implements OnInit, OnDestroy {
         window.location.reload();
         return;
       }
-      // Short absence: re-enter NgZone and refresh the Supabase JWT so
-      // subsequent API calls don't get 401s. Also nudge the active page to
-      // re-fetch habit data — the Realtime channel only delivers events
-      // while it's actually connected, and mobile browsers routinely
-      // suspend a backgrounded tab's WebSocket, so a completion made on
-      // another device while this tab was hidden would otherwise stay
-      // invisible until a manual refresh.
-      this.ngZone.run(async () => {
-        try {
-          await this.authService.supabase.auth.refreshSession();
-        } catch {
-          // Session already valid or offline — ignore.
-        }
-        this.habitUpdateService.emitResync();
-      });
+      this.handleForegroundResume();
     }
   };
+
+  // Re-enters NgZone, refreshes the Supabase JWT so subsequent API calls
+  // don't get 401s, and nudges the active page to re-fetch habit data — the
+  // Realtime channel only delivers events while it's actually connected, and
+  // mobile OSes routinely suspend a backgrounded app's WebSocket, so a
+  // completion made on another device while this app was hidden would
+  // otherwise stay invisible until a manual refresh.
+  //
+  // Triggered both by document.visibilitychange (below) and by Capacitor's
+  // native App 'resume' event (registered in ngOnInit) — WKWebView on native
+  // iOS doesn't reliably report visibilitychange even while the app is
+  // genuinely foregrounded (see HabitRealtimeService's own comment on this),
+  // so relying on visibilitychange alone left iOS users seeing stale data
+  // after backgrounding. Both operations here are safe to run twice if both
+  // listeners happen to fire for the same real foreground event (e.g. on web,
+  // where @capacitor/app's 'resume' is itself backed by visibilitychange).
+  private handleForegroundResume(): void {
+    this.ngZone.run(async () => {
+      try {
+        await this.authService.supabase.auth.refreshSession();
+      } catch {
+        // Session already valid or offline — ignore.
+      }
+      this.habitUpdateService.emitResync();
+    });
+  }
 
   constructor(
     private authService: AuthService,
     private router: Router,
     private ngZone: NgZone,
     private habitRealtimeService: HabitRealtimeService,
-    private habitUpdateService: HabitUpdateService
+    private habitUpdateService: HabitUpdateService,
+    private habitCacheService: HabitCacheService,
+    private offlineQueueService: OfflineQueueService,
+    private toastController: ToastController
   ) {}
 
   // Keeps the iOS widget's copy of the Supabase session current — its own
@@ -142,6 +162,12 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
     document.addEventListener('visibilitychange', this.onVisibilityChange);
+    App.addListener('resume', () => this.handleForegroundResume())
+      .then(handle => { this.resumeListener = handle; });
+
+    this.mutationsDroppedSub = this.offlineQueueService.mutationsDropped$.subscribe(dropped => {
+      this.showDroppedMutationsToast(dropped);
+    });
 
     const urlParams = new URLSearchParams(window.location.search);
     const isOAuthCallback = urlParams.has('code') || urlParams.has('error_code');
@@ -200,6 +226,12 @@ export class AppComponent implements OnInit, OnDestroy {
           }
           this.navigatedToHome = false; // Reset so next sign-in works
           void WidgetBridge.clearAuthSession();
+          // The local habit cache and offline mutation queue are keyed
+          // globally, not per-user — clear both on every sign-out so a second
+          // account signing in offline on a shared device never sees (or
+          // replays mutations against) the previous account's data.
+          void this.habitCacheService.clear();
+          void this.offlineQueueService.clearQueue();
           this.router.navigate(['/login']);
         } else if (event === 'SIGNED_IN') {
           const currentPath = this.getCurrentRoutePath();
@@ -259,9 +291,30 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  // A queued mutation that fails on replay for a real (non-network) reason —
+  // e.g. a stock trade that's no longer affordable, a habit goal already
+  // completed on another device — is dropped rather than retried forever.
+  // Without this, that drop was previously silent (console.warn only), so
+  // the user's offline action would just vanish once they reconnected.
+  private async showDroppedMutationsToast(dropped: Array<{ description: string; reason: string }>): Promise<void> {
+    if (dropped.length === 0) return;
+    const message = dropped.length === 1
+      ? `⚠️ Couldn't sync "${dropped[0].description}": ${dropped[0].reason}`
+      : `⚠️ ${dropped.length} offline actions couldn't sync (${dropped.map(d => d.description).join(', ')}). Your data was refreshed to the latest.`;
+    const toast = await this.toastController.create({
+      message,
+      duration: 5000,
+      position: 'top',
+      color: 'warning',
+    });
+    await toast.present();
+  }
+
   ngOnDestroy() {
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.appUrlOpenListener?.remove();
+    this.resumeListener?.remove();
+    this.mutationsDroppedSub?.unsubscribe();
     this.habitRealtimeService.stop();
   }
 }

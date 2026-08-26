@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { HabitBusinessService, HabitBusiness } from '../services/habit-business.service';
 import { JointVentureService, JointVentureStatusRow } from '../services/joint-venture.service';
-import { OfflineQueueService } from '../services/offline-queue.service';
+import { OfflineQueueService, OfflineQueuedError } from '../services/offline-queue.service';
 import { HabitCacheService } from '../services/habit-cache.service';
 import { HabitUpdateService } from '../services/habit-update.service';
 import { HabitIntervalService } from '../services/habit-interval.service';
@@ -20,6 +20,7 @@ import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitCardComponent } from '../shared/components/habit-card/habit-card.component';
 import { TodaysDividendsModalComponent } from '../shared/components/todays-dividends-modal/todays-dividends-modal.component';
 import { formatLargeNumber } from '../shared/currency-format.util';
+import { DEFAULT_STARTING_BALANCE } from '../shared/default-profile.util';
 import { addIcons } from 'ionicons';
 import { alertCircle, refresh, construct, addCircle, business, calendar, calendarOutline, time, ellipseOutline, add, lockClosed, logIn, trendingUpOutline, wallet, cash, logoUsd, settings, helpCircle, close, analytics, shield } from 'ionicons/icons';
 
@@ -185,13 +186,13 @@ export class HomePage implements OnInit, OnDestroy {
       } catch (error) {
         console.error('Profile creation/loading failed:', error);
         // Most likely offline — fall back to the last synced profile snapshot
-        // instead of a hardcoded $100 starting balance, so cash/net worth
-        // don't visibly reset every time the app opens without connectivity.
+        // instead of a hardcoded starting balance, so cash/net worth don't
+        // visibly reset every time the app opens without connectivity.
         const cachedProfile = await this.habitCacheService.getProfile();
         this.userProfile = cachedProfile || {
           name: user.user_metadata?.['name'] || 'Entrepreneur',
-          cash: 100.00,
-          net_worth: 100.00
+          cash: DEFAULT_STARTING_BALANCE,
+          net_worth: DEFAULT_STARTING_BALANCE
         };
       }
       
@@ -599,6 +600,18 @@ export class HomePage implements OnInit, OnDestroy {
       const orderedBusinessIds = this.habitBusinesses.map(hb => hb.id);
       await this.habitBusinessService.updateHabitBusinessOrder(this.currentUser.id, orderedBusinessIds);
     } catch (error) {
+      if (error instanceof OfflineQueuedError) {
+        // Keep the optimistic swap — it's queued and will sync once online.
+        const queuedToast = await this.toastController.create({
+          message: `📡 ${error.message}`,
+          duration: 3000,
+          position: 'top',
+          color: 'warning'
+        });
+        await queuedToast.present();
+        return;
+      }
+
       console.error('Error updating habit order:', error);
 
       // Revert the local change
@@ -620,8 +633,6 @@ export class HomePage implements OnInit, OnDestroy {
   async resetHabitsToCustomOrder() {
     try {
       await this.habitBusinessService.resetToCustomOrder(this.currentUser.id);
-      // Reload data to reflect the reset order
-      await this.loadDashboardData();
     } catch (error) {
       console.error('Error resetting habits to custom order:', error);
       // Don't show error toast as this is automatic - just log it

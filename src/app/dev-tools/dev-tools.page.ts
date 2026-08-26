@@ -4,6 +4,8 @@ import { Router, RouterLink } from '@angular/router';
 import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonItem, IonLabel, IonIcon, ToastController } from '@ionic/angular/standalone';
 import { AuthService } from '../services/auth.service';
 import { HabitBusinessService } from '../services/habit-business.service';
+import { HabitCacheService } from '../services/habit-cache.service';
+import { OfflineQueueService } from '../services/offline-queue.service';
 import { addIcons } from 'ionicons';
 import { checkmarkCircle, alertCircle, refresh, logOut, home, cash, cafe, wallet, rocket } from 'ionicons/icons';
 
@@ -30,7 +32,9 @@ export class DevToolsPage {
     private authService: AuthService, 
     private habitBusinessService: HabitBusinessService, 
     private router: Router,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private habitCacheService: HabitCacheService,
+    private offlineQueueService: OfflineQueueService
   ) {
     addIcons({ checkmarkCircle, alertCircle, refresh, logOut, home, cash, cafe, wallet, rocket });
     this.loadCurrentUser();
@@ -167,9 +171,15 @@ export class DevToolsPage {
         // Clear storage
         localStorage.clear();
         sessionStorage.clear();
+        // This success path doesn't go through signOut(), so it isn't
+        // covered by AppComponent's SIGNED_OUT cache/queue clear — and
+        // localStorage.clear() above doesn't touch Capacitor Preferences,
+        // where the habit cache and offline queue actually live.
+        void this.habitCacheService.clear();
+        void this.offlineQueueService.clearQueue();
         this.currentUser = null;
         this.userProfile = null;
-        
+
         alert('Account completely deleted! You cannot log in with these credentials anymore.');
       }
       

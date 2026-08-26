@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
 import { App } from '@capacitor/app';
 import { Network } from '@capacitor/network';
@@ -74,6 +74,12 @@ export class OfflineQueueService {
 
   private readonly pendingCountSubject = new BehaviorSubject<number>(0);
   readonly pendingCount$ = this.pendingCountSubject.asObservable();
+
+  // Emits once per drain() run that drops one or more mutations for a real
+  // (non-network) failure, so a UI layer can tell the user something they
+  // did offline didn't make it, instead of it silently vanishing.
+  private readonly mutationsDroppedSubject = new Subject<Array<{ description: string; reason: string }>>();
+  readonly mutationsDropped$ = this.mutationsDroppedSubject.asObservable();
 
   constructor() {
     this.refreshPendingCount();
@@ -154,6 +160,18 @@ export class OfflineQueueService {
   }
 
   /**
+   * Wipes the persisted queue and resets the pending count. Must run on
+   * sign-out (and account deletion) — a mutation queued under one account
+   * must never be replayed against a different account's session after a
+   * shared-device sign-out/sign-in, since queued mutations carry no user-id
+   * association of their own.
+   */
+  async clearQueue(): Promise<void> {
+    await Preferences.remove({ key: QUEUE_STORAGE_KEY });
+    this.pendingCountSubject.next(0);
+  }
+
+  /**
    * Removes and returns the most recently queued not-yet-replayed mutation
    * of `type` whose args satisfy `matchArgs`, without ever calling its
    * handler. Used to cancel a pending action out entirely (e.g. undoing a
@@ -215,6 +233,8 @@ export class OfflineQueueService {
     if (this.draining || this.isOffline()) return;
     this.draining = true;
 
+    const droppedMutations: Array<{ description: string; reason: string }> = [];
+
     try {
       let queue = await this.getQueue();
       const hadQueuedItems = queue.length > 0;
@@ -264,9 +284,17 @@ export class OfflineQueueService {
           // A real (non-network) failure: this mutation is no longer
           // valid, so drop it instead of retrying it forever.
           console.warn(`[OfflineQueue] Dropping queued "${mutation.description}" — replay failed:`, error);
+          droppedMutations.push({
+            description: mutation.description,
+            reason: error instanceof Error ? error.message : String(error),
+          });
           queue = queue.slice(1);
           await this.saveQueue(queue);
         }
+      }
+
+      if (droppedMutations.length > 0) {
+        this.mutationsDroppedSubject.next(droppedMutations);
       }
 
       // Reconcile whenever the queue drains to empty, whether every

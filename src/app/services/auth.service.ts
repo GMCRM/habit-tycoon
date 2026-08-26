@@ -5,6 +5,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { SupabaseService } from './supabase.service';
 import { HabitCacheService } from './habit-cache.service';
+import { OfflineQueueService } from './offline-queue.service';
+import { DEFAULT_STARTING_BALANCE } from '../shared/default-profile.util';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +14,11 @@ import { HabitCacheService } from './habit-cache.service';
 export class AuthService {
   public supabase: SupabaseClient;
 
-  constructor(private supabaseService: SupabaseService, private habitCache: HabitCacheService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private habitCache: HabitCacheService,
+    private offlineQueue: OfflineQueueService
+  ) {
     this.supabase = supabaseService.client;
   }
 
@@ -267,8 +273,8 @@ export class AuthService {
             id: userId,
             email: email,
             name: name || email.split('@')[0],
-            cash: 99.00,
-            net_worth: 99.00
+            cash: DEFAULT_STARTING_BALANCE,
+            net_worth: DEFAULT_STARTING_BALANCE
           }
         ])
         .select()
@@ -339,7 +345,7 @@ export class AuthService {
     // Keep the offline cache warm on every successful fetch, not just after an
     // offline-queue drain — otherwise a user who goes offline before ever
     // queuing an action has no cached snapshot and falls back to a fresh
-    // $100 starting balance instead of their real cash/net worth.
+    // fresh DEFAULT_STARTING_BALANCE instead of their real cash/net worth.
     await this.habitCache.setProfile({ cash: data.cash, net_worth: data.net_worth, name: data.name });
     return data;
   }
@@ -356,6 +362,15 @@ export class AuthService {
       
       if (!user) {
         throw new Error('No authenticated user found');
+      }
+
+      // Skip the live fetch attempt (and the 3x1s retry loop below) entirely
+      // when already known to be offline — every caller of this method
+      // already catches and falls back to the cached profile / default
+      // balance, so attempting the network here only adds 3+ seconds of
+      // guaranteed-to-fail stall before that fallback kicks in.
+      if (this.offlineQueue.isOffline()) {
+        throw new Error('Offline — skipping profile network lookup, caller will fall back to the cached profile.');
       }
 
       // First, try to get existing profile
@@ -384,8 +399,8 @@ export class AuthService {
               id: user.id,
               email: user.email!,
               name: user.user_metadata?.['full_name'] || user.user_metadata?.['name'] || user.email!.split('@')[0],
-              cash: 99.00,
-              net_worth: 99.00
+              cash: DEFAULT_STARTING_BALANCE,
+              net_worth: DEFAULT_STARTING_BALANCE
             }, {
               onConflict: 'id'
             })
@@ -436,8 +451,8 @@ export class AuthService {
           id: user.id,
           email: user.email!,
           name: user.user_metadata?.['full_name'] || user.user_metadata?.['name'] || user.email!.split('@')[0],
-          cash: 99.00,
-          net_worth: 99.00
+          cash: DEFAULT_STARTING_BALANCE,
+          net_worth: DEFAULT_STARTING_BALANCE
         }, {
           onConflict: 'id'
         })
@@ -611,8 +626,8 @@ export class AuthService {
     const { error: resetProfileError } = await this.supabase
       .from('user_profiles')
       .update({
-        cash: 99.00,
-        net_worth: 99.00,
+        cash: DEFAULT_STARTING_BALANCE,
+        net_worth: DEFAULT_STARTING_BALANCE,
         updated_at: nowIso
       })
       .eq('id', user.id);

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { HabitBusiness } from './habit-business.service';
+import { OfflineQueueService, OfflineQueuedError } from './offline-queue.service';
 
 export interface JointVentureProposalResult {
   success: boolean;
@@ -92,8 +93,11 @@ export interface JointVentureParticipation {
 export class JointVentureService {
   private supabase: SupabaseClient;
 
-  constructor(supabaseService: SupabaseService) {
+  constructor(supabaseService: SupabaseService, private offlineQueue: OfflineQueueService) {
     this.supabase = supabaseService.client;
+    this.offlineQueue.registerHandler('jvCheckIn', (habitBusinessId: string, occurredAtIso: string) =>
+      this.checkIn(habitBusinessId, new Date(occurredAtIso))
+    );
   }
 
   // ─── Creation → invite → accept/decline → fund ───
@@ -167,6 +171,10 @@ export class JointVentureService {
   // ─── Daily check-in ───
 
   async checkIn(habitBusinessId: string, occurredAt: Date = new Date()): Promise<JointVentureCheckinResult> {
+    if (this.offlineQueue.isOffline()) {
+      await this.offlineQueue.enqueue('jvCheckIn', [habitBusinessId, occurredAt.toISOString()], 'Check in for joint venture');
+      throw new OfflineQueuedError("You're offline — this check-in will sync automatically once you're back online.");
+    }
     const { data, error } = await this.supabase.rpc('complete_joint_venture_checkin', {
       p_habit_business_id: habitBusinessId,
       p_occurred_at: occurredAt.toISOString()
