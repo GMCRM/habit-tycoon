@@ -19,6 +19,7 @@ import { HabitIntervalService } from '../services/habit-interval.service';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { HabitCardComponent } from '../shared/components/habit-card/habit-card.component';
 import { TodaysDividendsModalComponent } from '../shared/components/todays-dividends-modal/todays-dividends-modal.component';
+import { TodaysEarningsModalComponent } from '../shared/components/todays-earnings-modal/todays-earnings-modal.component';
 import { formatLargeNumber } from '../shared/currency-format.util';
 import { DEFAULT_STARTING_BALANCE } from '../shared/default-profile.util';
 import { addIcons } from 'ionicons';
@@ -514,6 +515,26 @@ export class HomePage implements OnInit, OnDestroy {
         todaysStockEarnings: this.todaysStockEarnings
       },
       cssClass: 'todays-dividends-modal'
+    });
+    await modal.present();
+  }
+
+  /**
+   * Open the "Today's Habit Earnings" breakdown: every habit completed
+   * today and how much each one earned. The modal fetches its own live
+   * per-habit totals (see TodaysEarningsModalComponent) seeded from the
+   * home screen's current total so there's no flash of $0.
+   */
+  async openTodaysEarningsModal() {
+    if (!this.currentUser) return;
+    const modal = await this.modalController.create({
+      component: TodaysEarningsModalComponent,
+      componentProps: {
+        modalController: this.modalController,
+        userId: this.currentUser.id,
+        todaysEarnings: this.todaysEarnings
+      },
+      cssClass: 'todays-earnings-modal'
     });
     await modal.present();
   }
