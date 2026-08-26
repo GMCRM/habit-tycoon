@@ -23,6 +23,11 @@
 --    second device, or a modal left open across midnight) can't send a
 --    duplicate reminder for the same business on the same day.
 
+-- Adding reminded_today changes the OUT-parameter row type, which
+-- CREATE OR REPLACE cannot do in place for a same-signature function
+-- (Postgres error 42P13) — drop it first.
+DROP FUNCTION IF EXISTS get_todays_dividend_status(UUID, TEXT);
+
 CREATE OR REPLACE FUNCTION get_todays_dividend_status(
     user_uuid UUID,
     p_client_timezone TEXT DEFAULT 'UTC'
