@@ -92,6 +92,19 @@
   white-space: nowrap;
 }
 
+// The reorder handle is the only part of each row that starts a drag (Ionic
+// scopes the gesture to touches/clicks that originate inside <ion-reorder> —
+// see canStart() in @ionic/core's reorder-group component) — everything else
+// in the row, and the modal's own scroll, is untouched by it. Styled as its
+// own separate "grip" chip so that's visually obvious too.
 ion-reorder {
   color: rgba(255, 215, 0, 0.85);
+  margin-inline-start: 8px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+
+  &::part(icon) {
+    font-size: 20px;
+  }
 }
