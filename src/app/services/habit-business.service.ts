@@ -140,6 +140,15 @@ export interface DividendStatusItem {
   remindedToday: boolean;
 }
 
+export interface TodaysEarningsBreakdownItem {
+  habitBusinessId: string;
+  businessName: string;
+  businessIcon: string;
+  isJointVenture: boolean;
+  totalEarnings: number;
+  completionsCount: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -1743,6 +1752,63 @@ export class HabitBusinessService {
       return totalEarnings;
     } catch (error) {
       console.error('Error in getTodaysActualEarnings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Per-habit breakdown behind the "Today's Habit Earnings" home screen stat:
+   * every habit this user completed today, how many times, and how much it
+   * earned in total — the same habit_completions rows getTodaysActualEarnings
+   * sums into a single total, grouped by habit_business_id instead and joined
+   * against habit_businesses for display name/icon.
+   */
+  async getTodaysEarningsBreakdown(userId: string): Promise<TodaysEarningsBreakdownItem[]> {
+    try {
+      const now = new Date();
+      const todayLocalDateString = this.getLocalDateString(now);
+      const localDayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const localDayEnd = new Date(localDayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      const { data, error } = await this.supabase
+        .from('habit_completions')
+        .select('earnings, completed_at, habit_business_id, habit_businesses(business_name, business_icon, is_joint_venture)')
+        .eq('user_id', userId)
+        .gte('completed_at', localDayStart.toISOString())
+        .lt('completed_at', localDayEnd.toISOString());
+
+      if (error) {
+        console.error('Error fetching today\'s earnings breakdown:', error);
+        throw error;
+      }
+
+      const todayCompletions = (data || []).filter((completion: any) => {
+        const completionLocalDate = this.getLocalDateString(new Date(completion.completed_at));
+        return completionLocalDate === todayLocalDateString;
+      });
+
+      const byHabit = new Map<string, TodaysEarningsBreakdownItem>();
+      for (const completion of todayCompletions as any[]) {
+        const business = completion.habit_businesses;
+        const existing = byHabit.get(completion.habit_business_id);
+        if (existing) {
+          existing.totalEarnings += completion.earnings;
+          existing.completionsCount += 1;
+        } else {
+          byHabit.set(completion.habit_business_id, {
+            habitBusinessId: completion.habit_business_id,
+            businessName: business?.business_name || 'Unknown Habit',
+            businessIcon: business?.business_icon || '💪',
+            isJointVenture: !!business?.is_joint_venture,
+            totalEarnings: completion.earnings,
+            completionsCount: 1
+          });
+        }
+      }
+
+      return Array.from(byHabit.values()).sort((a, b) => b.totalEarnings - a.totalEarnings);
+    } catch (error) {
+      console.error('Error in getTodaysEarningsBreakdown:', error);
       throw error;
     }
   }

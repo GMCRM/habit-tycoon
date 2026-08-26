@@ -110,9 +110,8 @@
         </ion-card>
 
         <ion-card
-          class="stat-card"
-          [class.clickable-card]="isStatAbbreviated(todaysEarnings)"
-          (click)="showExactStatValue('Today\'s Habit Earnings', todaysEarnings, true)"
+          class="stat-card clickable-card"
+          (click)="openTodaysEarningsModal()"
         >
           <ion-card-content>
             <div class="stat-content">

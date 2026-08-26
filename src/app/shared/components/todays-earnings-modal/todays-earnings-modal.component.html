@@ -1,0 +1,61 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="logo-usd" color="success"></ion-icon>
+        Today's Habit Earnings
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="earnings-breakdown-modal-content">
+  <div *ngIf="isLoading" class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="hero-card">
+      <div class="hero-label">Earned Today</div>
+      <div class="hero-value">${{ fmt(liveTodaysEarnings) }}</div>
+      <div class="hero-sub" *ngIf="items.length > 0">
+        {{ totalCompletions }} completion{{ totalCompletions === 1 ? '' : 's' }} across {{ items.length }} habit{{ items.length === 1 ? '' : 's' }}
+      </div>
+    </div>
+
+    <div *ngIf="items.length === 0" class="empty-state">
+      <ion-icon name="logo-usd" color="medium"></ion-icon>
+      <h3>No earnings yet today</h3>
+      <p>Complete a habit to start earning &mdash; today's breakdown will show up here.</p>
+    </div>
+
+    <div *ngIf="items.length > 0" class="habits-list">
+      <div class="habit-row" *ngFor="let item of items; trackBy: trackByHabitId">
+        <img
+          *ngIf="item.businessIcon | businessIconSrc as iconSrc"
+          [src]="iconSrc"
+          [alt]="item.businessName"
+          class="business-icon-img"
+        />
+        <div *ngIf="!(item.businessIcon | businessIconSrc)" class="business-icon-emoji">
+          {{ item.businessIcon || '💪' }}
+        </div>
+
+        <div class="habit-info">
+          <div class="habit-name">{{ item.businessName }}</div>
+          <div class="habit-completions">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            {{ item.completionsCount }} completion{{ item.completionsCount === 1 ? '' : 's' }}
+          </div>
+        </div>
+
+        <div class="habit-amount">${{ fmt(item.totalEarnings) }}</div>
+      </div>
+    </div>
+  </ng-container>
+</ion-content>
