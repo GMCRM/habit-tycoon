@@ -99,9 +99,6 @@ export class SocialPage implements OnInit, OnDestroy {
   private readonly notificationsPageSize = 10;
   notificationsVisibleCount = this.notificationsPageSize;
 
-  // Toggle states for the Net Worth / Habit Cash display above the Marketplace/Stocks sub-tabs
-  showDetailedNetWorth = false;
-  showDetailedCash = false;
 
   /** Friends/leaderboard/marketplace aren't cached locally (see HabitCacheService, which only covers habit tracking), so just surface connectivity instead. */
   get isOffline(): boolean {
@@ -350,7 +347,7 @@ export class SocialPage implements OnInit, OnDestroy {
    */
   getDisplayedNetWorth(): string {
     const netWorth = this.userProfile?.net_worth || 0;
-    if (netWorth >= 1000 && !this.showDetailedNetWorth) {
+    if (netWorth >= 1000) {
       return this.formatLargeNumber(netWorth);
     }
     return netWorth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -361,24 +358,29 @@ export class SocialPage implements OnInit, OnDestroy {
    */
   getDisplayedCash(): string {
     const cash = this.userProfile?.cash || 0;
-    if (cash >= 1000 && !this.showDetailedCash) {
+    if (cash >= 1000) {
       return this.formatLargeNumber(cash);
     }
     return cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  /**
-   * Toggle net worth display between abbreviated and detailed
-   */
-  toggleNetWorthDisplay(): void {
-    this.showDetailedNetWorth = !this.showDetailedNetWorth;
+  isCashAbbreviated(value: number): boolean {
+    return Math.abs(value || 0) >= 1000;
   }
 
   /**
-   * Toggle cash display between abbreviated and detailed
+   * Show the exact value behind an abbreviated cash/net worth header stat in a popup.
    */
-  toggleCashDisplay(): void {
-    this.showDetailedCash = !this.showDetailedCash;
+  async showExactCashValue(label: string, value: number) {
+    if (!this.isCashAbbreviated(value)) return;
+    const exact = value || 0;
+    const message = '$' + exact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const alert = await this.alertController.create({
+      header: label,
+      message,
+      buttons: ['OK'],
+    });
+    await alert.present();
   }
 
   /** Clears the "new listings" badge for this user and syncs the bottom-nav count. */

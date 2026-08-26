@@ -674,11 +674,19 @@
         >
           <!-- Net Worth / Habit Cash — shown above both sub-tabs so it's visible from either -->
           <div class="cash-display-bar ion-margin-bottom" *ngIf="userProfile">
-            <div class="networth-display" (click)="toggleNetWorthDisplay()">
+            <div
+              class="networth-display"
+              [class.clickable-card]="isCashAbbreviated(userProfile?.net_worth || 0)"
+              (click)="showExactCashValue('Net Worth', userProfile?.net_worth || 0)"
+            >
               <div class="networth-amount clickable">${{ getDisplayedNetWorth() }}</div>
               <div class="networth-label">NET WORTH</div>
             </div>
-            <div class="cash-section" (click)="toggleCashDisplay()">
+            <div
+              class="cash-section"
+              [class.clickable-card]="isCashAbbreviated(userProfile?.cash || 0)"
+              (click)="showExactCashValue('Habit Cash', userProfile?.cash || 0)"
+            >
               <div class="cash-amount clickable">${{ getDisplayedCash() }}</div>
               <div class="cash-label">HABIT CASH</div>
             </div>
