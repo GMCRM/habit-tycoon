@@ -10,7 +10,7 @@
       <ion-icon name="people"></ion-icon>
       <ion-label>Social</ion-label>
       <ion-badge *ngIf="notificationBadgeCount > 0" color="danger" class="social-badge"
-        >{{ notificationBadgeCount }}</ion-badge
+        >{{ notificationBadgeCount > 99 ? '99+' : notificationBadgeCount }}</ion-badge
       >
     </ion-tab-button>
 
