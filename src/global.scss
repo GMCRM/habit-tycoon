@@ -255,6 +255,20 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
+/* Pending Habits Modal (home screen stat card) */
+.pending-habits-modal .modal-wrapper {
+  --height: auto;
+  --max-height: 85%;
+  --max-width: 460px;
+  --width: 92%;
+  --border-radius: 20px;
+}
+
+.pending-habits-modal .modal-wrapper .modal-shadow {
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
 /* Achievement Reactions Modal (notification's "who reacted" popup) */
 .achievement-reactions-modal .modal-wrapper {
   --height: auto;
