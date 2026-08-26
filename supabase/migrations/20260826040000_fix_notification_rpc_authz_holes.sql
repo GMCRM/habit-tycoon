@@ -23,10 +23,33 @@
 -- never meant to be called by clients at all — same reasoning as
 -- adjust_user_cash in the previous migration. Nested SECURITY DEFINER
 -- calls are unaffected (see that migration's comment for why).
-REVOKE EXECUTE ON FUNCTION check_general_achievements(UUID, BOOLEAN) FROM authenticated;
-REVOKE EXECUTE ON FUNCTION notify_friends_of_general_achievement(UUID, TEXT, TEXT, TEXT, TEXT) FROM authenticated;
-REVOKE EXECUTE ON FUNCTION notify_friends_of_milestone(UUID, UUID) FROM authenticated;
-REVOKE EXECUTE ON FUNCTION check_weekly_leaderboard_first(UUID, TEXT) FROM authenticated;
+--
+-- Guarded with to_regprocedure() rather than a bare REVOKE: this project's
+-- live database has drifted from the tracked migration history in both
+-- directions before (see 20260807100000's comment on social_pokes), and
+-- REVOKE on a function that doesn't exist in this particular database
+-- errors out the whole script instead of no-op'ing like GRANT does. If a
+-- function below isn't present here, there's simply nothing to revoke.
+DO $$ BEGIN
+    IF to_regprocedure('check_general_achievements(uuid, boolean)') IS NOT NULL THEN
+        REVOKE EXECUTE ON FUNCTION check_general_achievements(UUID, BOOLEAN) FROM authenticated;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF to_regprocedure('notify_friends_of_general_achievement(uuid, text, text, text, text)') IS NOT NULL THEN
+        REVOKE EXECUTE ON FUNCTION notify_friends_of_general_achievement(UUID, TEXT, TEXT, TEXT, TEXT) FROM authenticated;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF to_regprocedure('notify_friends_of_milestone(uuid, uuid)') IS NOT NULL THEN
+        REVOKE EXECUTE ON FUNCTION notify_friends_of_milestone(UUID, UUID) FROM authenticated;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF to_regprocedure('check_weekly_leaderboard_first(uuid, text)') IS NOT NULL THEN
+        REVOKE EXECUTE ON FUNCTION check_weekly_leaderboard_first(UUID, TEXT) FROM authenticated;
+    END IF;
+END $$;
 
 -- ─── 2) Sender-identity spoofing in the three "send a notification to
 -- someone" RPCs actually called from the client ───
