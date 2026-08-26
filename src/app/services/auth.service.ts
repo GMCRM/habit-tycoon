@@ -3,10 +3,13 @@
 import { Injectable } from '@angular/core';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { SupabaseService } from './supabase.service';
 import { HabitCacheService } from './habit-cache.service';
 import { OfflineQueueService } from './offline-queue.service';
 import { DEFAULT_STARTING_BALANCE } from '../shared/default-profile.util';
+
+const LAST_SIGNED_IN_USER_KEY = 'last_signed_in_user_id';
 
 @Injectable({
   providedIn: 'root',
@@ -236,25 +239,75 @@ export class AuthService {
    * supabase.auth.getUser() revalidates the JWT with a network round-trip
    * every time — offline, that fails and would otherwise look identical to
    * "not logged in" to every caller (home.page.ts's loadCurrentUser() would
-   * redirect straight to /login). Fall back to the session Supabase already
-   * persists locally (via CapacitorPreferencesStorage) — no network call —
-   * whenever the live check can't complete, so the user stays authenticated
-   * offline until their token actually expires.
+   * redirect straight to /login). Fall back to getSession() below, which
+   * carries its own offline fallback.
    */
   async getUser() {
     const result = await this.supabase.auth.getUser();
-    if (!result.error) return result;
+    if (!result.error && result.data.user) {
+      void this.rememberSignedInUser(result.data.user.id);
+      return result;
+    }
 
-    const { data: { session } } = await this.supabase.auth.getSession();
+    const { data: { session } } = await this.getSession();
     if (session?.user) {
       return { data: { user: session.user }, error: null };
     }
     return result;
   }
 
-  // Get current session
-  getSession() {
-    return this.supabase.auth.getSession();
+  /**
+   * getSession() is NOT a pure local read once the access token is stale
+   * (~1hr TTL): gotrue-js tries to silently refresh it over the network
+   * first, and offline that refresh fails, so this reports `session: null`
+   * — indistinguishable from "signed out" to every caller (auth.guard.ts,
+   * the app-startup check, home.page.ts's loadCurrentUser) — even though
+   * the refresh token itself is left untouched in storage and no SIGNED_OUT
+   * event fires. That's a real bug: a user offline for more than about an
+   * hour gets bounced to a login screen they have no way to use, on every
+   * app reopen, despite having a perfectly valid session sitting in storage.
+   *
+   * Fix: remember the user id from the last live check that actually
+   * succeeded (see rememberSignedInUser/forgetSignedInUser), and when the
+   * live call comes back empty while offline, fall back to that id instead
+   * of reporting "no session". This only ever activates while offline, so
+   * it can never mask a real sign-out — a genuine SIGNED_OUT event (this
+   * device signing out, or an actually-invalid refresh token once back
+   * online) still clears the remembered id via forgetSignedInUser().
+   */
+  async getSession() {
+    const result = await this.supabase.auth.getSession();
+    if (result.data.session?.user) {
+      void this.rememberSignedInUser(result.data.session.user.id);
+      return result;
+    }
+
+    if (this.offlineQueue.isOffline()) {
+      const rememberedUserId = await this.getRememberedUserId();
+      if (rememberedUserId) {
+        return { data: { session: { user: { id: rememberedUserId } } as any }, error: null };
+      }
+    }
+    return result;
+  }
+
+  private async rememberSignedInUser(userId: string): Promise<void> {
+    await Preferences.set({ key: LAST_SIGNED_IN_USER_KEY, value: userId });
+  }
+
+  private async getRememberedUserId(): Promise<string | null> {
+    const { value } = await Preferences.get({ key: LAST_SIGNED_IN_USER_KEY });
+    return value;
+  }
+
+  /**
+   * Clears the id remembered by getSession()'s offline fallback above. Must
+   * run on sign-out (see the SIGNED_OUT handler in app.component.ts) so a
+   * second account signing in on a shared device never inherits the first
+   * account's offline-fallback identity.
+   */
+  async forgetSignedInUser(): Promise<void> {
+    await Preferences.remove({ key: LAST_SIGNED_IN_USER_KEY });
   }
 
   // Listen to auth state changes

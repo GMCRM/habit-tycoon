@@ -232,6 +232,7 @@ export class AppComponent implements OnInit, OnDestroy {
           // replays mutations against) the previous account's data.
           void this.habitCacheService.clear();
           void this.offlineQueueService.clearQueue();
+          void this.authService.forgetSignedInUser();
           this.router.navigate(['/login']);
         } else if (event === 'SIGNED_IN') {
           const currentPath = this.getCurrentRoutePath();

@@ -144,6 +144,74 @@ describe('AuthService', () => {
     expect((result as any).data.user.id).toBe('u1');
   });
 
+  // --- Staying Logged In While Offline (multi-day-offline false-logout fix) ---
+
+  // getSession() isn't a pure local read once the access token is stale —
+  // gotrue-js tries to refresh it over the network first, and offline that
+  // fails and reports session: null even though the refresh token is fine.
+  // A previously-remembered user id should be used as a fallback so the
+  // user isn't bounced to a login screen they can't use while offline.
+  it('should fall back to the remembered user id when getSession() reports no session while offline', async () => {
+    authApi.getSession.and.resolveTo({ data: { session: null }, error: null });
+    spyOn((service as any).offlineQueue, 'isOffline').and.returnValue(true);
+    spyOn(service as any, 'getRememberedUserId').and.resolveTo('u1');
+
+    const result = await service.getSession();
+
+    expect((result as any).data.session.user.id).toBe('u1');
+  });
+
+  // A brand-new device that never had a live session shouldn't be handed a
+  // fake logged-in state just because it's offline.
+  it('should still report no session when offline and nothing was ever remembered', async () => {
+    authApi.getSession.and.resolveTo({ data: { session: null }, error: null });
+    spyOn((service as any).offlineQueue, 'isOffline').and.returnValue(true);
+    spyOn(service as any, 'getRememberedUserId').and.resolveTo(null);
+
+    const result = await service.getSession();
+
+    expect((result as any).data.session).toBeNull();
+  });
+
+  // The offline fallback must never activate while online — a genuinely
+  // expired/invalid session with connectivity available should still report
+  // no session so the real sign-out flow runs.
+  it('should not use the remembered user id when getSession() reports no session while online', async () => {
+    authApi.getSession.and.resolveTo({ data: { session: null }, error: null });
+    spyOn((service as any).offlineQueue, 'isOffline').and.returnValue(false);
+    const rememberedSpy = spyOn(service as any, 'getRememberedUserId').and.resolveTo('u1');
+
+    const result = await service.getSession();
+
+    expect((result as any).data.session).toBeNull();
+    expect(rememberedSpy).not.toHaveBeenCalled();
+  });
+
+  // getUser() falls back through getSession(), so it inherits the same
+  // offline fallback without any separate logic of its own.
+  it('should fall back to the remembered user id in getUser() when offline', async () => {
+    authApi.getUser.and.resolveTo({ data: { user: null }, error: { message: 'network error' } });
+    authApi.getSession.and.resolveTo({ data: { session: null }, error: null });
+    spyOn((service as any).offlineQueue, 'isOffline').and.returnValue(true);
+    spyOn(service as any, 'getRememberedUserId').and.resolveTo('u1');
+
+    const result = await service.getUser();
+
+    expect((result as any).data.user.id).toBe('u1');
+  });
+
+  // forgetSignedInUser() (called on real sign-out) must clear the fallback
+  // so a second account on a shared device can't inherit the first
+  // account's offline identity.
+  it('should stop falling back to a user id once forgetSignedInUser() has cleared it', async () => {
+    await (service as any).rememberSignedInUser('u1');
+    await service.forgetSignedInUser();
+
+    const rememberedUserId = await (service as any).getRememberedUserId();
+
+    expect(rememberedUserId).toBeNull();
+  });
+
   // --- Signing Out ---
 
   // signOut should call supabase auth.signOut
