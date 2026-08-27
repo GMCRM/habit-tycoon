@@ -332,7 +332,7 @@ export class AuthService {
       .select('*')
       .eq('id', userId)
       .single();
-    
+
     if (error) {
       // If the profile doesn't exist (PGRST116), return null instead of throwing
       if (error.code === 'PGRST116') {
@@ -342,6 +342,25 @@ export class AuthService {
       console.error('❌ Profile fetch error:', error);
       throw error;
     }
+
+    // user_profiles.net_worth is a stored snapshot that's only refreshed when
+    // this user personally trades stock or collects a dividend — it does NOT
+    // get updated when stock prices move on their own (habit-completion price
+    // bumps, the hourly price-sync cron), so a holder who isn't actively
+    // trading sees a Net Worth that lags further and further behind their
+    // live Portfolio Value. Recalculate it here, on every profile read, so
+    // the number shown is always current rather than however stale the last
+    // trade/dividend left it.
+    try {
+      const { data: liveNetWorth, error: recalcError } = await this.supabase
+        .rpc('recalculate_net_worth', { p_user_id: userId });
+      if (!recalcError && liveNetWorth !== null && liveNetWorth !== undefined) {
+        data.net_worth = liveNetWorth;
+      }
+    } catch (recalcException) {
+      console.log('⚠️ Could not refresh live net worth, using stored value:', recalcException);
+    }
+
     // Keep the offline cache warm on every successful fetch, not just after an
     // offline-queue drain — otherwise a user who goes offline before ever
     // queuing an action has no cached snapshot and falls back to a fresh

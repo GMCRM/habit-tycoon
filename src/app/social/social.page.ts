@@ -210,21 +210,14 @@ export class SocialPage implements OnInit, OnDestroy {
 
       this.currentUser = user;
 
-      // Load user profile (but don't fail if this doesn't work)
+      // Load user profile (but don't fail if this doesn't work). Routed
+      // through authService.getUserProfile() rather than a raw table select
+      // so Net Worth is refreshed live here too, same as Home — otherwise
+      // this page's own stored snapshot goes stale relative to the live
+      // Portfolio Value shown right below it.
       if (user) {
         try {
-          const { data: profile, error } = await this.authService.supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.log('⚠️ SocialPage: User profile not found, will use defaults:', error.message);
-            this.userProfile = null;
-          } else {
-            this.userProfile = profile;
-          }
+          this.userProfile = await this.authService.getUserProfile(user.id);
         } catch (profileError) {
           console.log('Error loading user profile, continuing without it:', profileError);
           this.userProfile = null;
