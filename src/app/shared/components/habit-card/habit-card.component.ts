@@ -7,7 +7,7 @@ import {
   checkmarkCircle, arrowUndo, chevronUp, chevronDown, trash,
   receiptOutline, calendarOutline, trendingUp, people, create, informationCircleOutline
 } from 'ionicons/icons';
-import { HabitBusiness, HabitBusinessService } from '../../../services/habit-business.service';
+import { BusinessType, HabitBusiness, HabitBusinessService } from '../../../services/habit-business.service';
 import { AchievementsService } from '../../../services/achievements.service';
 import { JointVentureService, JointVentureStatusRow } from '../../../services/joint-venture.service';
 import { OfflineQueuedError } from '../../../services/offline-queue.service';
@@ -356,7 +356,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
         (bt.tier !== 2 || tycoonUnlocked)
       );
       if (upgradeOptions.length === 0) {
-        await this.showNoUpgradesAvailable(tycoonUnlocked);
+        await this.showNoUpgradesAvailable(businessTypes, currentCost, tycoonUnlocked);
         return;
       }
 
@@ -460,7 +460,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       );
 
       if (upgradeOptions.length === 0) {
-        await this.showNoUpgradesAvailable(tycoonUnlocked);
+        await this.showNoUpgradesAvailable(businessTypes, currentCost, tycoonUnlocked);
         return;
       }
 
@@ -491,13 +491,20 @@ export class HabitCardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * No upgrade options were found for this habit. If Habit Tycoon is
-   * already unlocked, this habit genuinely owns every business type there
-   * is — otherwise show its progress toward the 6 milestone badges that
-   * unlock the Habit Tycoon tier, instead of just a dead-end toast.
+   * No upgrade options were found for this habit. This only ever happens
+   * once a habit is at the very top of tier 1 (Oil Company) — every lower
+   * tier-1 business always has a costlier tier-1 business above it. Show
+   * the milestone progress card ONLY in that exact spot, while Habit
+   * Tycoon is still locked; any other empty-options case (already fully
+   * unlocked and owning every tier-2 type too) falls back to the plain
+   * "best available" toast.
    */
-  private async showNoUpgradesAvailable(tycoonUnlocked: boolean) {
-    if (tycoonUnlocked) {
+  private async showNoUpgradesAvailable(businessTypes: BusinessType[], currentCost: number, tycoonUnlocked: boolean) {
+    const currentType = businessTypes.find(bt => bt.id === this.hb.business_type_id);
+    const tier1MaxCost = Math.max(0, ...businessTypes.filter(bt => bt.tier === 1).map(bt => bt.base_cost));
+    const isAtTopOfTier1 = currentType?.tier === 1 && currentCost === tier1MaxCost;
+
+    if (tycoonUnlocked || !isAtTopOfTier1) {
       await this.toast('🎉 You already have the best business type available!', 'success');
       return;
     }
