@@ -73,7 +73,13 @@ export class PendingHabitsModalComponent {
         if (!hb.is_joint_venture) {
           hb.current_progress = this.habitIntervalService.getCurrentProgress(hb) + 1;
           hb.last_completed_at = new Date().toISOString();
-          goalMet = this.habitIntervalService.isHabitCompleteForCurrentPeriod(hb);
+          // A 'weekly_count' habit has nothing left to do today once logged,
+          // even though the week's overall goal may still be short (only one
+          // completion per calendar day counts) — mirrors HabitCardComponent's
+          // isDoneForNow() / home.page.ts's isDoneForDisplay().
+          goalMet = hb.recurrence_interval === 'weekly_count'
+            ? this.habitIntervalService.hasLoggedToday(hb)
+            : this.habitIntervalService.isHabitCompleteForCurrentPeriod(hb);
         }
         if (goalMet) {
           this.orderedHabits = this.orderedHabits.filter(item => item.id !== hb.id);

@@ -27,12 +27,15 @@
   </ion-item>
 
   <div class="segment-label">Schedule</div>
-  <ion-segment [(ngModel)]="recurrenceInterval">
+  <ion-segment [(ngModel)]="recurrenceInterval" (ionChange)="onScheduleChange()">
     <ion-segment-button value="24h">
       <ion-label>Daily 🔥</ion-label>
     </ion-segment-button>
     <ion-segment-button value="specific_days">
       <ion-label>Specific Days 📅</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="weekly_count">
+      <ion-label>X/Week 🗓️</ion-label>
     </ion-segment-button>
   </ion-segment>
 
@@ -53,13 +56,17 @@
     </div>
   </div>
 
+  <p *ngIf="recurrenceInterval === 'weekly_count'" class="segment-label">
+    Do it any {{ goalValue }} day{{ goalValue === 1 ? '' : 's' }} you like this week — only your first check-in each day counts.
+  </p>
+
   <ion-item>
-    <ion-label position="stacked">Completions per day</ion-label>
+    <ion-label position="stacked">{{ recurrenceInterval === 'weekly_count' ? 'Days per week' : 'Completions per day' }}</ion-label>
     <ion-input
       type="number"
       [(ngModel)]="goalValue"
       min="1"
-      max="20"
+      [max]="maxGoalValue"
       placeholder="1"
     ></ion-input>
   </ion-item>

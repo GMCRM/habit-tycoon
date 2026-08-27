@@ -26,10 +26,10 @@ export interface HabitBusiness {
   business_icon: string;
   cost: number;
   habit_description: string;
-  recurrence_interval: '24h' | '7d' | 'specific_days'; // '7d' kept for backward compat
+  recurrence_interval: '24h' | '7d' | 'specific_days' | 'weekly_count'; // '7d' kept for backward compat
   frequency?: 'daily' | 'weekly'; // @deprecated — use recurrence_interval
   active_days?: number[]; // DOW array (0=Sun…6=Sat), only used for 'specific_days'
-  goal_value: number; // How many times per active day (e.g., 3 push-up sets/day)
+  goal_value: number; // How many times per active day (e.g., 3 push-up sets/day) — for 'weekly_count', how many days per calendar week instead
   current_progress: number; // Current completions for this interval period
   earnings_per_completion: number;
   streak: number;
@@ -56,7 +56,7 @@ export interface CreateHabitBusinessRequest {
   business_type_id: number;
   business_name: string;
   habit_description: string;
-  recurrence_interval: '24h' | 'specific_days';
+  recurrence_interval: '24h' | 'specific_days' | 'weekly_count';
   goal_value: number;
   active_days?: number[]; // required when recurrence_interval === 'specific_days'
 }
@@ -260,6 +260,22 @@ export class HabitBusinessService {
    */
   getMarketplaceListingPrice(business: { cost?: number; marketplace_base_value?: number | null; streak?: number }): number {
     return this.calculateMarketplaceListingPrice(this.getBaseSellValue(business), business.streak || 0);
+  }
+
+  /**
+   * Throws if this habit is a 'weekly_count' habit still inside its first
+   * calendar week — the anti-churn floor that stops a user from
+   * front-loading a week's goal and immediately selling to repeat it faster
+   * than a real week passes (see create_marketplace_listing() for the
+   * authoritative, server-side version of this same check). A no-op for
+   * every other interval type.
+   */
+  private assertPastMinimumHoldPeriod(habit: HabitBusiness): void {
+    const earliestSellDate = this.habitIntervalService.getEarliestSellDate(habit);
+    if (earliestSellDate && new Date() < earliestSellDate) {
+      const dateLabel = earliestSellDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      throw new Error(`This weekly habit can't be sold until its first week ends on ${dateLabel}. Give it a full week before deciding.`);
+    }
   }
 
   /**
@@ -476,6 +492,19 @@ export class HabitBusinessService {
   }
 
   /**
+   * A 'weekly_count' goal can never exceed 7 — the once-per-day payout cap
+   * enforced in complete_habit_business() means more than 7 completions in
+   * a calendar week is structurally unreachable. Other interval types keep
+   * the existing 1-20 bound.
+   */
+  private validateGoalValue(recurrenceInterval: string, goalValue: number): void {
+    const max = recurrenceInterval === 'weekly_count' ? 7 : 20;
+    if (goalValue < 1 || goalValue > max) {
+      throw new Error(`Goal value must be between 1 and ${max}`);
+    }
+  }
+
+  /**
    * Create a new habit-business
    */
   /**
@@ -493,9 +522,7 @@ export class HabitBusinessService {
       if (!businessType) {
         throw new Error("This business type isn't available offline yet — open the shop once while connected first.");
       }
-      if (request.goal_value < 1 || request.goal_value > 20) {
-        throw new Error('Goal value must be between 1 and 20');
-      }
+      this.validateGoalValue(request.recurrence_interval, request.goal_value);
       const profile = await this.habitCache.getProfile();
       if (profile && profile.cash < businessType.base_cost) {
         const errorMsg = `Insufficient funds. Need $${businessType.base_cost.toFixed(2)}, but you only have $${profile.cash.toFixed(2)}`;
@@ -561,9 +588,7 @@ export class HabitBusinessService {
       // Validate goal_value — checked before the cash lookup below so a bad
       // request fails the same way (and on the same check) whether the
       // device is online or offline; see the offline branch above.
-      if (request.goal_value < 1 || request.goal_value > 20) {
-        throw new Error('Goal value must be between 1 and 20');
-      }
+      this.validateGoalValue(request.recurrence_interval, request.goal_value);
 
       // Check if user has enough cash
       const { data: profile, error: profileError } = await this.supabase
@@ -772,7 +797,7 @@ export class HabitBusinessService {
   async updateHabitBusiness(habitBusinessId: string, updates: {
     business_name?: string;
     habit_description?: string;
-    recurrence_interval?: '24h' | 'specific_days';
+    recurrence_interval?: '24h' | 'specific_days' | 'weekly_count';
     goal_value?: number;
     active_days?: number[];
   }): Promise<void> {
@@ -781,8 +806,8 @@ export class HabitBusinessService {
       if (!cachedHabit) {
         throw new Error("This habit isn't available offline yet — open it once while connected first.");
       }
-      if (updates.goal_value !== undefined && (updates.goal_value < 1 || updates.goal_value > 20)) {
-        throw new Error('Goal value must be between 1 and 20');
+      if (updates.goal_value !== undefined) {
+        this.validateGoalValue(updates.recurrence_interval ?? cachedHabit.recurrence_interval, updates.goal_value);
       }
       await this.habitCache.patchHabit(habitBusinessId, { ...updates, updated_at: new Date().toISOString() });
       await this.offlineQueue.enqueue('updateHabitBusiness', [habitBusinessId, updates], `Update "${cachedHabit.business_name}"`);
@@ -809,9 +834,7 @@ export class HabitBusinessService {
 
       // Validate goal_value if provided
       if (updates.goal_value !== undefined) {
-        if (updates.goal_value < 1 || updates.goal_value > 20) {
-          throw new Error('Goal value must be between 1 and 20');
-        }
+        this.validateGoalValue(updates.recurrence_interval ?? habitBusiness.recurrence_interval, updates.goal_value);
       }
 
       // Update the habit-business
@@ -847,6 +870,7 @@ export class HabitBusinessService {
       if (cachedHabits.length <= 1) {
         throw new Error('Cannot delete your only habit business! You must have at least one active business.');
       }
+      this.assertPastMinimumHoldPeriod(cachedHabit);
 
       const isNeverSynced = habitBusinessId.startsWith('local-');
       if (isNeverSynced) {
@@ -905,6 +929,10 @@ export class HabitBusinessService {
         // write below for a JV row) against a stale code path reaching here.
         throw new Error('This is a joint venture — use the group deletion vote instead.');
       }
+      // Non-authoritative pre-check — create_marketplace_listing() enforces
+      // the real guard server-side. Just avoids a round trip for the common
+      // case of tapping delete on a weekly habit still in its first week.
+      this.assertPastMinimumHoldPeriod(habitBusiness);
 
       // Check how many active habit businesses the user has
       const { data: userHabits, error: countError } = await this.supabase
@@ -1012,6 +1040,13 @@ export class HabitBusinessService {
     if (interval === 'specific_days' && !this.habitIntervalService.isTodayActiveDay(habit, now)) {
       return null;
     }
+    // Same-day cap for 'weekly_count' — mirrors complete_habit_business()'s
+    // server-side check (see that RPC's migration for why): at most one
+    // completion per calendar day, so a week's goal can't be front-loaded
+    // into a single day.
+    if (interval === 'weekly_count' && this.habitIntervalService.hasLoggedToday(habit, now)) {
+      return null;
+    }
     const periodStart = this.habitIntervalService.getCurrentPeriodStart(interval, now);
 
     let currentProgress = habit.current_progress || 0;
@@ -1067,7 +1102,9 @@ export class HabitBusinessService {
         const interval = this.habitIntervalService.resolveInterval(cachedHabit);
         const errorMsg = interval === 'specific_days' && !this.habitIntervalService.isTodayActiveDay(cachedHabit, new Date(occurredAt))
           ? "This habit isn't scheduled for today."
-          : `Goal already completed! ${cachedHabit.current_progress}/${cachedHabit.goal_value || 1} done.`;
+          : interval === 'weekly_count' && this.habitIntervalService.hasLoggedToday(cachedHabit, new Date(occurredAt))
+            ? "Already logged today — come back tomorrow to log another day toward your weekly goal."
+            : `Goal already completed! ${cachedHabit.current_progress}/${cachedHabit.goal_value || 1} done.`;
         await this.showErrorToast(errorMsg);
         throw new Error(errorMsg);
       }
@@ -1103,7 +1140,9 @@ export class HabitBusinessService {
       });
 
       if (error) {
-        const isAlreadyCompleted = error.message?.includes('already completed') || error.message?.includes('Goal already completed');
+        const isAlreadyCompleted = error.message?.includes('already completed')
+          || error.message?.includes('Goal already completed')
+          || error.message?.includes('Already logged today');
         if (isAlreadyCompleted) {
           await this.showErrorToast(error.message);
         }
@@ -1117,7 +1156,8 @@ export class HabitBusinessService {
       // Only show generic error if we haven't already shown a specific one
       if (error instanceof Error &&
           !error.message.includes('already completed') &&
-          !error.message.includes('Goal already completed')) {
+          !error.message.includes('Goal already completed') &&
+          !error.message.includes('Already logged today')) {
         await this.showErrorToast('Failed to complete habit. Please try again.');
       }
       throw error;

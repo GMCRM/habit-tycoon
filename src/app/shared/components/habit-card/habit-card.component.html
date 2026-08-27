@@ -29,17 +29,17 @@
   <div class="corner-controls corner-top-right" *ngIf="!hb.is_joint_venture">
     <!-- Single transforming button: Complete -> Undo, single tap -->
     <div
-      *ngIf="!isGoalCompleted() || (isTodayActiveDay() && getCurrentProgress() > 0)"
+      *ngIf="!isDoneForNow() || (isTodayActiveDay() && getCurrentProgress() > 0)"
       class="hold-complete-button"
       [class.is-completing]="completing"
-      [class.is-undo-mode]="isGoalCompleted() && getCurrentProgress() > 0"
+      [class.is-undo-mode]="isDoneForNow() && (getCurrentProgress() > 0 || hasLoggedToday())"
       [class.is-undoing]="undoing"
-      [attr.aria-label]="isGoalCompleted() ? 'Undo completion' : 'Complete'"
-      (click)="isGoalCompleted() ? handleUndoTap($event) : handleCompleteTap($event)"
+      [attr.aria-label]="isDoneForNow() ? 'Undo completion' : 'Complete'"
+      (click)="isDoneForNow() ? handleUndoTap($event) : handleCompleteTap($event)"
     >
       <!-- Icon changes based on mode -->
       <ion-icon
-        [name]="isGoalCompleted() ? 'arrow-undo' : 'checkmark-circle'"
+        [name]="isDoneForNow() ? 'arrow-undo' : 'checkmark-circle'"
         class="button-icon"
       ></ion-icon>
 
@@ -52,9 +52,13 @@
     <!-- Step-back undo for multi-completion habits mid-progress (not yet
          goal-complete) — once the goal is met, the main button above already
          is the undo control, so this stays hidden to avoid a second,
-         differently-styled undo affordance for the same action. -->
+         differently-styled undo affordance for the same action. Never shown
+         for 'weekly_count': undo only ever targets *today's* completion (see
+         undo_habit_business_completion), and this button's condition
+         (progress > 0, not yet goal-complete) can be true on a day with no
+         completion of its own for a weekly habit, which would fail server-side. -->
     <div
-      *ngIf="isTodayActiveDay() && (hb.goal_value && hb.goal_value > 1) && getCurrentProgress() > 0 && !isGoalCompleted()"
+      *ngIf="hb.recurrence_interval !== 'weekly_count' && isTodayActiveDay() && (hb.goal_value && hb.goal_value > 1) && getCurrentProgress() > 0 && !isGoalCompleted()"
       class="back-button"
       [class.is-undoing]="undoing"
       aria-label="Undo last completion"
@@ -265,13 +269,10 @@
       <div class="habit-period-status" *ngIf="!hb.is_joint_venture">
         <span class="period-progress"
           >{{ getCurrentProgress() }}/{{ hb.goal_value || 1 }}
-          completions</span
+          {{ getPeriodUnitLabel() }}</span
         >
-        <span *ngIf="isTodayActiveDay()" class="period-reset"
-          >&bull; resets in {{ countdown }}</span
-        >
-        <span *ngIf="!isTodayActiveDay()" class="period-reset rest-day"
-          >&bull; rest day</span
+        <span class="period-reset" [class.rest-day]="hb.recurrence_interval !== 'weekly_count' && !isTodayActiveDay()"
+          >&bull; {{ getPeriodStatusText() }}</span
         >
       </div>
 

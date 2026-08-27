@@ -11,7 +11,7 @@ import { HabitBusiness } from '../../services/habit-business.service';
 export interface EditHabitResult {
   businessName: string;
   habitDescription: string;
-  recurrenceInterval: '24h' | 'specific_days';
+  recurrenceInterval: '24h' | 'specific_days' | 'weekly_count';
   goalValue: number;
   activeDays: number[];
 }
@@ -34,12 +34,23 @@ export class EditHabitModalComponent {
 
   businessName = '';
   habitDescription = '';
-  recurrenceInterval: '24h' | 'specific_days' = '24h';
+  recurrenceInterval: '24h' | 'specific_days' | 'weekly_count' = '24h';
   activeDays: number[] = [1, 2, 3, 4, 5];
   goalValue = 1;
 
   readonly dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   readonly dayDows   = [0, 1, 2, 3, 4, 5, 6];
+
+  /** Upper bound for goalValue given the current schedule — see HabitBusinessService.validateGoalValue. */
+  get maxGoalValue(): number {
+    return this.recurrenceInterval === 'weekly_count' ? 7 : 20;
+  }
+
+  onScheduleChange() {
+    if (this.goalValue > this.maxGoalValue) {
+      this.goalValue = this.maxGoalValue;
+    }
+  }
 
   ngOnInit() {
     this.businessName = this.habitBusiness.business_name;
@@ -47,7 +58,9 @@ export class EditHabitModalComponent {
 
     // Map legacy '7d' to 'specific_days'
     const ri = this.habitBusiness.recurrence_interval as string;
-    if (ri === 'specific_days' || ri === '7d' || this.habitBusiness.frequency === 'weekly') {
+    if (ri === 'weekly_count') {
+      this.recurrenceInterval = 'weekly_count';
+    } else if (ri === 'specific_days' || ri === '7d' || this.habitBusiness.frequency === 'weekly') {
       this.recurrenceInterval = 'specific_days';
     } else {
       this.recurrenceInterval = '24h';
@@ -89,7 +102,7 @@ export class EditHabitModalComponent {
       businessName: this.businessName.trim(),
       habitDescription: this.habitDescription.trim(),
       recurrenceInterval: this.recurrenceInterval,
-      goalValue: Math.max(1, Math.min(20, this.goalValue || 1)),
+      goalValue: Math.max(1, Math.min(this.maxGoalValue, this.goalValue || 1)),
       activeDays: this.recurrenceInterval === 'specific_days' ? this.activeDays : []
     };
     this.modalController.dismiss(result, 'save');

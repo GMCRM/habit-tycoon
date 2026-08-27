@@ -119,6 +119,39 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     return this.habitIntervalService.isHabitCompleteForCurrentPeriod(this.hb);
   }
 
+  /** True if this 'weekly_count' habit already has a completion logged today. */
+  hasLoggedToday(): boolean {
+    return this.habitIntervalService.hasLoggedToday(this.hb);
+  }
+
+  /**
+   * Whether the complete button should show its "done" (undo) state right
+   * now. For every other schedule this is just isGoalCompleted() — but a
+   * 'weekly_count' habit needs its own "done for today" state once logged,
+   * even though the *week's* goal isn't met yet, since only one completion
+   * per calendar day counts (see complete_habit_business()'s same-day cap).
+   */
+  isDoneForNow(): boolean {
+    if (this.isGoalCompleted()) return true;
+    return this.hb.recurrence_interval === 'weekly_count' && this.hasLoggedToday();
+  }
+
+  /** Unit label for the progress badge — "completions" everywhere except a weekly-count goal, which counts days. */
+  getPeriodUnitLabel(): string {
+    return this.hb.recurrence_interval === 'weekly_count' ? 'days this week' : 'completions';
+  }
+
+  /** The "&bull; ..." status line under the progress badge. */
+  getPeriodStatusText(): string {
+    if (this.hb.recurrence_interval === 'weekly_count') {
+      if (!this.isGoalCompleted() && this.hasLoggedToday()) {
+        return 'Logged today — come back tomorrow';
+      }
+      return `Week resets in ${this.countdown}`;
+    }
+    return this.isTodayActiveDay() ? `Resets in ${this.countdown}` : 'Rest day';
+  }
+
   /** Today's progress, scoped to the current period (see HabitIntervalService.getCurrentProgress). */
   getCurrentProgress(): number {
     return this.habitIntervalService.getCurrentProgress(this.hb);
@@ -634,6 +667,17 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     try {
       if (!this.canDelete) {
         await this.toast('⚠️ Cannot delete your only habit business! You must have at least one active business.', 'warning', 4000);
+        return;
+      }
+
+      // Weekly habits can't be sold inside their first calendar week — the
+      // anti-churn floor create_marketplace_listing() enforces server-side
+      // (see that RPC). Checked here too so this shows as a plain warning
+      // instead of falling through to the generic failure toast below.
+      const earliestSellDate = this.habitIntervalService.getEarliestSellDate(this.hb);
+      if (earliestSellDate && new Date() < earliestSellDate) {
+        const dateLabel = earliestSellDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        await this.toast(`⏳ This weekly habit can't be sold until its first week ends on ${dateLabel}. Give it a full week before deciding.`, 'warning', 4500);
         return;
       }
 

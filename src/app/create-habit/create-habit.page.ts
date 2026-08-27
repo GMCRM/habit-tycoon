@@ -48,9 +48,16 @@ export class CreateHabitPage implements OnInit {
   selectedBusinessType: BusinessType | null = null;
   habitName = '';
   habitDescription = '';
-  recurrenceInterval: '24h' | 'specific_days' = '24h';
+  recurrenceInterval: '24h' | 'specific_days' | 'weekly_count' = '24h';
   activeDays: number[] = [1, 2, 3, 4, 5]; // Mon–Fri default
   goalValue = 1;
+
+  /** Upper bound for goalValue given the current schedule — a 'weekly_count'
+   *  goal can never exceed 7 since only one completion per calendar day
+   *  counts toward it (see HabitBusinessService.validateGoalValue). */
+  get maxGoalValue(): number {
+    return this.recurrenceInterval === 'weekly_count' ? 7 : 20;
+  }
 
   readonly scheduleInterfaceOptions = { cssClass: 'schedule-select-popover' };
 
@@ -283,7 +290,14 @@ export class CreateHabitPage implements OnInit {
               this.habitDescription.trim() &&
               this.recurrenceInterval &&
               daysValid &&
-              this.goalValue > 0 && this.goalValue <= 20);
+              this.goalValue > 0 && this.goalValue <= this.maxGoalValue);
+  }
+
+  /** Clamps goalValue when switching to a schedule with a lower max (e.g. 'weekly_count' caps at 7). */
+  onScheduleChange() {
+    if (this.goalValue > this.maxGoalValue) {
+      this.goalValue = this.maxGoalValue;
+    }
   }
 
   /** Gates the Launch button — also requires at least one friend chosen once on the Joint Venture tab. */

@@ -362,7 +362,15 @@ export class HomePage implements OnInit, OnDestroy {
       const mine = rows.find(r => r.co_owner_id === this.currentUser?.id);
       return !!mine?.checked_in_today;
     }
-    return this.isGoalCompleted(habitBusiness);
+    if (this.isGoalCompleted(habitBusiness)) return true;
+    // A 'weekly_count' habit has nothing left to do today once logged, even
+    // though the week's overall goal isn't met yet (only one completion per
+    // calendar day counts — see complete_habit_business()) — without this it
+    // would sit in the to-do list every day of the week regardless.
+    if (habitBusiness.recurrence_interval === 'weekly_count') {
+      return this.habitIntervalService.hasLoggedToday(habitBusiness);
+    }
+    return false;
   }
 
   /** Habit-businesses not yet completed for the current period, in display order. */

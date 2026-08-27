@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HabitBusiness } from './habit-business.service';
 
-export type RecurrenceInterval = '24h' | 'specific_days';
+export type RecurrenceInterval = '24h' | 'specific_days' | 'weekly_count';
 
 /** Minimal fields getEffectiveStreak needs. HabitBusiness satisfies this
  *  structurally; callers with only a flattened/joined shape (e.g. stock
@@ -21,38 +21,78 @@ export class HabitIntervalService {
   }
 
   /**
+   * Returns the local midnight of the most recent Monday (today's midnight
+   * if today is Monday) — the fixed calendar-week boundary used by
+   * 'weekly_count' habits, matching complete_habit_business()'s
+   * date_trunc('week', ...) (Postgres weeks are Monday-based, same as here).
+   */
+  private localWeekStart(now: Date = new Date()): Date {
+    const midnight = this.localMidnight(now);
+    const daysSinceMonday = (midnight.getDay() + 6) % 7; // Sun(0)->6, Mon(1)->0, ... Sat(6)->5
+    return new Date(midnight.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000);
+  }
+
+  /**
    * Returns the start of the current interval period in local time.
-   * Both '24h' and 'specific_days' use today's midnight.
+   * '24h' and 'specific_days' use today's midnight; 'weekly_count' uses the
+   * most recent Monday's midnight (a fixed calendar week, not a rolling
+   * window from the habit's creation date).
    */
   getCurrentPeriodStart(interval: RecurrenceInterval, now: Date = new Date()): Date {
+    if (interval === 'weekly_count') return this.localWeekStart(now);
     return this.localMidnight(now);
   }
 
   /**
-   * Returns the start of the next interval period (tomorrow's midnight).
+   * Returns the start of the next interval period (tomorrow's midnight, or
+   * next Monday's midnight for 'weekly_count').
    */
   getNextPeriodStart(interval: RecurrenceInterval, now: Date = new Date()): Date {
+    if (interval === 'weekly_count') {
+      const weekStart = this.localWeekStart(now);
+      return new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
     const midnight = this.localMidnight(now);
     return new Date(midnight.getTime() + 24 * 60 * 60 * 1000);
   }
 
   /**
-   * Returns the start of the previous interval period (yesterday's midnight).
+   * Returns the start of the previous interval period (yesterday's
+   * midnight, or the previous Monday's midnight for 'weekly_count').
    */
   getPreviousPeriodStart(interval: RecurrenceInterval, now: Date = new Date()): Date {
+    if (interval === 'weekly_count') {
+      const weekStart = this.localWeekStart(now);
+      return new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
     const midnight = this.localMidnight(now);
     return new Date(midnight.getTime() - 24 * 60 * 60 * 1000);
   }
 
   /**
    * Returns true if today is an active day for this habit.
-   * Always true for '24h' habits.
+   * Always true for '24h' and 'weekly_count' habits — a weekly-count habit
+   * has no fixed schedule, so every day is eligible to log progress toward
+   * the week's goal (subject to the once-per-day cap enforced server-side).
    */
   isTodayActiveDay(habit: HabitBusiness, now: Date = new Date()): boolean {
     const interval = this.resolveInterval(habit);
     if (interval !== 'specific_days') return true;
     const activeDays = habit.active_days || [];
     return activeDays.includes(now.getDay());
+  }
+
+  /**
+   * Returns true if this 'weekly_count' habit already has a completion
+   * logged today (local time) — the client-side mirror of the same-day cap
+   * complete_habit_business() enforces server-side. Used to show a "logged
+   * today, come back tomorrow" state and to avoid firing a tap the server
+   * would just reject.
+   */
+  hasLoggedToday(habit: HabitBusiness, now: Date = new Date()): boolean {
+    if (!habit.last_completed_at) return false;
+    const todayStart = this.localMidnight(now);
+    return new Date(habit.last_completed_at) >= todayStart;
   }
 
   /**
@@ -125,10 +165,14 @@ export class HabitIntervalService {
 
   /**
    * Resolves a habit's recurrence interval.
-   * Maps legacy '7d' and frequency='weekly' → 'specific_days'.
+   * Maps legacy '7d' and frequency='weekly' → 'specific_days'. 'weekly_count'
+   * ("X times this week, any days") is a distinct, newer type — not to be
+   * confused with the legacy frequency='weekly' alias, which always meant
+   * "every day" under the old scheme.
    */
   resolveInterval(habit: HabitBusiness): RecurrenceInterval {
     const ri = habit.recurrence_interval as string;
+    if (ri === 'weekly_count') return 'weekly_count';
     if (ri === 'specific_days' || ri === '7d') return 'specific_days';
     if (habit.frequency === 'weekly') return 'specific_days';
     return '24h';
@@ -183,6 +227,12 @@ export class HabitIntervalService {
    */
   getPreviousPeriodWindow(habit: HabitBusiness, now: Date = new Date()): { start: Date; end: Date } | null {
     const interval = this.resolveInterval(habit);
+
+    if (interval === 'weekly_count') {
+      const start = this.getPreviousPeriodStart(interval, now);
+      const end = this.getCurrentPeriodStart(interval, now);
+      return { start, end };
+    }
 
     if (interval === 'specific_days') {
       const activeDays = habit.active_days || [];
@@ -259,6 +309,11 @@ export class HabitIntervalService {
    */
   didMissYesterday(habit: HabitBusiness, now: Date = new Date()): boolean {
     const interval = this.resolveInterval(habit);
+    // A weekly-count habit's deadline is the end of its calendar week, not
+    // "yesterday" — there's no per-day grace window to check.
+    if (interval === 'weekly_count') {
+      return false;
+    }
     if ((habit.goal_value || 1) !== 1) {
       return false;
     }
@@ -291,6 +346,23 @@ export class HabitIntervalService {
    * Returns a UI label for the interval.
    */
   getIntervalLabel(interval: RecurrenceInterval): string {
-    return interval === 'specific_days' ? 'Specific Days' : '1 Day';
+    if (interval === 'specific_days') return 'Specific Days';
+    if (interval === 'weekly_count') return 'X Times a Week';
+    return '1 Day';
+  }
+
+  /**
+   * The earliest this 'weekly_count' habit can be sold/deleted: the Monday
+   * after its first full calendar week. Non-authoritative client-side
+   * preview of the guard create_marketplace_listing() enforces server-side
+   * (see that RPC for why — this is the anti-churn floor that stops
+   * front-loading a week's goal and immediately selling to repeat it).
+   * Returns null for any other interval, which has no such restriction.
+   */
+  getEarliestSellDate(habit: HabitBusiness): Date | null {
+    if (this.resolveInterval(habit) !== 'weekly_count') return null;
+    const createdAt = new Date(habit.created_at);
+    const weekStart = this.localWeekStart(createdAt);
+    return new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
   }
 }
