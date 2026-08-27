@@ -6,6 +6,7 @@ import {
 } from '@ionic/angular/standalone';
 import { HabitBusiness } from '../../services/habit-business.service';
 import { HabitCompletionService } from '../../services/habit-completion.service';
+import { HabitIntervalService } from '../../services/habit-interval.service';
 import { addIcons } from 'ionicons';
 import { calendarOutline, close, checkmarkDoneCircle, checkmarkCircle } from 'ionicons/icons';
 
@@ -32,7 +33,10 @@ export class PendingHabitsModalComponent {
   /** Ids currently mid-complete-tap, so their button can show a busy state and repeat taps are ignored. */
   completingIds = new Set<string>();
 
-  constructor(private habitCompletionService: HabitCompletionService) {
+  constructor(
+    private habitCompletionService: HabitCompletionService,
+    private habitIntervalService: HabitIntervalService,
+  ) {
     addIcons({ calendarOutline, close, checkmarkDoneCircle, checkmarkCircle });
   }
 
@@ -45,7 +49,18 @@ export class PendingHabitsModalComponent {
     await this.onReorder(this.orderedHabits.map(hb => hb.id));
   }
 
-  /** Complete a habit right from the list — same one-tap flow as the Home screen's card, minus the wait to see it disappear there too. */
+  /**
+   * Complete a habit right from the list — same tap flow as the Home
+   * screen's card. For a multi-completion goal (goal_value > 1), a tap only
+   * advances progress by one and the row stays put; the server response
+   * doesn't include the new progress count, so it's applied optimistically
+   * here (mirroring what the completion just did server-side) rather than
+   * waiting on a full dashboard refresh to reflect it. The row is only
+   * dropped from the list once the goal is actually met. Joint ventures
+   * don't track current_progress/goal_value at all (their "done" state is
+   * per-co-owner check-in) so a single tap there still completes and
+   * removes the row, exactly like today.
+   */
   async handleCompleteTap(hb: HabitBusiness, event: Event) {
     event.preventDefault();
     event.stopPropagation();
@@ -54,11 +69,24 @@ export class PendingHabitsModalComponent {
     try {
       const result = await this.habitCompletionService.complete(hb);
       if (result.completed) {
-        this.orderedHabits = this.orderedHabits.filter(item => item.id !== hb.id);
+        let goalMet = true;
+        if (!hb.is_joint_venture) {
+          hb.current_progress = this.habitIntervalService.getCurrentProgress(hb) + 1;
+          hb.last_completed_at = new Date().toISOString();
+          goalMet = this.habitIntervalService.isHabitCompleteForCurrentPeriod(hb);
+        }
+        if (goalMet) {
+          this.orderedHabits = this.orderedHabits.filter(item => item.id !== hb.id);
+        }
       }
     } finally {
       this.completingIds.delete(hb.id);
     }
+  }
+
+  /** Current/goal progress for this period — same source as the Home screen's badge. */
+  getCurrentProgress(hb: HabitBusiness): number {
+    return this.habitIntervalService.getCurrentProgress(hb);
   }
 
   trackByHabitId(_index: number, hb: HabitBusiness): string {

@@ -41,6 +41,10 @@
           (click)="handleCompleteTap(hb, $event)"
         >
           <ion-icon name="checkmark-circle" class="button-icon"></ion-icon>
+          <!-- Progress count badge for multi-completion goals, same as the Home screen's card -->
+          <span class="progress-badge" *ngIf="!hb.is_joint_venture && hb.goal_value && hb.goal_value > 1">
+            {{ getCurrentProgress(hb) }}/{{ hb.goal_value }}
+          </span>
         </div>
       </ion-item>
     </ion-reorder-group>

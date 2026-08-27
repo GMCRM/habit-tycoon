@@ -56,6 +56,9 @@
   --padding-start: 12px;
   --inner-padding-end: 10px;
   --min-height: 52px;
+  // Default ion-item clips its content to the row — override so the
+  // multi-completion progress badge isn't cut off at the row's edge.
+  --overflow: visible;
   margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-left: 3px solid var(--ion-color-warning);
@@ -120,6 +123,9 @@ ion-reorder {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  // Not hidden: the multi-completion progress badge below is positioned
+  // just outside this circle's edge and must not be clipped by it.
+  overflow: visible;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   box-shadow:
     0 4px 12px rgba(0, 230, 120, 0.3),
@@ -161,6 +167,31 @@ ion-reorder {
     font-size: 18px;
     color: #FFFFFF;
     filter: drop-shadow(0 0 4px rgba(0, 230, 120, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+  }
+
+  // Small count badge for multi-completion goals (e.g. "2/5") — same styling
+  // as the Home screen's .hold-complete-button .progress-badge, scaled down
+  // to fit this smaller 36px button.
+  .progress-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    z-index: 5;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(23, 23, 51, 0.92), rgba(36, 36, 77, 0.92));
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    color: #FFD700;
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   &.is-completing {
