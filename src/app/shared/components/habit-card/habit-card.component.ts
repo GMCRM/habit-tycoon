@@ -339,10 +339,16 @@ export class HabitCardComponent implements OnInit, OnDestroy {
         this.habitBusinessService.getBusinessTypes(),
         this.habitBusinessService.hasUnlockedTycoonTier(this.hb.id),
       ]);
+      // Rank against the business type's *current* price, not this.hb.cost —
+      // that's a snapshot taken at purchase/upgrade time and goes stale
+      // whenever business_types is repriced later, which can let an
+      // already-superseded (but now more expensive) lower type reappear as
+      // a bogus "upgrade".
+      const currentCost = businessTypes.find(bt => bt.id === this.hb.business_type_id)?.base_cost ?? (this.hb.cost || 0);
       // Habit Tycoon (tier 2) options are simply absent here — not shown as
       // locked — until this habit has earned all 6 milestone achievements.
       const upgradeOptions = businessTypes.filter(bt =>
-        bt.base_cost > (this.hb.cost || 0) &&
+        bt.base_cost > currentCost &&
         bt.id !== this.hb.business_type_id &&
         (bt.tier !== 2 || tycoonUnlocked)
       );
@@ -436,10 +442,16 @@ export class HabitCardComponent implements OnInit, OnDestroy {
         this.habitBusinessService.getBusinessTypes(),
         this.habitBusinessService.hasUnlockedTycoonTier(this.hb.id),
       ]);
+      // Rank against the business type's *current* price, not this.hb.cost —
+      // that's a snapshot taken at purchase/upgrade time and goes stale
+      // whenever business_types is repriced later, which can let an
+      // already-superseded (but now more expensive) lower type reappear as
+      // a bogus "upgrade".
+      const currentCost = businessTypes.find(bt => bt.id === this.hb.business_type_id)?.base_cost ?? (this.hb.cost || 0);
       // Habit Tycoon (tier 2) options are simply absent here — not shown as
       // locked — until this habit has earned all 6 milestone achievements.
       const upgradeOptions = businessTypes.filter(bt =>
-        bt.base_cost > (this.hb.cost || 0) &&
+        bt.base_cost > currentCost &&
         bt.id !== this.hb.business_type_id &&
         (bt.tier !== 2 || tycoonUnlocked)
       );
