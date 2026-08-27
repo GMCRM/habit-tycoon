@@ -76,11 +76,11 @@
   <!-- New habit form -->
   <ng-container *ngIf="view === 'new-habit'">
     <ion-item lines="full">
-      <ion-label position="stacked">Business Name</ion-label>
+      <ion-label position="stacked">Habit Name</ion-label>
       <input
         type="text"
         [(ngModel)]="businessName"
-        placeholder="Name your business"
+        placeholder="e.g. Morning Newspaper Route"
         maxlength="40"
         class="business-name-input"
       />

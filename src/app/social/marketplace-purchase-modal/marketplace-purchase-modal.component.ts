@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -33,7 +33,7 @@ export type MarketplacePurchaseResolution =
     BusinessIconPipe
   ]
 })
-export class MarketplacePurchaseModalComponent implements OnInit {
+export class MarketplacePurchaseModalComponent {
   @Input() purchase!: MarketplacePurchase;
   @Input() eligibleBusinesses: HabitBusiness[] = [];
   @Input() modalController!: ModalController;
@@ -51,10 +51,6 @@ export class MarketplacePurchaseModalComponent implements OnInit {
 
   constructor() {
     addIcons({ close, storefront, add, arrowBack });
-  }
-
-  ngOnInit() {
-    this.businessName = this.purchase.business_name;
   }
 
   /** Actual per-completion pay the buyer's business will carry — the raw earnings
