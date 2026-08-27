@@ -4,7 +4,7 @@ import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonButtons
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { receiptOutline, close, chevronUp, chevronDown } from 'ionicons/icons';
+import { receiptOutline, close } from 'ionicons/icons';
 
 export interface EarningsBreakdown {
   baseEarnings: number;
@@ -29,14 +29,8 @@ export class EarningsModalComponent {
   @Input({ required: true }) breakdown!: EarningsBreakdown;
   @Input() modalController: any;
 
-  showBreakdown = false;
-
   constructor() {
-    addIcons({ receiptOutline, close, chevronUp, chevronDown });
-  }
-
-  toggleBreakdown() {
-    this.showBreakdown = !this.showBreakdown;
+    addIcons({ receiptOutline, close });
   }
 
   dismiss() {

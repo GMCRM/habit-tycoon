@@ -38,19 +38,6 @@
       letter-spacing: 0.5px;
       margin-bottom: 4px;
     }
-
-    ion-button {
-      --color: rgba(255, 255, 255, 0.7);
-      --padding-top: 4px;
-      --padding-bottom: 4px;
-      font-size: 0.7rem;
-      margin: 0;
-      height: auto;
-
-      &:hover {
-        --color: rgba(255, 255, 255, 0.9);
-      }
-    }
   }
 
   .earnings-breakdown {

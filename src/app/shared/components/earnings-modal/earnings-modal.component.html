@@ -21,27 +21,10 @@
         ${{ breakdown.totalEarnings | number:'1.2-2' }}
       </div>
       <div class="earnings-label">total per completion</div>
-
-      <!-- Itemized Earnings Toggle Button -->
-      <ion-button
-        fill="clear"
-        size="small"
-        color="medium"
-        (click)="toggleBreakdown()"
-      >
-        <ion-icon
-          [name]="showBreakdown ? 'chevron-up' : 'chevron-down'"
-          slot="end"
-        ></ion-icon>
-        {{ showBreakdown ? 'Hide Details' : 'Itemized' }}
-      </ion-button>
     </div>
 
-    <!-- Earnings Breakdown (Collapsible) -->
-    <div
-      class="earnings-breakdown"
-      *ngIf="showBreakdown"
-    >
+    <!-- Earnings Breakdown -->
+    <div class="earnings-breakdown">
       <div class="breakdown-item">
         <span class="breakdown-label">Base Pay:</span>
         <span class="breakdown-value">${{ breakdown.baseEarnings | number:'1.2-2' }}</span>
