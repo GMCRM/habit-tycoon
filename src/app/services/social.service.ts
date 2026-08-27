@@ -862,13 +862,35 @@ export class SocialService {
       // any the user has toggled off their leaderboards.
       const friends = (await this.getFriends(userId)).filter(f => f.show_on_leaderboard);
 
+      // user_profiles.net_worth is only refreshed when that person personally
+      // trades stock or collects a dividend — it doesn't move when stock
+      // prices rise on their own (habit-completion price bumps, the hourly
+      // price-sync cron). Without this, someone who holds stock but hasn't
+      // traded recently would be ranked by a stale number here even though
+      // their own Home/Social screen (fixed separately) shows the live one.
+      // Recalculate live for everyone on the board — self and friends — so
+      // ranking reflects current prices. Falls back to the stored value for
+      // anyone the recalculation call fails for (e.g. offline).
+      const idsToRefresh = [userProfile.id, ...friends.map(f => f.friend_profile.id)];
+      const liveNetWorths = await Promise.all(
+        idsToRefresh.map(async id => {
+          try {
+            const { data, error } = await this.supabase.rpc('recalculate_net_worth', { p_user_id: id });
+            return error ? null : data;
+          } catch {
+            return null;
+          }
+        })
+      );
+      const liveNetWorthById = new Map(idsToRefresh.map((id, i) => [id, liveNetWorths[i]]));
+
       const leaderboard = [
-        // Current user - use stored net_worth from database like home screen does
+        // Current user
         {
           id: userProfile.id,
           name: 'You', // Override name to show "You"
           avatar_url: userProfile.avatar_url || '',
-          net_worth: userProfile.net_worth || 0, // Use stored net_worth like home screen
+          net_worth: liveNetWorthById.get(userProfile.id) ?? (userProfile.net_worth || 0),
           cash: userProfile.cash || 0,
           rank: 1
         }
@@ -880,7 +902,7 @@ export class SocialService {
           id: friend.friend_profile.id,
           name: friend.friend_profile.name,
           avatar_url: friend.friend_profile.avatar_url || '',
-          net_worth: friend.friend_profile.net_worth || 0, // Use stored net_worth from database
+          net_worth: liveNetWorthById.get(friend.friend_profile.id) ?? (friend.friend_profile.net_worth || 0),
           cash: friend.friend_profile.cash || 0,
           rank: 0
         }));
