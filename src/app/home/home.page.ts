@@ -629,7 +629,11 @@ export class HomePage implements OnInit, OnDestroy {
    * screen's To-Do group.
    */
   async openPendingHabitsModal() {
-    if (!this.currentUser) return;
+    // Guard against a click landing before loadDashboardData() has populated
+    // todoHabitBusinesses: the modal only reads its `habits` input once (in
+    // ngOnInit), so opening it with a still-empty snapshot would show "All
+    // caught up!" forever, even after the real data finishes loading.
+    if (!this.currentUser || !this.hasCheckedAuth || this.isLoading) return;
     const modal = await this.modalController.create({
       component: PendingHabitsModalComponent,
       componentProps: {
