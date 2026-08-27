@@ -21,6 +21,7 @@ import { CountdownTickService } from '../services/countdown-tick.service';
 import { OfflineQueueService } from '../services/offline-queue.service';
 import { WeeklyReceiptService } from '../services/weekly-receipt.service';
 import { MarketplacePurchaseModalComponent, MarketplacePurchaseResolution } from './marketplace-purchase-modal/marketplace-purchase-modal.component';
+import { PendingPurchasesModalComponent } from './pending-purchases-modal/pending-purchases-modal.component';
 import { BottomNavComponent } from '../shared/bottom-nav/bottom-nav.component';
 import { StocksContentComponent } from '../stocks/stocks-content/stocks-content.component';
 import { BusinessIconPipe } from '../shared/pipes/business-icon.pipe';
@@ -69,7 +70,7 @@ export class SocialPage implements OnInit, OnDestroy {
 
   // Marketplace data
   marketplaceListings: MarketplaceListing[] = [];
-  unresolvedPurchase: MarketplacePurchase | null = null;
+  unresolvedPurchases: MarketplacePurchase[] = [];
   isLoadingMarketplace = false;
   private marketplaceTickSubscription: Subscription | null = null;
   // Incrementing tick makes Angular re-evaluate getListingCountdown() bindings every second
@@ -982,13 +983,13 @@ export class SocialPage implements OnInit, OnDestroy {
       // No scheduled job exists in this app — this is the trigger for that logic.
       await this.marketplaceService.resolveExpiredListings(this.currentUser.id);
 
-      const [listings, unresolvedPurchase] = await Promise.all([
+      const [listings, unresolvedPurchases] = await Promise.all([
         this.marketplaceService.getListings(this.currentUser.id),
-        this.marketplaceService.getUnresolvedPurchase(this.currentUser.id)
+        this.marketplaceService.getUnresolvedPurchases(this.currentUser.id)
       ]);
 
       this.marketplaceListings = listings;
-      this.unresolvedPurchase = unresolvedPurchase;
+      this.unresolvedPurchases = unresolvedPurchases;
 
       // If the Marketplace tab was already selected (e.g. restored from localStorage on
       // load), the listings we just fetched are about to be shown, so clear the badge for
@@ -1073,8 +1074,14 @@ export class SocialPage implements OnInit, OnDestroy {
               await this.loadCurrentUser();
               await this.loadMarketplaceData();
 
-              if (this.unresolvedPurchase) {
-                await this.openResolvePurchaseModal(this.unresolvedPurchase);
+              // Open the resolve modal for the specific purchase just made — NOT
+              // just "whatever's unresolved," since that could be an older, unrelated
+              // purchase still sitting in the queue (e.g. one the user dismissed
+              // setting up earlier). Using the wrong one here silently resolved a
+              // different business than the one the buyer just paid for.
+              const justPurchased = this.unresolvedPurchases.find(p => p.id === result.purchase_id);
+              if (justPurchased) {
+                await this.openResolvePurchaseModal(justPurchased);
               }
             } catch (error) {
               const toast = await this.toastController.create({
@@ -1091,6 +1098,26 @@ export class SocialPage implements OnInit, OnDestroy {
     });
 
     await alert.present();
+  }
+
+  /** Lets the user browse every business they've bought but not yet set up, and pick which one to act on next. */
+  async openPendingPurchasesModal() {
+    if (!this.currentUser || this.unresolvedPurchases.length === 0) return;
+
+    const modal = await this.modalController.create({
+      component: PendingPurchasesModalComponent,
+      componentProps: {
+        purchases: this.unresolvedPurchases,
+        modalController: this.modalController
+      },
+      cssClass: 'pending-purchases-modal'
+    });
+
+    await modal.present();
+    const { data } = await modal.onDidDismiss<MarketplacePurchase>();
+    if (data) {
+      await this.openResolvePurchaseModal(data);
+    }
   }
 
   async openResolvePurchaseModal(purchase: MarketplacePurchase) {
@@ -1139,8 +1166,7 @@ export class SocialPage implements OnInit, OnDestroy {
         );
       }
 
-      this.marketplaceService.clearUnresolvedPurchase();
-      this.unresolvedPurchase = null;
+      await this.loadMarketplaceData();
 
       const resolvedName = data.mode === 'new' ? data.businessName : purchase.business_name;
       const toast = await this.toastController.create({
@@ -1203,14 +1229,14 @@ export class SocialPage implements OnInit, OnDestroy {
     return newNotifications + newRequests;
   }
 
-  /** Unresolved purchase (1) + friends' listings posted since this user last viewed the Marketplace tab. */
+  /** Unresolved purchases + friends' listings posted since this user last viewed the Marketplace tab. */
   get marketplaceBadgeCount(): number {
     if (!this.currentUser) return 0;
     const lastSeen = this.marketplaceService.getLastSeenTime(this.currentUser.id);
     const newListingsCount = this.marketplaceListings.filter(
       l => !l.is_own && new Date(l.created_at).getTime() > lastSeen
     ).length;
-    return (this.unresolvedPurchase ? 1 : 0) + newListingsCount;
+    return this.unresolvedPurchases.length + newListingsCount;
   }
 
   /** Combined count shown on the bottom-nav Social icon: notifications + marketplace signals. */

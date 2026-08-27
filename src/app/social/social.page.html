@@ -751,34 +751,18 @@
             </ion-accordion>
           </ion-accordion-group>
 
-          <ion-card *ngIf="unresolvedPurchase" class="unresolved-purchase-card">
-            <ion-card-content>
-              <div class="unresolved-purchase-info">
-                <img
-                  *ngIf="unresolvedPurchase.business_icon | businessIconSrc as iconSrc"
-                  [src]="iconSrc"
-                  [alt]="unresolvedPurchase.business_name"
-                  class="unresolved-icon-img"
-                />
-                <div *ngIf="!(unresolvedPurchase.business_icon | businessIconSrc)" class="unresolved-icon">{{ unresolvedPurchase.business_icon }}</div>
-                <div class="unresolved-details">
-                  <h3>Finish setting up "{{ unresolvedPurchase.business_name }}"</h3>
-                  <p>
-                    You bought this for ${{ unresolvedPurchase.purchase_price | number:'1.2-2' }} —
-                    choose where it goes.
-                  </p>
-                </div>
-                <ion-button
-                  fill="solid"
-                  color="primary"
-                  size="small"
-                  (click)="openResolvePurchaseModal(unresolvedPurchase)"
-                >
-                  Choose
-                </ion-button>
-              </div>
-            </ion-card-content>
-          </ion-card>
+          <ion-button
+            *ngIf="unresolvedPurchases.length > 0"
+            expand="block"
+            fill="solid"
+            color="primary"
+            class="pending-purchases-button"
+            (click)="openPendingPurchasesModal()"
+          >
+            <ion-icon name="business" slot="start"></ion-icon>
+            Pending Businesses to Set Up
+            <ion-badge color="light" class="pending-purchases-count">{{ unresolvedPurchases.length }}</ion-badge>
+          </ion-button>
 
           <!-- Skeleton placeholders while listings are (re)loading — shaped like
                real listing cards so the swap-in doesn't jump around. -->

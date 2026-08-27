@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
@@ -50,9 +49,6 @@ export interface MarketplacePurchase {
 })
 export class MarketplaceService {
   private supabase: SupabaseClient;
-
-  private unresolvedPurchaseSubject = new BehaviorSubject<MarketplacePurchase | null>(null);
-  public unresolvedPurchase$ = this.unresolvedPurchaseSubject.asObservable();
 
   constructor(supabaseService: SupabaseService) {
     this.supabase = supabaseService.client;
@@ -131,28 +127,21 @@ export class MarketplaceService {
     return data as string;
   }
 
-  /** Any purchase this user made but hasn't yet chosen a target business for. */
-  async getUnresolvedPurchase(buyerId: string): Promise<MarketplacePurchase | null> {
+  /** Every purchase this user made but hasn't yet chosen a target business for, oldest first. */
+  async getUnresolvedPurchases(buyerId: string): Promise<MarketplacePurchase[]> {
     const { data, error } = await this.supabase
       .from('marketplace_purchases')
       .select('*')
       .eq('buyer_id', buyerId)
       .eq('resolved', false)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error loading unresolved marketplace purchase:', error);
+      console.error('Error loading unresolved marketplace purchases:', error);
       throw error;
     }
 
-    this.unresolvedPurchaseSubject.next(data ?? null);
-    return data ?? null;
-  }
-
-  clearUnresolvedPurchase(): void {
-    this.unresolvedPurchaseSubject.next(null);
+    return data ?? [];
   }
 
   private getLastSeenKey(viewerId: string): string {
@@ -170,18 +159,18 @@ export class MarketplaceService {
     localStorage.setItem(this.getLastSeenKey(viewerId), Date.now().toString());
   }
 
-  /** Unresolved purchase (1) + friends' listings posted since this user last viewed the Marketplace tab. */
+  /** Unresolved purchases + friends' listings posted since this user last viewed the Marketplace tab. */
   async getMarketplaceBadgeCount(viewerId: string): Promise<number> {
     try {
-      const [listings, unresolvedPurchase] = await Promise.all([
+      const [listings, unresolvedPurchases] = await Promise.all([
         this.getListings(viewerId),
-        this.getUnresolvedPurchase(viewerId)
+        this.getUnresolvedPurchases(viewerId)
       ]);
 
       const lastSeen = this.getLastSeenTime(viewerId);
       const newListingsCount = listings.filter(l => !l.is_own && new Date(l.created_at).getTime() > lastSeen).length;
 
-      return (unresolvedPurchase ? 1 : 0) + newListingsCount;
+      return unresolvedPurchases.length + newListingsCount;
     } catch (error) {
       console.error('Error computing marketplace badge count:', error);
       return 0;

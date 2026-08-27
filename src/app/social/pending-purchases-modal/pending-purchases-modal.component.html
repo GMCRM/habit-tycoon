@@ -1,0 +1,42 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="business" color="success"></ion-icon>
+        Pending Businesses
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="pending-purchases-content">
+  <p class="section-subtitle">
+    Businesses you've bought but haven't set up yet. Choose one to pick where it goes.
+  </p>
+
+  <div class="pending-list" *ngIf="purchases.length > 0; else emptyState">
+    <div class="pending-option" *ngFor="let p of purchases" (click)="choose(p)">
+      <img
+        *ngIf="p.business_icon | businessIconSrc as iconSrc"
+        [src]="iconSrc"
+        [alt]="p.business_name"
+        class="pending-icon-img"
+      />
+      <div *ngIf="!(p.business_icon | businessIconSrc)" class="pending-icon">{{ p.business_icon }}</div>
+      <div class="pending-details">
+        <h3>{{ p.business_name }}</h3>
+        <p>Bought for ${{ p.purchase_price | number:'1.2-2' }} &middot; {{ timeAgo(p.created_at) }}</p>
+      </div>
+      <ion-icon name="arrow-back" class="pending-arrow"></ion-icon>
+    </div>
+  </div>
+
+  <ng-template #emptyState>
+    <p class="empty-hint">Nothing pending — every business you've bought is already set up.</p>
+  </ng-template>
+</ion-content>
