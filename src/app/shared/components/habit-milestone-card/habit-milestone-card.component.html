@@ -1,0 +1,32 @@
+<div class="habit-achievement-card">
+  <div class="habit-achievement-header">
+    <img
+      *ngIf="habit.business_icon | businessIconSrc as iconSrc"
+      [src]="iconSrc"
+      alt=""
+      class="habit-achievement-icon-img"
+    />
+    <span *ngIf="!(habit.business_icon | businessIconSrc)" class="habit-achievement-icon">{{ habit.business_icon }}</span>
+    <div class="habit-achievement-info">
+      <div class="habit-achievement-name">{{ habit.business_name }}</div>
+      <div class="habit-achievement-type">{{ habit.business_types?.name || 'Business' }}</div>
+    </div>
+    <div class="habit-achievement-count">{{ earnedCount }}/{{ milestones.length }}</div>
+  </div>
+
+  <div class="badge-grid">
+    <div class="badge" *ngFor="let m of milestones" [class.earned]="m.earned">
+      <div class="badge-emoji-wrap">
+        <span class="badge-emoji">{{ m.emoji }}</span>
+        <ion-icon *ngIf="!m.earned" name="lock-closed-outline" class="badge-lock"></ion-icon>
+      </div>
+      <div class="badge-label">{{ m.label }}</div>
+      <div class="badge-progress-track" *ngIf="!m.earned">
+        <div class="badge-progress-fill" [style.width.%]="progressPercent(m)"></div>
+      </div>
+      <div class="badge-progress-text">
+        {{ m.earned ? 'Earned' : progressLabel(m) }}
+      </div>
+    </div>
+  </div>
+</div>

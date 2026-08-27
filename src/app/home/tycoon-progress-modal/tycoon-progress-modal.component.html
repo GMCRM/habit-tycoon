@@ -1,0 +1,37 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      <div class="modal-title">
+        <ion-icon name="trophy" color="warning"></ion-icon>
+        Habit Tycoon Progress
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="dismiss()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="tycoon-progress-content">
+  <div class="content-inner">
+    <p class="intro">
+      "{{ habitBusiness.business_name }}" has reached the top of its business ladder. Earn all 6 milestone
+      badges on this habit to unlock its Habit Tycoon upgrades.
+    </p>
+
+    <app-habit-milestone-card [habit]="habitBusiness" [earnedKeys]="earnedKeys"></app-habit-milestone-card>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="footer-content">
+      <ion-button fill="clear" color="warning" (click)="dismiss()">
+        <ion-icon name="arrow-back" slot="start"></ion-icon>
+        Close
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

@@ -227,6 +227,25 @@ export class AchievementsService {
   }
 
   /**
+   * Every milestone key a single habit has earned. Used where only one
+   * habit's progress is needed (e.g. the upgrade popup) so we don't have
+   * to pull every habit's milestones just to check one.
+   */
+  async getEarnedMilestoneKeysForHabit(habitBusinessId: string): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from('habit_milestone_achievements')
+      .select('milestone_key')
+      .eq('habit_business_id', habitBusinessId);
+
+    if (error) {
+      console.error('Error fetching earned milestones for habit:', error);
+      throw error;
+    }
+
+    return (data || []).map(row => row.milestone_key);
+  }
+
+  /**
    * Whether a specific habit has earned all 6 milestone badges — the
    * condition that unlocks Habit Tycoon (tier 2) business types for that
    * habit. Pass the result of getEarnedMilestones() rather than refetching.

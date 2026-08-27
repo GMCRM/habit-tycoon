@@ -8,6 +8,7 @@ import {
   receiptOutline, calendarOutline, trendingUp, people, create, informationCircleOutline
 } from 'ionicons/icons';
 import { HabitBusiness, HabitBusinessService } from '../../../services/habit-business.service';
+import { AchievementsService } from '../../../services/achievements.service';
 import { JointVentureService, JointVentureStatusRow } from '../../../services/joint-venture.service';
 import { OfflineQueuedError } from '../../../services/offline-queue.service';
 import { HabitUpdateService } from '../../../services/habit-update.service';
@@ -17,6 +18,7 @@ import { CountdownTickService } from '../../../services/countdown-tick.service';
 import { SoundService } from '../../../services/sound.service';
 import { BusinessIconPipe } from '../../pipes/business-icon.pipe';
 import { UpgradeModalComponent } from '../../../home/upgrade-modal/upgrade-modal.component';
+import { TycoonProgressModalComponent } from '../../../home/tycoon-progress-modal/tycoon-progress-modal.component';
 import { EditHabitModalComponent } from '../../../home/edit-habit-modal/edit-habit-modal.component';
 import { StockOwnersModalComponent } from '../stock-owners-modal/stock-owners-modal.component';
 import { JvParticipantsModalComponent } from '../jv-participants-modal/jv-participants-modal.component';
@@ -77,6 +79,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
 
   constructor(
     private habitBusinessService: HabitBusinessService,
+    private achievementsService: AchievementsService,
     private jointVentureService: JointVentureService,
     private habitUpdateService: HabitUpdateService,
     private habitIntervalService: HabitIntervalService,
@@ -353,7 +356,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
         (bt.tier !== 2 || tycoonUnlocked)
       );
       if (upgradeOptions.length === 0) {
-        await this.toast('🎉 You already have the best business type available!', 'success');
+        await this.showNoUpgradesAvailable(tycoonUnlocked);
         return;
       }
 
@@ -457,7 +460,7 @@ export class HabitCardComponent implements OnInit, OnDestroy {
       );
 
       if (upgradeOptions.length === 0) {
-        await this.toast('🎉 You already have the best business type available!', 'success');
+        await this.showNoUpgradesAvailable(tycoonUnlocked);
         return;
       }
 
@@ -485,6 +488,31 @@ export class HabitCardComponent implements OnInit, OnDestroy {
     } catch (error) {
       await this.toast(`❌ Failed to load upgrade options: ${error}`, 'danger');
     }
+  }
+
+  /**
+   * No upgrade options were found for this habit. If Habit Tycoon is
+   * already unlocked, this habit genuinely owns every business type there
+   * is — otherwise show its progress toward the 6 milestone badges that
+   * unlock the Habit Tycoon tier, instead of just a dead-end toast.
+   */
+  private async showNoUpgradesAvailable(tycoonUnlocked: boolean) {
+    if (tycoonUnlocked) {
+      await this.toast('🎉 You already have the best business type available!', 'success');
+      return;
+    }
+
+    const earnedKeys = await this.achievementsService.getEarnedMilestoneKeysForHabit(this.hb.id);
+    const modal = await this.modalController.create({
+      component: TycoonProgressModalComponent,
+      componentProps: {
+        habitBusiness: this.hb,
+        earnedKeys,
+        modalController: this.modalController
+      },
+      cssClass: 'upgrade-modal'
+    });
+    await modal.present();
   }
 
   private async performUpgrade(newBusinessType: any, upgradeCost: number) {

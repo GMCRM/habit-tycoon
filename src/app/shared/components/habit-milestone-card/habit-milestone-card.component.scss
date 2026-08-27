@@ -1,0 +1,182 @@
+.habit-achievement-card {
+  background: var(--ion-card-background);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  padding: 16px;
+}
+
+.habit-achievement-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  .habit-achievement-icon {
+    font-size: 1.8rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .habit-achievement-icon-img {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 22%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.25);
+  }
+
+  .habit-achievement-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .habit-achievement-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.95);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .habit-achievement-type {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 1px;
+  }
+
+  .habit-achievement-count {
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--ion-color-primary);
+    background: rgba(255, 215, 0, 0.12);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+  padding: 10px 4px;
+  background: var(--business-item-background);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  opacity: 0.55;
+  transition: opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+
+  &.earned {
+    opacity: 1;
+    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+  }
+
+  .badge-emoji-wrap {
+    position: relative;
+    margin-bottom: 6px;
+  }
+
+  .badge-emoji {
+    font-size: 1.8rem;
+    line-height: 1;
+    filter: grayscale(1);
+  }
+
+  &.earned .badge-emoji {
+    filter: none;
+  }
+
+  .badge-lock {
+    position: absolute;
+    bottom: -2px;
+    right: -6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    background: var(--business-item-background);
+    border-radius: 50%;
+    padding: 2px;
+  }
+
+  .badge-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 4px;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  &.earned .badge-label {
+    color: var(--ion-color-primary);
+  }
+
+  .badge-progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .badge-progress-fill {
+    height: 100%;
+    background: var(--ion-color-primary);
+    border-radius: 2px;
+  }
+
+  .badge-progress-text {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.45);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.earned .badge-progress-text {
+    color: var(--ion-color-success);
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 400px) {
+  .habit-achievement-card {
+    padding: 12px;
+  }
+
+  .badge-grid {
+    gap: 6px;
+  }
+
+  .badge {
+    padding: 8px 3px;
+
+    .badge-emoji {
+      font-size: 1.5rem;
+    }
+
+    .badge-label {
+      font-size: 0.66rem;
+    }
+
+    .badge-progress-text {
+      font-size: 0.6rem;
+    }
+  }
+}
